@@ -1,4 +1,4 @@
-package com.minhquan.QuanLyVuaCa.entity;
+package com.minhquan.QuanLyVuaCa.Tam;
 
 import jakarta.persistence.*;
 

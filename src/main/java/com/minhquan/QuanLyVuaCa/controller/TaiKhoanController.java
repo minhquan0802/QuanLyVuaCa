@@ -1,7 +1,7 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
-import com.minhquan.QuanLyVuaCa.entity.TaiKhoan;
+import com.minhquan.QuanLyVuaCa.Tam.TaiKhoan;
 import com.minhquan.QuanLyVuaCa.service.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
