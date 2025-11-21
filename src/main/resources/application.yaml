@@ -11,8 +11,5 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-      naming:
-        # Dòng này cực kỳ quan trọng: Bảo Hibernate dùng đúng tên trong @Table
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
 
