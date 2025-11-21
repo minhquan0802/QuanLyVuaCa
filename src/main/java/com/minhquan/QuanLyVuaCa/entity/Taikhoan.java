@@ -33,7 +33,7 @@ public class Taikhoan {
 
     @Size(max = 36)
     @Column(name = "matkhau", length = 36)
-    private char matkhau;
+    private String matkhau;
 
     @Size(max = 50)
     @Column(name = "email", length = 50)
