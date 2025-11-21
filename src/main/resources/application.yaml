@@ -12,7 +12,8 @@ spring:
     hibernate:
       ddl-auto: validate
       naming:
-        # Dòng này cực kỳ quan trọng: Bảo Hibernate dùng đúng tên trong @Table
+        # Dòng này quan trọng: Bắt Hibernate dùng đúng tên trong @Column, không tự sửa thành snake_case
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     show-sql: true
 

@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 public class Chitietphieuthanhly {
     @Id
     @Size(max = 36)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "idchitietphieuthanhly", nullable = false, length = 36)
     private String idchitietphieuthanhly;
 

@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 
@@ -16,6 +15,7 @@ import java.time.Instant;
 public class Donhang {
     @Id
     @Size(max = 36)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "iddonhang", nullable = false, length = 36)
     private String iddonhang;
 

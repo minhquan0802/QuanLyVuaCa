@@ -14,6 +14,7 @@ import java.time.Instant;
 public class Phieuthanhly {
     @Id
     @Size(max = 36)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "idphieuthanhly", nullable = false, length = 36)
     private String idphieuthanhly;
 

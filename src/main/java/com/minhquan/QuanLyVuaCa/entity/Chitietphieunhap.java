@@ -16,6 +16,7 @@ import java.time.LocalDate;
 public class Chitietphieunhap {
     @Id
     @Size(max = 36)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "idchitietphieunhap", nullable = false, length = 36)
     private String idchitietphieunhap;
 
