@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 @Getter
 @Setter
@@ -15,6 +14,7 @@ import org.hibernate.annotations.ColumnDefault;
 public class Taikhoan {
     @Id
     @Size(max = 36)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "idtaikhoan", nullable = false, length = 36)
     private String idtaikhoan;
 
