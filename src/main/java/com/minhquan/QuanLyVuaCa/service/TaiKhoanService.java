@@ -7,10 +7,7 @@ import com.minhquan.QuanLyVuaCa.entity.Vaitro;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import com.minhquan.QuanLyVuaCa.repository.VaitroRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +20,6 @@ public class TaiKhoanService {
     public Taikhoan taoTaiKhoan(TaiKhoanCreationRequest request){
         Vaitro vaitro = vaitroRepository.findById(request.getIdvaitro())
                 .orElseThrow(()->new RuntimeException("Khong tim thay vai tro co id: "+request.getIdvaitro()));
-
         Taikhoan taikhoan = new Taikhoan();
         taikhoan.setIdvaitro(vaitro);
         taikhoan.setHo(request.getHo());
@@ -31,7 +27,7 @@ public class TaiKhoanService {
         taikhoan.setEmail(request.getEmail());
         taikhoan.setSodienthoai(request.getSodienthoai());
         taikhoan.setDiachi(request.getDiachi());
-        taikhoan.setMatkhau('i');
+        taikhoan.setMatkhau(request.getMatkhau());
         taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
 
         return taiKhoanRepository.save(taikhoan);
