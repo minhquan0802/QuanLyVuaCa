@@ -13,5 +13,4 @@ public class TaiKhoanCreationRequest {
     private String email;
     private String sodienthoai;
     private String diachi;
-    private TrangThaiTaiKhoan trangthaitk;
 }
