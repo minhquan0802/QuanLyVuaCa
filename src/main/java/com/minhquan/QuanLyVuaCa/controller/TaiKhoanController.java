@@ -3,6 +3,7 @@ package com.minhquan.QuanLyVuaCa.controller;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanUpdateRequest;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
+import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import com.minhquan.QuanLyVuaCa.service.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,8 @@ import java.util.List;
 public class TaiKhoanController {
     @Autowired
     private TaiKhoanService taiKhoanService;
+    @Autowired
+    private TaiKhoanRepository taiKhoanRepository;
 
     @PostMapping("/TaiKhoans")
     Taikhoan taoUser(@RequestBody TaiKhoanCreationRequest request){
