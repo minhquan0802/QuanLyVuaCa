@@ -28,10 +28,12 @@ public class TaiKhoanController {
     List<Taikhoan> danhSachUser(){
         return taiKhoanService.getTaiKhoans();
     }
+
     @GetMapping("/TaiKhoans/{idtaikhoan}")
     Taikhoan timUser(@PathVariable("idtaikhoan") String idtaikhoan){
         return taiKhoanService.timTaiKhoan(idtaikhoan);
     }
+
     @PutMapping("/TaiKhoans/{idtaikhoan}")
     Taikhoan updateTK(@PathVariable("idtaikhoan") String idtaikhoan, @RequestBody TaiKhoanUpdateRequest request){
         return taiKhoanService.updateTaiKhoan(idtaikhoan, request);

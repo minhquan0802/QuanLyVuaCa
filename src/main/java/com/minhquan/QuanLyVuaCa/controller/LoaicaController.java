@@ -18,5 +18,9 @@ public class LoaicaController {
     List<Loaica> danhSachLoaiCa(){
         return loaicaService.getLoaiCa();
     }
+    @GetMapping("/Loaicas/{loaicaid}")
+    Loaica timCa(@PathVariable("loaicaid") Integer loaicaid){
+        return loaicaService.timLoaica(loaicaid);
+    }
 
 }

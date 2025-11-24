@@ -15,4 +15,7 @@ public class LoaicaService {
     public List<Loaica> getLoaiCa(){
         return loaicaRepository.findAll();
     }
+    public Loaica timLoaica(Integer id){
+        return loaicaRepository.findById(id).orElseThrow(()-> new RuntimeException("Khong tim thay loai ca"));
+    }
 }
