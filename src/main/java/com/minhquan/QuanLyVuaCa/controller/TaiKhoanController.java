@@ -2,11 +2,14 @@ package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanUpdateRequest;
+import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
+import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import com.minhquan.QuanLyVuaCa.service.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,28 +23,45 @@ public class TaiKhoanController {
     private TaiKhoanRepository taiKhoanRepository;
 
     @PostMapping("/TaiKhoans")
-    Taikhoan taoUser(@RequestBody TaiKhoanCreationRequest request){
-        Taikhoan newTaikhoan = taiKhoanService.taoTaiKhoan(request);
-        return ResponseEntity.ok(newTaikhoan).getBody();
+    private ApiResponse<TaikhoanResponse> taoTaikhoan(@Validated @RequestBody TaiKhoanCreationRequest request){
+        return ApiResponse.<TaikhoanResponse>builder()
+                .code(200)
+                .message("TaiKhoan created")
+                .result(taiKhoanService.taoTaiKhoan(request))
+                .build();
     }
 
     @GetMapping("/TaiKhoans")
-    List<Taikhoan> danhSachUser(){
-        return taiKhoanService.getTaiKhoans();
+    private ApiResponse<List<TaikhoanResponse>> danhSachTaiKhoan(){
+        return ApiResponse.<List<TaikhoanResponse>>builder()
+                .code(200)
+                .message("OK")
+                .result(taiKhoanService.getTaiKhoans())
+                .build();
     }
 
     @GetMapping("/TaiKhoans/{idtaikhoan}")
-    Taikhoan timUser(@PathVariable("idtaikhoan") String idtaikhoan){
-        return taiKhoanService.timTaiKhoan(idtaikhoan);
+    private ApiResponse<TaikhoanResponse> timTaiKhoan(@PathVariable("idtaikhoan") String userId) {
+        return ApiResponse.<TaikhoanResponse>builder()
+                .code(200)
+                .message("OK")
+                .result(taiKhoanService.timTaiKhoan(userId))
+                .build();
     }
 
     @PutMapping("/TaiKhoans/{idtaikhoan}")
-    Taikhoan updateTK(@PathVariable("idtaikhoan") String idtaikhoan, @RequestBody TaiKhoanUpdateRequest request){
-        return taiKhoanService.updateTaiKhoan(idtaikhoan, request);
+    private ApiResponse<TaikhoanResponse> updateUser(@PathVariable("idtaikhoan") String idtaikhoan, @RequestBody TaiKhoanUpdateRequest request){
+        return ApiResponse.<TaikhoanResponse>builder()
+                .code(200)
+                .message("OK")
+                .result(taiKhoanService.updateTaiKhoan(idtaikhoan,request))
+                .build();
     }
     @DeleteMapping("/TaiKhoans/{idtaikhoan}")
-    String xoaTK(@PathVariable("idtaikhoan") String idtaikhoan){
+    private ApiResponse<String> xoaTK(@PathVariable("idtaikhoan") String idtaikhoan){
         taiKhoanService.xoaTaiKhoan(idtaikhoan);
-        return "Da xoa tai khoan";
+        return ApiResponse.<String>builder()
+                .result("Da xoa user")
+                .build();
     }
 }

@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LoaicaRepository extends JpaRepository<Loaica, Integer> {
+    boolean existsByTenloaica(String tenloaica);
 }

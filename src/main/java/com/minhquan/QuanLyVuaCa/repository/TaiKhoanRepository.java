@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TaiKhoanRepository extends JpaRepository<Taikhoan, String> {
+    boolean existsByEmail(String email);
 }
