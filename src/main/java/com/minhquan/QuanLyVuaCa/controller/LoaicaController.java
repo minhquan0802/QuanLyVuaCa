@@ -8,9 +8,12 @@ import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.service.LoaicaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -29,15 +32,59 @@ public class LoaicaController {
                 .build();
     }
     // ======================== CREATE ========================
-    @PostMapping("/Loaicas")
-    private ApiResponse<LoaicaResponse> taoLoaica(@Validated @RequestBody LoaicaCeationRequest request) {
+//    @PostMapping("/Loaicas")
+//    private ApiResponse<LoaicaResponse> taoLoaica(@Validated @RequestBody LoaicaCeationRequest request) {
+//        return ApiResponse.<LoaicaResponse>builder()
+//                .code(200)
+//                .message("Loai ca created")
+//                .result(loaicaService.taoLoaica(request))
+//                .build();
+//    }
+    // ======================== GET ONE ========================
+
+    @PostMapping(value = "/Loaicas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<LoaicaResponse> themLoaiCa(
+            @RequestParam("tenloaica") String tenloaica,
+            @RequestParam("mieuta") String mieuta,
+            @RequestParam(value = "hinhanh", required = false) MultipartFile file) {
+
+        LoaicaCeationRequest request = new LoaicaCeationRequest();
+        request.setTenloaica(tenloaica);
+        request.setMieuta(mieuta);
+        request.setHinhanh(file);
+
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
-                .message("Loai ca created")
+                .message("OK")
                 .result(loaicaService.taoLoaica(request))
                 .build();
     }
-    // ======================== GET ONE ========================
+
+    // ======================== UPDATE (ĐÃ SỬA) ========================
+    @PutMapping(value = "/Loaicas/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    private ApiResponse<LoaicaResponse> capNhatLoaica(
+            @PathVariable("id") Integer id,
+            @RequestParam("tenloaica") String tenloaica,
+            @RequestParam("mieuta") String mieuta,
+            @RequestParam(value = "hinhanh", required = false) MultipartFile file) {
+
+        // 1. Tạo đối tượng Request từ các tham số nhận được
+        LoaicaUpdateRequest request = new LoaicaUpdateRequest();
+        request.setTenloaica(tenloaica);
+        request.setMieuta(mieuta);
+        request.setHinhanh(file); // Nếu người dùng không gửi file, nó sẽ là null
+
+        // 2. Gọi Service để xử lý (Service sẽ tự kiểm tra file có null hay không)
+        return ApiResponse.<LoaicaResponse>builder()
+                .code(200)
+                .message("OK")
+                .result(loaicaService.capNhatLoaica(id, request))
+                .build();
+    }
+
+
+
+
     @GetMapping("/Loaicas/{id}")
     private ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
         return ApiResponse.<LoaicaResponse>builder()
@@ -47,18 +94,6 @@ public class LoaicaController {
                 .build();
     }
 
-    // ======================== UPDATE ========================
-    @PutMapping("/Loaicas/{id}")
-    private ApiResponse<LoaicaResponse> capNhatLoaica(
-            @PathVariable("id") Integer id,
-            @RequestBody LoaicaUpdateRequest request) {
-
-        return ApiResponse.<LoaicaResponse>builder()
-                .code(200)
-                .message("OK")
-                .result(loaicaService.capNhatLoaica(id, request))
-                .build();
-    }
 
     // ======================== DELETE ========================
     @DeleteMapping("/Loaicas/{id}")
