@@ -4,51 +4,55 @@ import com.minhquan.QuanLyVuaCa.Enum.TrangThaiTaiKhoan;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
+@Entity
 @Getter
 @Setter
-@Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name = "taikhoan")
 public class Taikhoan {
     @Id
     @Size(max = 36)
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "idtaikhoan", nullable = false, length = 36)
-    private String idtaikhoan;
+    String idtaikhoan;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "idvaitro", nullable = false)
-    private Vaitro idvaitro;
+    Vaitro idvaitro;
 
     @Size(max = 50)
     @Column(name = "ho", length = 50)
-    private String ho;
+    String ho;
 
     @Size(max = 10)
     @Column(name = "ten", length = 10)
-    private String ten;
+    String ten;
 
     @Size(min = 8, max = 255)
     @Column(name = "matkhau", length = 60)
-    private String matkhau;
+    String matkhau;
 
     @Size(max = 50)
     @Column(name = "email", length = 50)
-    private String email;
+    String email;
 
     @Size(max = 15)
     @Column(name = "sodienthoai", length = 15)
-    private String sodienthoai;
+    String sodienthoai;
 
     @Size(max = 80)
     @Column(name = "diachi", length = 80)
-    private String diachi;
+    String diachi;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "trangthaitk", columnDefinition = "ENUM('HOAT_DONG','KHOA')")
-    private TrangThaiTaiKhoan trangthaitk;
+    TrangThaiTaiKhoan trangthaitk;
 
 }

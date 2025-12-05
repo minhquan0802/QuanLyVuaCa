@@ -20,15 +20,6 @@ public class DonhangController {
     @Autowired
     private DonhangService donhangService;
 
-//    @PostMapping
-//    public ApiResponse<DonhangResponse> taoDonhang(@RequestBody DonhangRequestCreation request) {
-//        return ApiResponse.<DonhangResponse>builder()
-//                .code(200)
-//                .message("TaiKhoan created")
-//                .result(donhangService.createDonhang(request))
-//                .build();
-//    }
-
     @GetMapping
     public ResponseEntity<List<Donhang>> danhSachDonhangs() {
         return ResponseEntity.ok(donhangService.getAllDonhangs());

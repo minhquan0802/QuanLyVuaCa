@@ -16,4 +16,5 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     show-sql: true
-
+jwt:
+  signerKey: "61b8e4c9638f759c9112471bdfff29f02310f0e6e1053fa9c04d924d3d9869fc"

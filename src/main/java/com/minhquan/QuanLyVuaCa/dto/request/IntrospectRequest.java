@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -8,14 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Data
+@AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TaiKhoanCreationRequest {
-//    Integer idvaitro;
-    String ho;
-    String ten;
-    String matkhau;
-    String email;
-    String sodienthoai;
-    String diachi;
+public class IntrospectRequest {
+    String token;
 }
