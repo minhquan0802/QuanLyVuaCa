@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -24,8 +25,7 @@ public class Donhang {
     private String idthongtinkhachhang;
 
     @Column(name = "ngaydat")
-    private Instant ngaydat;
-
+    private LocalDateTime ngaydat;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "trangthaidonhang", columnDefinition = "ENUM('CHO_XAC_NHAN','DANG_DONG_HANG', 'DANG_VAN_CHUYEN', 'HOAN_TAT' 'HUY') ColumnDefault 'CHO_XAC_NHAN'")

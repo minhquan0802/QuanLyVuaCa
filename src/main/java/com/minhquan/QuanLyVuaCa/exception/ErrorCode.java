@@ -15,7 +15,8 @@ public enum ErrorCode {
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     LOAICA_NOT_EXISTED(1011, "Loai ca khong ton tai", HttpStatus.NOT_FOUND),
     DATA_EXISTED(1012, "Da ton tai data", HttpStatus.CONFLICT),
-    UNAUTHORIZED(1007, "UNAUTHORIZED", HttpStatus.FORBIDDEN);
+    PAYLOAD_TOO_LARGE(1013, "Dung lượng file vượt quá giới hạn cho phép - PAYLOAD_TOO_LARGE", HttpStatus.PAYLOAD_TOO_LARGE),
+    UNAUTHORIZED(1007, "Bạn không có quyền thực hiện hành động này - UNAUTHORIZED", HttpStatus.FORBIDDEN);
     private int code;
     private String message;
     private HttpStatus status;

@@ -10,12 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TaiKhoanCreationRequest {
-    Integer idvaitro;
-    String ho;
-    String ten;
-    String matkhau;
-    String email;
-    String sodienthoai;
-    String diachi;
+public class DangnhapRequest {
+    private String email;
+    private String matkhau;
 }
