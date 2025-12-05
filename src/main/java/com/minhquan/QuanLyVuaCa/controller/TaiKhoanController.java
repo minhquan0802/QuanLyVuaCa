@@ -19,11 +19,9 @@ import java.util.List;
 public class TaiKhoanController {
     @Autowired
     private TaiKhoanService taiKhoanService;
-    @Autowired
-    private TaiKhoanRepository taiKhoanRepository;
 
     @PostMapping("/TaiKhoans")
-    private ApiResponse<TaikhoanResponse> taoTaikhoan(@Validated @RequestBody TaiKhoanCreationRequest request){
+    private ApiResponse<TaikhoanResponse> taoTaikhoan(@RequestBody TaiKhoanCreationRequest request){
         return ApiResponse.<TaikhoanResponse>builder()
                 .code(200)
                 .message("TaiKhoan created")

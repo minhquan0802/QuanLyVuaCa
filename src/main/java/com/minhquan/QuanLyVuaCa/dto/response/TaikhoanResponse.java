@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.dto.response;
 
+import com.minhquan.QuanLyVuaCa.Enum.TrangThaiTaiKhoan;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,4 +20,5 @@ public class TaikhoanResponse {
     String email;
     String sodienthoai;
     String diachi;
+    TrangThaiTaiKhoan trangthaitk;
 }

@@ -18,12 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,8 +129,6 @@ public class LoaicaService {
 
     public String saveImage(MultipartFile file, String fileName) {
         try {
-            // Đường dẫn lưu file ngoài project (không dùng src/main/resources)
-//            String uploadDir = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/sourceCode/BE/QuanLyVuaCa/images/loaica/";
             String uploadDir = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
 
             // Tạo folder nếu chưa tồn tại
@@ -186,9 +182,6 @@ public class LoaicaService {
 
             String finalFileName = baseName + extension;
 
-            // Lưu file bằng phương thức đã chuẩn bị
-            System.out.println("FE gửi file: " + (file != null ? file.getOriginalFilename() : "null"));
-            System.out.println("File có trống không? " + (file != null && !file.isEmpty()));
             saveImage(file, finalFileName);
 
             // Lưu tên file vào DB

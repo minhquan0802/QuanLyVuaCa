@@ -1,20 +1,44 @@
 package com.minhquan.QuanLyVuaCa.exception;
 
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @ControllerAdvice
+@Slf4j
 public class XulyException {
 
+    // SỬA LẠI HÀM NÀY
     @ExceptionHandler(value = RuntimeException.class)
     ResponseEntity<ApiResponse> xulyRuntimeException (RuntimeException exception)
     {
-        ApiResponse apiResponse =new ApiResponse();
-        apiResponse.setCode(ErrorCode.UNAUTHORIZED.getCode());
-        apiResponse.setMessage(ErrorCode.UNAUTHORIZED.getMessage());
+        // In lỗi ra console để bạn biết nó chết ở đâu (Quan trọng!)
+        log.error("Exception occurred: ", exception);
+
+        ApiResponse apiResponse = new ApiResponse();
+
+        // Thay vì UNAUTHORIZED, hãy dùng UNCATEGORIZED (9999)
+        apiResponse.setCode(ErrorCode.UNCATEGORIZED.getCode());
+
+        // Lấy message lỗi chính
+        String message = exception.getMessage();
+
+        // NẾU CÓ NGUYÊN NHÂN SÂU XA (ROOT CAUSE), NỐI THÊM VÀO ĐỂ DỄ ĐỌC LỖI
+        if (exception.getCause() != null) {
+            message += " -> Caused by: " + exception.getCause().getMessage();
+            // Đào sâu thêm 1 lớp nữa nếu có (thường là lỗi SQL nằm ở đây)
+            if (exception.getCause().getCause() != null) {
+                message += " -> Root: " + exception.getCause().getCause().getMessage();
+            }
+        }
+
+        // Kèm theo message thực tế của lỗi để debug
+        apiResponse.setMessage(ErrorCode.UNCATEGORIZED.getMessage() + ": " + exception.getMessage());
+
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
@@ -41,6 +65,19 @@ public class XulyException {
 
         return ResponseEntity.badRequest().body(apiResponse);
 
-}
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse> handleMaxSizeException(MaxUploadSizeExceededException ex) {
+        ErrorCode errorCode = ErrorCode.PAYLOAD_TOO_LARGE;
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(errorCode.getCode());
+        apiResponse.setMessage(errorCode.getMessage());
+
+        return ResponseEntity
+                .status(errorCode.getStatus()) // dùng đúng HttpStatus 413
+                .body(apiResponse);
+    }
 
 }

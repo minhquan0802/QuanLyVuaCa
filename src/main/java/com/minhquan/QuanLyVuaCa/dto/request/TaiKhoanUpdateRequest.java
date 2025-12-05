@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
+import com.minhquan.QuanLyVuaCa.Enum.TrangThaiTaiKhoan;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,10 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TaiKhoanUpdateRequest {
-    private String ho;
-    private String ten;
-    private String matkhau;
-    private String email;
-    private String sodienthoai;
-    private String diachi;
+    Integer idvaitro;
+    String ho;
+    String ten;
+    String matkhau;
+    String email;
+    String sodienthoai;
+    String diachi;
+    TrangThaiTaiKhoan trangthaitk;
 }

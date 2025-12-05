@@ -31,8 +31,8 @@ public class Taikhoan {
     @Column(name = "ten", length = 10)
     private String ten;
 
-    @Size(max = 36)
-    @Column(name = "matkhau", length = 36)
+    @Size(min = 8, max = 255)
+    @Column(name = "matkhau", length = 60)
     private String matkhau;
 
     @Size(max = 50)
