@@ -2,7 +2,9 @@ package com.minhquan.QuanLyVuaCa.exception;
 
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -51,7 +53,9 @@ public class XulyException {
         apiResponse.setCode(errorCode.getCode());
         apiResponse.setMessage(errorCode.getMessage() );
 
-        return ResponseEntity.badRequest().body(apiResponse);
+        return ResponseEntity
+                .status(errorCode.getCode())
+                .body(apiResponse);
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
@@ -63,8 +67,9 @@ public class XulyException {
         apiResponse.setCode(errorCode.getCode());
         apiResponse.setMessage(errorCode.getMessage());
 
-        return ResponseEntity.badRequest().body(apiResponse);
-
+        return ResponseEntity
+                .status(errorCode.getCode())
+                .body(apiResponse);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -79,5 +84,21 @@ public class XulyException {
                 .status(errorCode.getStatus()) // dùng đúng HttpStatus 413
                 .body(apiResponse);
     }
+
+    @ExceptionHandler(value = AuthorizationDeniedException.class)
+    public ResponseEntity<ApiResponse> xuLyXacThuc(AuthorizationDeniedException exception) {
+        // Lấy error code cố định cho lỗi phân quyền
+        ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(errorCode.getCode());
+        apiResponse.setMessage(errorCode.getMessage());
+
+        // Trả về 403 Forbidden thay vì 400 Bad Request
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(apiResponse);
+    }
+
 
 }

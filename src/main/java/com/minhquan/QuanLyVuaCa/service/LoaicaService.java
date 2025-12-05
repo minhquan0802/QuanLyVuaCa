@@ -3,9 +3,7 @@ package com.minhquan.QuanLyVuaCa.service;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaCeationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.LoaicaResponse;
-import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
-import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.LoaicaMapper;
@@ -14,7 +12,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
