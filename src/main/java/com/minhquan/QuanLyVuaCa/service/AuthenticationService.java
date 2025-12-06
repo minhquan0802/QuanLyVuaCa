@@ -2,11 +2,15 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.request.AuthenticationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.IntrospectRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.LogoutRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.RefreshRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.IntrospectResponse;
+import com.minhquan.QuanLyVuaCa.entity.InvalidatedToken;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
+import com.minhquan.QuanLyVuaCa.repository.InvalidatedTokenRepository;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -28,36 +32,47 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
-    TaiKhoanRepository repository;
+    TaiKhoanRepository TKRepository;
+    InvalidatedTokenRepository invalidatedTokenRepository;
 
     @NonFinal
     @Value("${jwt.signerKey}")
     protected String SIGNER_KEY;
 
+    @NonFinal
+    @Value("${jwt.valid-duration}")
+    protected long tokenTime;
+
+    @NonFinal
+    @Value("${jwt.refreshable-duration}")
+    protected long refreshTime;
+
     public IntrospectResponse introspect(IntrospectRequest request)
             throws JOSEException, ParseException {
         var token = request.getToken();
+        boolean isValid = true;
 
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-        SignedJWT signedJWT = SignedJWT.parse(token);
+        try {
+            verifyToken(token, false);
 
-        Date expityTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        var verified = signedJWT.verify(verifier);
+        } catch (AppExceptions e) {
+            isValid = false;
+        }
 
         return IntrospectResponse.builder()
-                .valid(verified && expityTime.after(new Date()))
+                .valid(isValid)
                 .build();
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        var user = repository.findByEmail(request.getEmail())
+        var user = TKRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getMatkhau());
@@ -81,7 +96,8 @@ public class AuthenticationService {
                 .issuer("QuanLyVuCa_React_SpringBoot.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli())) //Het han sau 1 tieng
+                        Instant.now().plus(tokenTime, ChronoUnit.SECONDS).toEpochMilli())) //Het han sau 1 tieng
+                .jwtID(UUID.randomUUID().toString())
                 .claim("role", buildScope(taikhoan))
                 .build();
 
@@ -107,5 +123,74 @@ public class AuthenticationService {
         }
         return scopeJoiner.toString();
     }
+
+    private SignedJWT verifyToken(String token, boolean isRefresh)
+            throws JOSEException, ParseException {
+
+        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expityTime = (isRefresh)
+                ? new Date(signedJWT.getJWTClaimsSet().getIssueTime().toInstant().plus(refreshTime, ChronoUnit.SECONDS).toEpochMilli())
+                : signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        var verified = signedJWT.verify(verifier);
+
+        //Neu chu ky het han hoac khong duoc verified thi cut
+        if(!(verified && expityTime.after(new Date())))
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+
+        if(invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+
+        return signedJWT;
+    }
+
+    public void logout(LogoutRequest tokenRequest)
+            throws ParseException, JOSEException {
+        try {
+            var signedToken = verifyToken(tokenRequest.getToken(), true);
+            String jwtID = signedToken.getJWTClaimsSet().getJWTID();
+            Date expityTime = signedToken.getJWTClaimsSet().getExpirationTime();
+
+            InvalidatedToken invalidatedToken = new InvalidatedToken().builder()
+                    .id(jwtID)
+                    .expirationTime(expityTime)
+                    .build();
+
+            invalidatedTokenRepository.save(invalidatedToken);
+        } catch (AppExceptions e) {
+            log.info("Token da het han roi: ", e);
+        }
+    }
+
+    public AuthenticationResponse refreshToken(RefreshRequest requestToken)
+            throws ParseException, JOSEException {
+        var signJWT = verifyToken(requestToken.getToken(),true);
+
+        var jwtID = signJWT.getJWTClaimsSet().getJWTID();
+        var expityTime = signJWT.getJWTClaimsSet().getExpirationTime();
+
+        InvalidatedToken invalidatedToken = new InvalidatedToken().builder()
+                .id(jwtID)
+                .expirationTime(expityTime)
+                .build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
+
+        var email = signJWT.getJWTClaimsSet().getSubject();
+
+        var taiKhoan = TKRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.UNAUTHENTICATED));
+
+        var token = generateToken(taiKhoan);
+
+        return AuthenticationResponse.builder()
+                .token(token)
+                .authenticated(true)
+                .build();
+    }
+
 }
 

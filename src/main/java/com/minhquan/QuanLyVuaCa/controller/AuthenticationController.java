@@ -1,6 +1,8 @@
 package com.minhquan.QuanLyVuaCa.controller;
 import com.minhquan.QuanLyVuaCa.dto.request.AuthenticationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.IntrospectRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.LogoutRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.RefreshRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.IntrospectResponse;
@@ -25,8 +27,9 @@ public class AuthenticationController {
     @Autowired
     AuthenticationService service;
 
+    //login
     @PostMapping("/token")
-    ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
+    ApiResponse<AuthenticationResponse> taoToken(@RequestBody AuthenticationRequest request) {
         var result = service.authenticate(request);
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
@@ -34,9 +37,26 @@ public class AuthenticationController {
     }
 
     @PostMapping("/introspect")
-    ApiResponse<IntrospectResponse> authenticate(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
+    ApiResponse<IntrospectResponse> kiemTraToken(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
         var result = service.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(@RequestBody LogoutRequest request)
+            throws ParseException, JOSEException {
+        service.logout(request);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request)
+            throws ParseException, JOSEException {
+        var result = service.refreshToken(request);
+        return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
                 .build();
     }
