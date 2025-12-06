@@ -7,6 +7,7 @@ import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import com.minhquan.QuanLyVuaCa.service.TaiKhoanService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class TaiKhoanController {
     private TaiKhoanService taiKhoanService;
 
     @PostMapping
-    private ApiResponse<TaikhoanResponse> taoTaikhoan(@RequestBody TaiKhoanCreationRequest request){
+    private ApiResponse<TaikhoanResponse> taoTaikhoan(@Valid @RequestBody TaiKhoanCreationRequest request){
         return ApiResponse.<TaikhoanResponse>builder()
                 .code(200)
                 .message("TaiKhoan created")

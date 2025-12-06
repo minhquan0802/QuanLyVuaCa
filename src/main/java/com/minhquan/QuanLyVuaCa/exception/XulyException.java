@@ -48,14 +48,12 @@ public class XulyException {
     ResponseEntity<ApiResponse> xulyAppexception (AppExceptions exception)
     {
         ErrorCode errorCode=exception.getErrorCode();
-        ApiResponse apiResponse =new ApiResponse();
-
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage() );
-
-        return ResponseEntity
-                .status(errorCode.getCode())
-                .body(apiResponse);
+        return ResponseEntity.status(errorCode.getStatus()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build()
+        );
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
@@ -63,26 +61,24 @@ public class XulyException {
         String enumKey = exception.getFieldError().getDefaultMessage();
         ErrorCode errorCode=ErrorCode.valueOf(enumKey);
 
-        ApiResponse apiResponse =new ApiResponse();
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
-
-        return ResponseEntity
-                .status(errorCode.getCode())
-                .body(apiResponse);
+        return ResponseEntity.status(errorCode.getStatus()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build()
+        );
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse> handleMaxSizeException(MaxUploadSizeExceededException ex) {
         ErrorCode errorCode = ErrorCode.PAYLOAD_TOO_LARGE;
 
-        ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
-
-        return ResponseEntity
-                .status(errorCode.getStatus()) // dùng đúng HttpStatus 413
-                .body(apiResponse);
+        return ResponseEntity.status(errorCode.getStatus()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build()
+        );
     }
 
     @ExceptionHandler(value = AuthorizationDeniedException.class)
@@ -90,14 +86,12 @@ public class XulyException {
         // Lấy error code cố định cho lỗi phân quyền
         ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
 
-        ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
-
-        // Trả về 403 Forbidden thay vì 400 Bad Request
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(apiResponse);
+        return ResponseEntity.status(errorCode.getStatus()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build()
+        );
     }
 
 

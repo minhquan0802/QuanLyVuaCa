@@ -42,8 +42,8 @@ public class TaiKhoanService {
         if(taiKhoanRepository.existsByEmail(request.getEmail()))
             throw new AppExceptions(ErrorCode.USER_EXISTED);
 
-        Vaitro vaitro = vaitroRepository.findById(6)
-                .orElseThrow(()->new RuntimeException("Khong tim thay vai tro co id: 6"));
+        Vaitro vaitro = vaitroRepository.findById(6) // Cân nhắc sửa dòng này
+                .orElseThrow(()->new RuntimeException("Lỗi cấu hình vai trò mặc định"));
 
         Taikhoan taikhoan = mapper.toTaikhoan(request);
         taikhoan.setIdvaitro(vaitro);
@@ -54,10 +54,8 @@ public class TaiKhoanService {
         return mapper.toTaikhoanResponse(taikhoan);
     }
 
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang')")
     public List<TaikhoanResponse> getTaiKhoans(){
-
-
         List<Taikhoan> taikhoans = taiKhoanRepository.findAll();
         List<TaikhoanResponse> responses = new ArrayList<>();
         for (Taikhoan tk : taikhoans) {
@@ -71,16 +69,21 @@ public class TaiKhoanService {
         return mapper.toTaikhoanResponse(
                 taiKhoanRepository.findById(id).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED)));
     }
+    @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang', 'khachle', 'khachsi')")
     public TaikhoanResponse updateTaiKhoan(String idTaiKhoan,TaiKhoanUpdateRequest request){
         Taikhoan taikhoan = taiKhoanRepository.findById(idTaiKhoan).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
         mapper.updateTaikhoan(taikhoan,request);
 
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-        taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
 
-        Taikhoan updatedTailhoan = taiKhoanRepository.save(taikhoan);
-        return mapper.toTaikhoanResponse(updatedTailhoan);
+
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        if (request.getMatkhau() != null && !request.getMatkhau().isEmpty()) {
+            taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
+        }
+
+        return mapper.toTaikhoanResponse(taiKhoanRepository.save(taikhoan));
     }
+    @PreAuthorize("hasRole('admin')")
     public void xoaTaiKhoan(String id){
         taiKhoanRepository.deleteById(id);
     }
