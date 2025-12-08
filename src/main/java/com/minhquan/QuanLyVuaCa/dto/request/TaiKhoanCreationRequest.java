@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TaiKhoanCreationRequest {
 
+    @NotBlank(message = "VAITRO_INVALID")
+    String idvaitro;
+
     // Họ không được để trống -> Map về lỗi FULL_NAME_INVALID
     @NotBlank(message = "FULL_NAME_INVALID")
     String ho;
@@ -41,4 +44,8 @@ public class TaiKhoanCreationRequest {
     // Địa chỉ không được để trống
     @NotBlank(message = "ADDRESS_INVALID")
     String diachi;
+
+    @NotBlank(message = "TRANGTHAI_INVALID")
+    String trangthaitk;
+
 }

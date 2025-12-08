@@ -8,10 +8,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class ChitietDonhangResponse {
-    private String idchitietdonhang;
-    private String tenChiTietCaBan; // Tên hiển thị (Lấy từ entity Chitietcaban)
-    private String tenDonViTinh;    // Tên hiển thị (Lấy từ entity Donvitinh)
-    private Integer soluong;
-    private BigDecimal tongtiendukien;
-    private BigDecimal tongtienthucte;
+    String idchitietdonhang;
+    Integer idchitietcaban;
+    String tenLoaiCa; // "Cá Điêu Hồng"
+    String tenSize;   // "1kg - 2kg"
+    Integer soluong;
+    BigDecimal dongia;
+    BigDecimal tongtiendukien;
 }
