@@ -36,9 +36,9 @@ public class TaiKhoanController {
 
     @GetMapping
     private ApiResponse<List<TaikhoanResponse>> danhSachTaiKhoan(){
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        log.info("Username : {}", authentication.getName());
-        authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.toString()));
+//        var authentication = SecurityContextHolder.getContext().getAuthentication();
+//        log.info("Username : {}", authentication.getName());
+//        authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.toString()));
 
         return ApiResponse.<List<TaikhoanResponse>>builder()
                 .code(200)

@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 public class DonhangResponse {
     String iddonhang;
     String idthongtinkhachhang;
+    String tenKhachHang; // Thêm trường này
+    String sdtKhachHang; // Thêm trường này
     LocalDateTime ngaydat;
     TrangThaiDonHang trangthaidonhang;
 }

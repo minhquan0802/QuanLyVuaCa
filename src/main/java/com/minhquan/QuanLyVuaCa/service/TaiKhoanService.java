@@ -42,12 +42,33 @@ public class TaiKhoanService {
         if(taiKhoanRepository.existsByEmail(request.getEmail()))
             throw new AppExceptions(ErrorCode.USER_EXISTED);
 
-        Vaitro vaitro = vaitroRepository.findById(6) // Cân nhắc sửa dòng này
-                .orElseThrow(()->new RuntimeException("Lỗi cấu hình vai trò mặc định"));
-
         Taikhoan taikhoan = mapper.toTaikhoan(request);
+
+        int roleId = 3;
+
+        if (request.getIdvaitro() != null && !request.getIdvaitro().isEmpty()) {
+            try {
+                roleId = Integer.parseInt(request.getIdvaitro());
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("ID Vai trò không hợp lệ");
+            }
+        }
+
+        Vaitro vaitro = vaitroRepository.findById(roleId)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.IDVAITRO_EMPTY));
         taikhoan.setIdvaitro(vaitro);
-        taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
+
+        if(request.getTrangthaitk() != null) {
+            try {
+                taikhoan.setTrangthaitk(TrangThaiTaiKhoan.valueOf(request.getTrangthaitk()));
+            } catch (IllegalArgumentException e) {
+                taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
+            }
+        } else {
+            taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
+        }
+
+
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
         taiKhoanRepository.save(taikhoan);

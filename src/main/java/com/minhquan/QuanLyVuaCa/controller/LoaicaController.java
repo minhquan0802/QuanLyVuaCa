@@ -18,12 +18,13 @@ import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
+@RequestMapping("/Loaicas")
 public class LoaicaController {
     @Autowired
     private LoaicaService loaicaService;
 
 
-    @GetMapping("/Loaicas")
+    @GetMapping
     ApiResponse<List<LoaicaResponse>> danhSachLoaiCa(){
         return ApiResponse.<List<LoaicaResponse>>builder()
                 .code(200)
@@ -31,18 +32,8 @@ public class LoaicaController {
                 .result(loaicaService.getLoaiCa())
                 .build();
     }
-    // ======================== CREATE ========================
-//    @PostMapping("/Loaicas")
-//    private ApiResponse<LoaicaResponse> taoLoaica(@Validated @RequestBody LoaicaCeationRequest request) {
-//        return ApiResponse.<LoaicaResponse>builder()
-//                .code(200)
-//                .message("Loai ca created")
-//                .result(loaicaService.taoLoaica(request))
-//                .build();
-//    }
-    // ======================== GET ONE ========================
 
-    @PostMapping(value = "/Loaicas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<LoaicaResponse> themLoaiCa(
             @RequestParam("tenloaica") String tenloaica,
             @RequestParam("mieuta") String mieuta,
@@ -61,7 +52,7 @@ public class LoaicaController {
     }
 
     // ======================== UPDATE (ĐÃ SỬA) ========================
-    @PutMapping(value = "/Loaicas/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     private ApiResponse<LoaicaResponse> capNhatLoaica(
             @PathVariable("id") Integer id,
             @RequestParam("tenloaica") String tenloaica,
@@ -85,7 +76,7 @@ public class LoaicaController {
 
 
 
-    @GetMapping("/Loaicas/{id}")
+    @GetMapping("/{id}")
     private ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
@@ -96,7 +87,7 @@ public class LoaicaController {
 
 
     // ======================== DELETE ========================
-    @DeleteMapping("/Loaicas/{id}")
+    @DeleteMapping("/{id}")
     private ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
         loaicaService.xoaLoaica(id);
 

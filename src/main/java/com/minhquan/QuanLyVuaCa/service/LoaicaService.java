@@ -45,26 +45,12 @@ public class LoaicaService {
         return mapper.toLoaicaResponse(loaicaRepository.findById(id).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED)));
     }
 
-//    public LoaicaResponse capNhatLoaica(Integer id, LoaicaUpdateRequest request) {
-//        Loaica loaica = loaicaRepository.findById(id)
-//                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
-//
-//        // MapStruct tự map các field có trong request
-//        mapper.updateLoaica(loaica, request);
-//
-//        Loaica updated = loaicaRepository.save(loaica);
-//
-//        return mapper.toLoaicaResponse(updated);
-//    }
 
     public LoaicaResponse capNhatLoaica(Integer id, LoaicaUpdateRequest request) {
         // Tìm loại cá cũ
         Loaica loaica = loaicaRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
-        // Cập nhật thông tin văn bản (MapStruct hoặc set thủ công)
-        // Lưu ý: Tên loại cá có thể thay đổi, nên slug (tên file) cũng có thể thay đổi theo nếu muốn
-        // Nhưng ở đây ta ưu tiên logic xử lý ảnh trước.
         loaica.setTenloaica(request.getTenloaica());
         loaica.setMieuta(request.getMieuta());
 
@@ -188,10 +174,4 @@ public class LoaicaService {
         Loaica saved = loaicaRepository.save(loaica);
         return mapper.toLoaicaResponse(saved);
     }
-
-
-
-
-
-
 }
