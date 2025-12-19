@@ -24,7 +24,7 @@ public class VaitroService {
     VaitroRepository repository;
     VaitroMapper mapper;
 
-    @PreAuthorize("hasRole('admin')")
+//    @PreAuthorize("hasRole('admin')")
     public List<VaitroResponse> getVaiTros(){
         List<Vaitro> vaitros = repository.findAll();
         List<VaitroResponse> responses = new ArrayList<>();

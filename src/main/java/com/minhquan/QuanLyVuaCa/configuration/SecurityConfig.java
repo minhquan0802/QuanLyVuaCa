@@ -31,7 +31,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {"/TaiKhoans",
-            "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh"
+            "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh",
     };
 
 
@@ -47,8 +47,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity, VaitroRepository vaitroRepository) throws Exception {
         httpSecurity.authorizeHttpRequests(request ->
                 request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/Loaicas", "/Loaicas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/Loaicas", "/Loaicas/**", "/Banggias", "/Banggias/**", "/vaitro", "/images/**")
+                            .permitAll()
                         .requestMatchers("/Sizecas/**").permitAll()
                 .anyRequest().authenticated());
 

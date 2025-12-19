@@ -24,14 +24,15 @@ public class ApplicationInitConfig {
     ApplicationRunner applicationRunner(TaiKhoanRepository repository, VaitroRepository vaitroRepository){
         return args -> {
             if (repository.findByEmail("admin@gmail.com").isEmpty()){
-                Vaitro vaitro = vaitroRepository.findById(1)
-                        .orElseThrow(()->new RuntimeException("Khong tim thay vai tro co id: 1"));
-
-
+                Vaitro adminRole = vaitroRepository.findById(1).orElseGet(() -> {
+                    Vaitro newRole = new Vaitro();
+                    newRole.setTenvaitro("ADMIN"); // Hoặc tên role bạn muốn
+                    return vaitroRepository.save(newRole);
+                });
                 Taikhoan user = Taikhoan.builder()
                         .email("admin@gmail.com")
                         .matkhau(passwordEncoder.encode("123456789"))
-                        .idvaitro(vaitro)
+                        .idvaitro(adminRole)
                         .build();
 
                 repository.save(user);

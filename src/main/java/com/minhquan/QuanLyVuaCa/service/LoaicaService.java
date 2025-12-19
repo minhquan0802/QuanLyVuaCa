@@ -85,24 +85,11 @@ public class LoaicaService {
         Loaica loaica = loaicaRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
-        // Gọi hàm xóa file đã viết ở trên
         deleteFile(loaica.getHinhanhurl());
 
         loaicaRepository.deleteById(id);
     }
 
-//    public LoaicaResponse taoLoaica(LoaicaCeationRequest request) {
-//
-//        // Nếu tên loại cá có unique thì check trùng
-//        if (loaicaRepository.existsByTenloaica(request.getTenloaica())) {
-//            throw new AppExceptions(ErrorCode.DATA_EXISTED);
-//        }
-//
-//        Loaica loaica = mapper.toLoaica(request);
-//        Loaica saved = loaicaRepository.save(loaica);
-//
-//        return mapper.toLoaicaResponse(saved);
-//    }
     private String slugify(String input) {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("[^\\p{ASCII}]", "")

@@ -9,20 +9,46 @@ import com.minhquan.QuanLyVuaCa.entity.Chitietdonhang;
 import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Mapper(componentModel = "spring")
 public interface DonhangMapper {
 
     DonhangResponse toDonhangResponse(Donhang donhang, String tenKhachHang, String sdtKhachHang);
 
-    @Mapping(target = "idchitietcaban", source = "idchitietcaban.id")
-    @Mapping(target = "tenLoaiCa", source = "idchitietcaban.idloaica.tenloaica")
-    @Mapping(target = "tenSize", source = "idchitietcaban.idsizeca.sizeca")
-    @Mapping(target = "tongtiendukien", source = "tongtiendukien")
-    ChitietDonhangResponse toChitietResponse(Chitietdonhang chitiet);
+//    @Mapping(target = "idchitietcaban", source = "idchitietcaban.id")
+//    @Mapping(target = "tenSize", source = "idchitietcaban.idsizeca.sizeca")
+//    @Mapping(target = "tongtiendukien", source = "tongtiendukien")
+//    ChitietDonhangResponse toChitietResponse(Chitietdonhang chitiet);
 
-    // --- CHIỀU VÀO (Request -> Entity) ---
+
+    // 1. Tự tính đơn giá: Dongia = Tongtien / Soluong
+    @Mapping(target = "dongia", expression = "java(calculateUnitPrice(entity))")
+    @Mapping(source = "idchitietcaban.id", target = "idchitietcaban")
+    @Mapping(source = "idchitietcaban.idloaica.tenloaica", target = "tenLoaiCa")
+    @Mapping(source = "idchitietcaban.idsizeca.sizeca", target = "tenSize")
+
+    // Các mapping khác giữ nguyên
+    ChitietDonhangResponse toChitietResponse(Chitietdonhang entity);
+
+    // Hàm phụ trợ để tính toán (viết ngay trong interface Mapper nếu dùng Java 8+)
+    default BigDecimal calculateUnitPrice(Chitietdonhang entity) {
+        if (entity.getTongtiendukien() != null
+                && entity.getSoluong() != null
+                && entity.getSoluong() > 0) {
+
+            return entity.getTongtiendukien().divide(
+                    BigDecimal.valueOf(entity.getSoluong()),
+                    2,
+                    RoundingMode.HALF_UP
+            );
+        }
+        return BigDecimal.ZERO;
+    }
+
+
 
     // 1. Map đơn hàng (Bỏ qua các trường tự sinh hoặc set thủ công)
     @Mapping(target = "iddonhang", ignore = true)

@@ -44,7 +44,7 @@ public class TaiKhoanService {
 
         Taikhoan taikhoan = mapper.toTaikhoan(request);
 
-        int roleId = 3;
+        int roleId = 6;
 
         if (request.getIdvaitro() != null && !request.getIdvaitro().isEmpty()) {
             try {

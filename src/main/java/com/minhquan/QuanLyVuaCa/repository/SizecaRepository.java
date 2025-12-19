@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface SizecaRepository extends JpaRepository<Sizeca, Integer> {
     // Tìm tất cả size thuộc về một loại cá cụ thể
-    List<Sizeca> findByIdloaica(Loaica loaica);
+    boolean existsBySizeca(String sizeca);
 }

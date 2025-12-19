@@ -2,7 +2,6 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.request.SizecaRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.SizecaResponse;
-import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.entity.Sizeca;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
@@ -24,52 +23,26 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SizecaService {
     SizecaRepository sizecaRepository;
-    LoaicaRepository loaicaRepository;
-    SizecaMapper sizecaMapper; // Inject Mapper vào đây
+    SizecaMapper sizecaMapper;
 
-    // 1. Lấy danh sách size
-    public List<SizecaResponse> getSizeByLoaiCa(Integer idLoaiCa) {
-        Loaica loaica = loaicaRepository.findById(idLoaiCa)
-                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
-
-        return sizecaRepository.findByIdloaica(loaica).stream()
-                .map(sizecaMapper::toSizecaResponse) // Dùng Mapper ở đây
-                .collect(Collectors.toList());
-    }
-
-    // 2. Thêm Size mới
+    // Thêm Size mới
     public SizecaResponse createSize(SizecaRequest request) {
-        // Tìm Loại cá từ DB (Bắt buộc phải làm ở Service)
-        Loaica loaica = loaicaRepository.findById(request.getIdloaica())
-                .orElseThrow(() -> new RuntimeException("Loại cá không tồn tại"));
-
-        // Dùng Mapper để map các trường cơ bản (như tên size)
         Sizeca sizeca = sizecaMapper.toSizeca(request);
-
-        // SET THỦ CÔNG MỐI QUAN HỆ (Vì Mapper đã ignore)
-        sizeca.setIdloaica(loaica);
-
         sizecaRepository.save(sizeca);
-
-        // Dùng Mapper để trả về kết quả
         return sizecaMapper.toSizecaResponse(sizeca);
     }
 
-    // 3. Xóa Size
+    // Xóa Size
     public void deleteSize(Integer id) {
         if (!sizecaRepository.existsById(id)) {
-            throw new RuntimeException("Size không tồn tại");
+            throw new AppExceptions(ErrorCode.SIZECA_NOT_EXISTED);
         }
         sizecaRepository.deleteById(id);
     }
 
-    // Helper: Map Entity -> Response
-    private SizecaResponse toResponse(Sizeca entity) {
-        return SizecaResponse.builder()
-                .idsizeca(entity.getId())
-                .sizeca(entity.getSizeca())
-                .idloaica(entity.getIdloaica().getId())
-                .tenloaica(entity.getIdloaica().getTenloaica())
-                .build();
+    public List<SizecaResponse> getAll() {
+        return sizecaRepository.findAll().stream()
+                .map(sizecaMapper::toSizecaResponse)
+                .collect(Collectors.toList());
     }
 }
