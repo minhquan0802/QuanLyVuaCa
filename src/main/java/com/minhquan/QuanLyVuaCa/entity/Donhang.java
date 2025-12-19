@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -28,7 +27,7 @@ public class Donhang {
     private LocalDateTime ngaydat;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trangthaidonhang", columnDefinition = "ENUM('CHO_XAC_NHAN','DANG_DONG_HANG', 'DANG_VAN_CHUYEN', 'HOAN_TAT' 'HUY') ColumnDefault 'CHO_XAC_NHAN'")
+    @Column(name = "trangthaidonhang", columnDefinition = "ENUM('CHO_XAC_NHAN','DANG_DONG_HANG', 'DANG_VAN_CHUYEN', 'HOAN_TAT', 'HUY') DEFAULT 'CHO_XAC_NHAN'")
     private TrangThaiDonHang trangthaidonhang;
 
 }

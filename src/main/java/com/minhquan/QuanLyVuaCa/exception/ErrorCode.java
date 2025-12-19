@@ -29,7 +29,13 @@ public enum ErrorCode {
     DATA_EXISTED(1012, "Da ton tai data", HttpStatus.CONFLICT),
     PAYLOAD_TOO_LARGE(1013, "Dung luong file vuot qua gioi han cho phep", HttpStatus.PAYLOAD_TOO_LARGE),
     ACCESS_DENIED(1014, "Khong co quyen truy cap tai nguyen", HttpStatus.FORBIDDEN),
-    UNAUTHORIZED(1007, "Ban khong co quyen thuc hien hanh dong nay", HttpStatus.UNAUTHORIZED);
+    UNAUTHORIZED(1007, "Ban khong co quyen thuc hien hanh dong nay", HttpStatus.UNAUTHORIZED),
+
+    // ---SIZE CA & CHI TIET CA BAN---
+    SIZECA_NOT_EXISTED(1020, "Size ca khong ton tai", HttpStatus.NOT_FOUND),
+    CHITIET_CABAN_EXISTED(1021, "San pham (Loai + Size) nay da ton tai trong kho", HttpStatus.CONFLICT),
+    CHITIET_CABAN_NOT_EXISTED(1022, "San pham khong ton tai", HttpStatus.NOT_FOUND),
+    CANNOT_DELETE_DATA_IN_USE(1023, "Khong the xoa vi san pham da co phat sinh giao dich (Lien ket khoa ngoai)", HttpStatus.CONFLICT);
 
     private int code;
     private String message;

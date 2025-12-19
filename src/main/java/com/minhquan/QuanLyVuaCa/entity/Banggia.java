@@ -13,19 +13,13 @@ import java.time.LocalDate;
 public class Banggia {
 
     @Id
-    // QUAN TRỌNG: Phải có dòng này để tương thích với AUTO_INCREMENT của MySQL
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idbanggia", nullable = false)
     private Integer id;
 
-    // SỬA LẠI TÊN BIẾN: Đặt là 'chitietcaban' thay vì 'idchitietcaban'
-    // Vì đây là một Object, không phải số Int
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "idchitietcaban", nullable = false) // Tên cột trong DB giữ nguyên
+    @JoinColumn(name = "idchitietcaban", nullable = false)
     private Chitietcaban chitietcaban;
-
-    @Column(name = "idloaikhachhang")
-    private Integer idloaikhachhang;
 
     @Column(name = "giabanle", precision = 18, scale = 2)
     private BigDecimal giabanle;

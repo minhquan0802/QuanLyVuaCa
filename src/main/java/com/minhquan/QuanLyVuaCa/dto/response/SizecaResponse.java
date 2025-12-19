@@ -9,8 +9,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SizecaResponse {
-    Integer idsizeca;
-    String sizeca;
-    Integer idloaica; // Trả về ID loại cá để tiện check nếu cần
-    String tenloaica; // Trả thêm tên loại cá cho rõ ràng
+    private Integer idsizeca;
+    private String sizeca;
 }

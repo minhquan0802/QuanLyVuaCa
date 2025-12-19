@@ -14,7 +14,5 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface VaitroMapper {
-//    Vaitro toVaitro (VaitroCeationRequest request);
     VaitroResponse toVaitroResponse(Vaitro vaitro);
-//    void updateVaitro(@MappingTarget Vaitro vaitro, VaitroUpdateRequest request);
 }

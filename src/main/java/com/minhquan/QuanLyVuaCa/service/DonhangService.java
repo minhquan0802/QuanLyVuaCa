@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,85 +38,172 @@ public class DonhangService {
     DonhangMapper donhangMapper;
 
     // --- 1. TẠO ĐƠN HÀNG ---
-    // Cho phép tất cả các role đã đăng nhập đều được tạo đơn
+//    @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang', 'khachle', 'khachsi')")
+//    @Transactional
+//    public DonhangResponse createDonhang(DonhangRequestCreation request) {
+//
+//        //Map từ Request sang Entity
+//        Donhang donhang = donhangMapper.toDonhang(request);
+//
+//
+//        if (request.getNgaydat() != null) {
+//            donhang.setNgaydat(request.getNgaydat());
+//        } else {
+//            donhang.setNgaydat(LocalDateTime.now());
+//        }
+//
+//        if (request.getTrangthaidonhang() != null) {
+//            donhang.setTrangthaidonhang(request.getTrangthaidonhang());
+//        } else {
+//            donhang.setTrangthaidonhang(TrangThaiDonHang.CHO_XAC_NHAN);
+//        }
+//
+//        // 3. Lưu đơn hàng cha
+//        Donhang savedDonhang = donhangRepository.save(donhang);
+//
+//        // 4. Xử lý chi tiết đơn hàng (Thủ công tìm ID liên kết)
+//        if (request.getChiTietDonHang() != null && !request.getChiTietDonHang().isEmpty()) {
+//            List<Chitietdonhang> listChiTietEntity = new ArrayList<>();
+//
+//            for (ChitietDonhangRequest ctdhRequest : request.getChiTietDonHang()) {
+//                // Map các trường cơ bản (số lượng, tiền...)
+//                Chitietdonhang ct = donhangMapper.toChitietEntity(ctdhRequest);
+//                ct.setIddonhang(savedDonhang);
+//
+//                // --- Xử lý Chitietcaban ---
+//                if (ctdhRequest.getIdchitietcaban() != null) {
+//                    try {
+//                        Integer idChiTiet = Integer.parseInt(ctdhRequest.getIdchitietcaban());
+//                        Chitietcaban chitietcaban = chitietcabanRepository.findById(idChiTiet)
+//                                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết cá bán ID: " + ctdhRequest.getIdchitietcaban()));
+//                        ct.setIdchitietcaban(chitietcaban);
+//                    } catch (NumberFormatException e) {
+//                        throw new RuntimeException("ID chi tiết cá bán phải là số: " + ctdhRequest.getIdchitietcaban());
+//                    }
+//                }
+//
+//                // --- Xử lý Donvitinh ---
+//                if (ctdhRequest.getIddonvitinh() != null) {
+//                    try {
+//                        Integer idDvt = Integer.parseInt(ctdhRequest.getIddonvitinh());
+//                        Donvitinh donvitinh = donvitinhRepository.findById(idDvt)
+//                                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn vị tính ID: " + ctdhRequest.getIddonvitinh()));
+//                        ct.setIddonvitinh(donvitinh);
+//                    } catch (NumberFormatException e) {
+//                        throw new RuntimeException("ID đơn vị tính phải là số: " + ctdhRequest.getIddonvitinh());
+//                    }
+//                }
+//
+//                listChiTietEntity.add(ct);
+//            }
+//            chitietdonhangRepository.saveAll(listChiTietEntity);
+//        }
+//
+//        // 5. Chuẩn bị dữ liệu trả về (Lấy tên khách hàng)
+//        String tenKhach = "Khách lẻ";
+//        String sdtKhach = "";
+//        if (savedDonhang.getIdthongtinkhachhang() != null) {
+//            var khachOpt = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang());
+//            if (khachOpt.isPresent()) {
+//                var khach = khachOpt.get();
+//                tenKhach = khach.getHo() + " " + khach.getTen();
+//                sdtKhach = khach.getSodienthoai();
+//            }
+//        }
+//
+//        return donhangMapper.toDonhangResponse(savedDonhang, tenKhach, sdtKhach);
+//    }
+
+// --- 1. TẠO ĐƠN HÀNG ---
     @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang', 'khachle', 'khachsi')")
     @Transactional
     public DonhangResponse createDonhang(DonhangRequestCreation request) {
 
-        // 1. Map từ Request sang Entity
-        Donhang donhang = donhangMapper.toDonhang(request);
+    // 1. Map & Lưu đơn hàng cha
+    Donhang donhang = donhangMapper.toDonhang(request);
 
-        // 2. Xử lý các giá trị mặc định (Giống pattern taoTaiKhoan)
-        if (request.getNgaydat() != null) {
-            donhang.setNgaydat(request.getNgaydat());
-        } else {
-            donhang.setNgaydat(LocalDateTime.now());
-        }
-
-        if (request.getTrangthaidonhang() != null) {
-            donhang.setTrangthaidonhang(request.getTrangthaidonhang());
-        } else {
-            donhang.setTrangthaidonhang(TrangThaiDonHang.CHO_XAC_NHAN);
-        }
-
-        // 3. Lưu đơn hàng cha
-        Donhang savedDonhang = donhangRepository.save(donhang);
-
-        // 4. Xử lý chi tiết đơn hàng (Thủ công tìm ID liên kết)
-        if (request.getChiTietDonHang() != null && !request.getChiTietDonHang().isEmpty()) {
-            List<Chitietdonhang> listChiTietEntity = new ArrayList<>();
-
-            for (ChitietDonhangRequest itemReq : request.getChiTietDonHang()) {
-                // Map các trường cơ bản (số lượng, tiền...)
-                Chitietdonhang ct = donhangMapper.toChitietEntity(itemReq);
-                ct.setIddonhang(savedDonhang);
-
-                // --- Xử lý Chitietcaban ---
-                if (itemReq.getIdchitietcaban() != null) {
-                    try {
-                        Integer idChiTiet = Integer.parseInt(itemReq.getIdchitietcaban());
-                        Chitietcaban chitietcaban = chitietcabanRepository.findById(idChiTiet)
-                                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết cá bán ID: " + itemReq.getIdchitietcaban()));
-                        ct.setIdchitietcaban(chitietcaban);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("ID chi tiết cá bán phải là số: " + itemReq.getIdchitietcaban());
-                    }
-                }
-
-                // --- Xử lý Donvitinh ---
-                if (itemReq.getIddonvitinh() != null) {
-                    try {
-                        Integer idDvt = Integer.parseInt(itemReq.getIddonvitinh());
-                        Donvitinh donvitinh = donvitinhRepository.findById(idDvt)
-                                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn vị tính ID: " + itemReq.getIddonvitinh()));
-                        ct.setIddonvitinh(donvitinh);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("ID đơn vị tính phải là số: " + itemReq.getIddonvitinh());
-                    }
-                }
-
-                listChiTietEntity.add(ct);
-            }
-            chitietdonhangRepository.saveAll(listChiTietEntity);
-        }
-
-        // 5. Chuẩn bị dữ liệu trả về (Lấy tên khách hàng)
-        String tenKhach = "Khách lẻ";
-        String sdtKhach = "";
-        if (savedDonhang.getIdthongtinkhachhang() != null) {
-            var khachOpt = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang());
-            if (khachOpt.isPresent()) {
-                var khach = khachOpt.get();
-                tenKhach = khach.getHo() + " " + khach.getTen();
-                sdtKhach = khach.getSodienthoai();
-            }
-        }
-
-        return donhangMapper.toDonhangResponse(savedDonhang, tenKhach, sdtKhach);
+    if (request.getNgaydat() != null) {
+        donhang.setNgaydat(request.getNgaydat());
+    } else {
+        donhang.setNgaydat(LocalDateTime.now());
     }
 
+    if (request.getTrangthaidonhang() != null) {
+        donhang.setTrangthaidonhang(request.getTrangthaidonhang());
+    } else {
+        donhang.setTrangthaidonhang(TrangThaiDonHang.CHO_XAC_NHAN);
+    }
+
+    Donhang savedDonhang = donhangRepository.save(donhang);
+
+    // 2. Xử lý chi tiết đơn hàng
+    if (request.getChiTietDonHang() != null && !request.getChiTietDonHang().isEmpty()) {
+
+        // [QUAN TRỌNG] Khởi tạo List để chứa các chi tiết
+        List<Chitietdonhang> listChiTietEntity = new ArrayList<>();
+
+        for (ChitietDonhangRequest ctdhRequest : request.getChiTietDonHang()) {
+            // Map các trường cơ bản (số lượng, tổng tiền...)
+            Chitietdonhang ct = donhangMapper.toChitietEntity(ctdhRequest);
+            ct.setIddonhang(savedDonhang);
+
+            // --- BỎ ĐOẠN TÍNH setDongia VÌ ENTITY KHÔNG CÓ TRƯỜNG NÀY ---
+            // Dữ liệu 'dongia' sẽ được Mapper tự tính toán khi READ (Xem chi tiết)
+            // chứ không phải khi WRITE (Tạo đơn).
+            // -------------------------------------------------------------
+
+            // Xử lý Chitietcaban (Kho)
+            if (ctdhRequest.getIdchitietcaban() != null) {
+                try {
+                    Integer idChiTiet = Integer.parseInt(ctdhRequest.getIdchitietcaban());
+                    Chitietcaban chitietcaban = chitietcabanRepository.findById(idChiTiet)
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm kho ID: " + ctdhRequest.getIdchitietcaban()));
+                    ct.setIdchitietcaban(chitietcaban);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("ID chi tiết cá bán lỗi: " + ctdhRequest.getIdchitietcaban());
+                }
+            }
+
+            // Xử lý Đơn vị tính
+            if (ctdhRequest.getIddonvitinh() != null) {
+                try {
+                    Integer idDvt = Integer.parseInt(ctdhRequest.getIddonvitinh());
+                    Donvitinh donvitinh = donvitinhRepository.findById(idDvt)
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy ĐVT ID: " + ctdhRequest.getIddonvitinh()));
+                    ct.setIddonvitinh(donvitinh);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("ID ĐVT lỗi: " + ctdhRequest.getIddonvitinh());
+                }
+            }
+
+            // Thêm vào list
+            listChiTietEntity.add(ct);
+        }
+
+        // [QUAN TRỌNG] Lưu tất cả chi tiết xuống DB
+        if (!listChiTietEntity.isEmpty()) {
+            chitietdonhangRepository.saveAll(listChiTietEntity);
+        }
+    }
+
+    // 3. Chuẩn bị dữ liệu trả về
+    String tenKhach = "Khách lẻ";
+    String sdtKhach = "";
+    if (savedDonhang.getIdthongtinkhachhang() != null) {
+        var khachOpt = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang());
+        if (khachOpt.isPresent()) {
+            var khach = khachOpt.get();
+            tenKhach = khach.getHo() + " " + khach.getTen();
+            sdtKhach = khach.getSodienthoai();
+        }
+    }
+
+    return donhangMapper.toDonhangResponse(savedDonhang, tenKhach, sdtKhach);
+}
+
+
+
     // --- 2. LẤY TẤT CẢ ĐƠN HÀNG ---
-    // Chỉ Admin và các nhân viên mới được xem toàn bộ
     @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang')")
     public List<DonhangResponse> getAllDonhangs() {
 
@@ -145,8 +234,6 @@ public class DonhangService {
             responseList.add(response);
         }
         return responseList;
-
-
 
         // ---- CACH 2 ----
 //        return donhangRepository.findAllByOrderByNgaydatDesc().stream()

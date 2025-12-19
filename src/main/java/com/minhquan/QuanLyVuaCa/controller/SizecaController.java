@@ -19,19 +19,6 @@ import java.util.List;
 public class SizecaController {
     SizecaService sizecaService;
 
-    // API: Lấy danh sách size theo ID loại cá
-    // URL: /Sizecas/loaica/{id}
-    @GetMapping("/loaica/{id}")
-    public ApiResponse<List<SizecaResponse>> getSizeByLoaiCa(@PathVariable Integer id) {
-        return ApiResponse.<List<SizecaResponse>>builder()
-                .code(200)
-                .message("OK")
-                .result(sizecaService.getSizeByLoaiCa(id))
-                .build();
-    }
-
-    // API: Thêm size mới
-    // URL: /Sizecas (POST)
     @PostMapping
     public ApiResponse<SizecaResponse> createSize(@RequestBody SizecaRequest request) {
         return ApiResponse.<SizecaResponse>builder()
@@ -50,6 +37,13 @@ public class SizecaController {
                 .code(200)
                 .message("Đã xóa size")
                 .result("Deleted")
+                .build();
+    }
+
+    @GetMapping
+    public ApiResponse<List<SizecaResponse>> getAll() {
+        return ApiResponse.<List<SizecaResponse>>builder()
+                .result(sizecaService.getAll())
                 .build();
     }
 }
