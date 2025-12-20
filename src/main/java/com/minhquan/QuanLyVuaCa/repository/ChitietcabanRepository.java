@@ -3,7 +3,6 @@ package com.minhquan.QuanLyVuaCa.repository;
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.entity.Sizeca;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
