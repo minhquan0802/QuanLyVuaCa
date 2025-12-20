@@ -1,7 +1,6 @@
 package com.minhquan.QuanLyVuaCa.mapper;
 
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietPhieunhapRequest;
-import com.minhquan.QuanLyVuaCa.dto.response.ChitietPhieunhapResponse;
 import com.minhquan.QuanLyVuaCa.entity.Chitietphieunhap;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
