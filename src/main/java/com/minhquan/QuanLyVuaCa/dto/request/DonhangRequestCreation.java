@@ -18,4 +18,5 @@ public class DonhangRequestCreation {
     LocalDateTime ngaydat;
     TrangThaiDonHang trangthaidonhang;
     List<ChitietDonhangRequest> chiTietDonHang;
+    String ghichu;
 }

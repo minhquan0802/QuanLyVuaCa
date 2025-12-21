@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface ChitietdonhangRepository extends JpaRepository<Chitietdonhang, String> {
     // Tìm các chi tiết thuộc về một đơn hàng cụ thể
-    List<Chitietdonhang> findByIddonhang(Donhang donhang);}
+    List<Chitietdonhang> findByIddonhang(Donhang donhang);
+}

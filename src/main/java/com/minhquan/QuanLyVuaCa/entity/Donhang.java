@@ -27,7 +27,6 @@ public class Donhang {
     private LocalDateTime ngaydat;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trangthaidonhang", columnDefinition = "ENUM('CHO_XAC_NHAN','DANG_DONG_HANG', 'DANG_VAN_CHUYEN', 'HOAN_TAT', 'HUY') DEFAULT 'CHO_XAC_NHAN'")
-    private TrangThaiDonHang trangthaidonhang;
+    @Column(name = "trangthaidonhang", columnDefinition = "ENUM('CHO_XAC_NHAN', 'DA_THANH_TOAN', 'DANG_DONG_HANG', 'DANG_VAN_CHUYEN', 'GIAO_HANG_THANH_CONG', 'HUY') DEFAULT 'CHO_XAC_NHAN'")    private TrangThaiDonHang trangthaidonhang;
 
 }

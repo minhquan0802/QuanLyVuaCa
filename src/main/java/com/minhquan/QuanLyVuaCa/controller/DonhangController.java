@@ -5,14 +5,10 @@ import com.minhquan.QuanLyVuaCa.dto.request.DonhangStatusRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.ChitietDonhangResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.DonhangResponse;
-import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
-import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import com.minhquan.QuanLyVuaCa.service.DonhangService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,6 +61,13 @@ public class DonhangController {
                 .code(200)
                 .message("Đặt hàng thành công")
                 .result(donhangService.createDonhang(request))
+                .build();
+    }
+
+    @GetMapping("/my-orders")
+    public ApiResponse<List<DonhangResponse>> ThongTinDonhang() {
+        return ApiResponse.<List<DonhangResponse>>builder()
+                .result(donhangService.getMyOrders())
                 .build();
     }
 }
