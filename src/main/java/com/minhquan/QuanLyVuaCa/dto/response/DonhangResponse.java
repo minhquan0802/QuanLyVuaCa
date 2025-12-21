@@ -4,6 +4,7 @@ import com.minhquan.QuanLyVuaCa.Enum.TrangThaiDonHang;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -18,4 +19,5 @@ public class DonhangResponse {
     String sdtKhachHang; // Thêm trường này
     LocalDateTime ngaydat;
     TrangThaiDonHang trangthaidonhang;
+    BigDecimal tongtien;
 }

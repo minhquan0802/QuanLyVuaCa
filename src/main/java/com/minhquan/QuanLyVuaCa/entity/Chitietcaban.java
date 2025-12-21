@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"idloaica", "idsizeca"})
         })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Chitietcaban {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

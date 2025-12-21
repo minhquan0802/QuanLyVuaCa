@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "loaica")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Loaica {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

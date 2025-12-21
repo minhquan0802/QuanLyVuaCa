@@ -20,3 +20,16 @@ jwt:
   signerKey: "61b8e4c9638f759c9112471bdfff29f02310f0e6e1053fa9c04d924d3d9869fc"
   valid-duration: 3600  #Second - 1 hour
   refreshable-duration: 360000 #Second - 1000 hours
+
+vnpay:
+  tmn-code: RX5WU6CZ
+  hash-secret: FWZI93E3QQMO1O4Z2BRFYWLSSSEWCUIM
+  base-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:8080/QuanLyVuaCa/payment/vnpay-callback
+  version: 2.1.0
+  command: pay
+  curr-code: VND
+  locale: vn
+
+timezone:
+  id: Asia/Ho_Chi_Minh

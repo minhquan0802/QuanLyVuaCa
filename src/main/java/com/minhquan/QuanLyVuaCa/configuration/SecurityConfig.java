@@ -48,9 +48,14 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(request ->
                 request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                "/Loaicas", "/Loaicas/**", "/Banggias", "/Banggias/**", "/vaitro", "/images/**")
+                                "/Loaicas", "/Loaicas/**",
+                                "/Banggias", "/Banggias/**",
+                                "/Chitietcabans", "/Chitietcabans/**",
+                                "/vaitro", "/images/**")
                             .permitAll()
+                        .requestMatchers("/payment/**").permitAll()
                         .requestMatchers("/Sizecas/**").permitAll()
+                        .requestMatchers("/Quydois/**").permitAll()
                 .anyRequest().authenticated());
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
