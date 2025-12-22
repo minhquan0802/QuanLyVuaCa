@@ -15,4 +15,10 @@ public class ChitietDonhangResponse {
     Integer soluong;
     BigDecimal dongia;
     BigDecimal tongtiendukien;
+
+    BigDecimal soluongkgthucte;
+    BigDecimal soluongkgthuctequydoi;
+    BigDecimal tongtienthucte;
+
+   Integer iddonvitinh;   // Để map ID
 }

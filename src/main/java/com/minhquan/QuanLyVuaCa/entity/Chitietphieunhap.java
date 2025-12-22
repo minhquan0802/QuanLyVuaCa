@@ -31,14 +31,18 @@ public class Chitietphieunhap {
     @Column(name = "soluongnhap", precision = 12, scale = 2)
     private BigDecimal soluongnhap;
 
-    @Column(name = "soluongton", precision = 12, scale = 2)
-    private BigDecimal soluongton;
+    // Đã xóa soluongton
 
     @Column(name = "gianhap", precision = 10, scale = 2)
     private BigDecimal gianhap;
 
-    @Column(name = "giabantaithoidiemnhap", precision = 10, scale = 2)
-    private BigDecimal giabantaithoidiemnhap;
+    // Đã xóa giabantaithoidiemnhap và thay thế bằng 2 trường dưới:
+
+    @Column(name = "giabanletaithoidiemnhap", precision = 10, scale = 2)
+    private BigDecimal giabanletaithoidiemnhap;
+
+    @Column(name = "giabansitaithoidiemnhap", precision = 10, scale = 2)
+    private BigDecimal giabansitaithoidiemnhap;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "trangthaica", columnDefinition = "ENUM('CON_HANG', 'HET_HANG', 'THANH_LY')")
@@ -46,5 +50,4 @@ public class Chitietphieunhap {
 
     @Column(name = "ngaythanhly")
     private LocalDate ngaythanhly;
-
 }

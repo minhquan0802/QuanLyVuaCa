@@ -34,19 +34,19 @@ public class Chitietdonhang {
     @JoinColumn(name = "iddonvitinh", nullable = false)
     private Donvitinh iddonvitinh;
 
+
     @Column(name = "soluong")
     private Integer soluong;
 
-    @Column(name = "soluongkgthucte", precision = 12, scale = 2)
-    private BigDecimal soluongkgthucte;
+    @Column(name = "khoiluongdukien", precision = 12, scale = 2)
+    private BigDecimal khoiluongdukien;
 
-    @Column(name = "soluongkgthuctequydoi", precision = 12, scale = 2)
-    private BigDecimal soluongkgthuctequydoi;
+    @Column(name = "khoiluongthucte", precision = 12, scale = 2)
+    private BigDecimal khoiluongthucte;
 
     @Column(name = "tongtiendukien", precision = 12, scale = 2)
     private BigDecimal tongtiendukien;
 
     @Column(name = "tongtienthucte", precision = 12, scale = 2)
     private BigDecimal tongtienthucte;
-
 }
