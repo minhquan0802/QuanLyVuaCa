@@ -2,6 +2,7 @@ package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.request.DonhangRequestCreation;
 import com.minhquan.QuanLyVuaCa.dto.request.DonhangStatusRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.UpdateCanNangRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.ChitietDonhangResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.DonhangResponse;
@@ -69,5 +70,10 @@ public class DonhangController {
         return ApiResponse.<List<DonhangResponse>>builder()
                 .result(donhangService.getMyOrders())
                 .build();
+    }
+    @PutMapping("/{id}/cap-nhat-can-nang")
+    public ApiResponse<String> updateCanNang(@PathVariable String id, @RequestBody List<UpdateCanNangRequest> request) {
+        donhangService.updateThucTeDonHang(id, request);
+        return ApiResponse.<String>builder().result("Cập nhật cân nặng thành công").build();
     }
 }

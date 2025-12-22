@@ -35,7 +35,13 @@ public enum ErrorCode {
     SIZECA_NOT_EXISTED(1020, "Size ca khong ton tai", HttpStatus.NOT_FOUND),
     CHITIET_CABAN_EXISTED(1021, "San pham (Loai + Size) nay da ton tai trong kho", HttpStatus.CONFLICT),
     CHITIET_CABAN_NOT_EXISTED(1022, "San pham khong ton tai", HttpStatus.NOT_FOUND),
-    CANNOT_DELETE_DATA_IN_USE(1023, "Khong the xoa vi san pham da co phat sinh giao dich (Lien ket khoa ngoai)", HttpStatus.CONFLICT);
+    CANNOT_DELETE_DATA_IN_USE(1023, "Khong the xoa vi san pham da co phat sinh giao dich (Lien ket khoa ngoai)", HttpStatus.CONFLICT),
+
+    // DON HANG & KHO ---
+    DONHANG_NOT_EXISTED(1024, "Don hang khong ton tai", HttpStatus.NOT_FOUND),
+    CHITIET_DONHANG_NOT_EXISTED(1025, "Chi tiet don hang khong ton tai", HttpStatus.NOT_FOUND),
+    ORDER_STATUS_INVALID(1026, "Trang thai don hang khong hop le de thuc hien hanh dong nay", HttpStatus.BAD_REQUEST),
+    INVENTORY_NOT_ENOUGH(1027, "So luong ton kho khong du de thuc hien giao dich", HttpStatus.CONFLICT);
 
     private int code;
     private String message;

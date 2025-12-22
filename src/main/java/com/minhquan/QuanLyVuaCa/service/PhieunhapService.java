@@ -41,21 +41,20 @@ public class PhieunhapService {
         // Tìm và Set Nhà cung cấp
         Nhacungcap ncc = nhacungcapRepository.findById(request.getIdncc())
                 .orElseThrow(() -> new RuntimeException("Nhà cung cấp không tồn tại"));
-        phieunhap.setIdncc(ncc); // Setter của Lombok sinh ra từ biến "idncc"
+        phieunhap.setIdncc(ncc);
 
-        // Tìm và Set Loại cá (Phiếu nhập này dành cho loại cá nào)
+        // Tìm và Set Loại cá
         Loaica loaica = loaicaRepository.findById(request.getIdloaica())
                 .orElseThrow(() -> new RuntimeException("Loại cá không tồn tại"));
-        phieunhap.setIdloaica(loaica); // Setter của Lombok
+        phieunhap.setIdloaica(loaica);
 
-        // Set mặc định
+        // Set mặc định ngày nhập
         if (phieunhap.getNgaynhap() == null) phieunhap.setNgaynhap(LocalDate.now());
 
-        // Chuyển String Enum sang Object Enum (nếu Mapper chưa handle)
-        // Hoặc nếu Request gửi String đúng tên Enum, Mapper tự lo.
-        // Ở đây đảm bảo an toàn:
+        // Xử lý Enum Trạng thái thanh toán
         if (request.getTrangthaithanhtoan() != null) {
             try {
+                // Đảm bảo request gửi String đúng format "CHUA_THANH_TOAN" hoặc "DA_THANH_TOAN"
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.valueOf(request.getTrangthaithanhtoan()));
             } catch (IllegalArgumentException e) {
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.CHUA_THANH_TOAN);
@@ -71,6 +70,7 @@ public class PhieunhapService {
                     .map(ChitietPhieunhapRequest::getSoluongnhap)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
+        // [SỬA] Tên field trong Entity là tongsoluongnhap
         phieunhap.setTongsoluong(tongSoluong);
 
         Phieunhap savedPhieu = phieunhapRepository.save(phieunhap);
@@ -83,25 +83,33 @@ public class PhieunhapService {
                 Chitietphieunhap detail = chitietphieunhapMapper.toEntity(itemRequest);
 
                 // Link tới phiếu cha
-                detail.setIdphieunhap(savedPhieu); // Setter: setIdphieunhap
+                detail.setIdphieunhap(savedPhieu);
 
-                detail.setSoluongton(itemRequest.getSoluongnhap()); // Tồn = Nhập
+                // [SỬA] Xóa dòng setSoluongton vì đã bỏ cột này trong DB
+                // detail.setSoluongton(itemRequest.getSoluongnhap()); <-- DELETE
+
+                // [MỚI] Lưu lịch sử giá bán tại thời điểm nhập
+                detail.setGiabanletaithoidiemnhap(itemRequest.getGiabanletaithoidiemnhap());
+                detail.setGiabansitaithoidiemnhap(itemRequest.getGiabansitaithoidiemnhap());
+
                 detail.setTrangthaica(TrangThaiCa.CON_HANG);
-                detail.setNgaythanhly(savedPhieu.getNgaynhap().plusDays(2)); // Hạn 2 ngày
+                // Ngày thanh lý = Ngày nhập + 2 ngày
+                detail.setNgaythanhly(savedPhieu.getNgaynhap().plusDays(2));
 
                 // --- LOGIC KHO (Bảng chitietcaban) ---
+                // Cần Size để tìm trong kho
+                // (Giả sử request gửi idsizeca dạng Integer/String tùy DTO, ở đây coi là Integer id)
                 Sizeca sizeca = sizecaRepository.findById(itemRequest.getIdsizeca())
                         .orElseThrow(() -> new RuntimeException("Size cá không tồn tại"));
 
                 // Tìm trong kho xem đã có cặp (Loại cá - Size) này chưa
-                // Lưu ý: phải truyền Object Loaica và Object Sizeca vào hàm tìm kiếm
                 Chitietcaban khoItem = chitietcabanRepository.findByIdloaicaAndIdsizeca(loaica, sizeca)
                         .orElse(null);
 
                 if (khoItem == null) {
                     khoItem = new Chitietcaban();
-                    khoItem.setIdloaica(loaica); // Setter: setIdloaica
-                    khoItem.setIdsizeca(sizeca); // Setter: setIdsizeca
+                    khoItem.setIdloaica(loaica);
+                    khoItem.setIdsizeca(sizeca);
                     khoItem.setSoluongton(BigDecimal.ZERO);
                 }
 
@@ -109,11 +117,13 @@ public class PhieunhapService {
                 khoItem.setSoluongton(khoItem.getSoluongton().add(itemRequest.getSoluongnhap()));
                 Chitietcaban savedKho = chitietcabanRepository.save(khoItem);
 
-                // Link chi tiết phiếu nhập tới Kho
-                detail.setIdchitietcaban(savedKho); // Setter: setIdchitietcaban
+                // Link chi tiết phiếu nhập tới Kho (quan trọng)
+                detail.setIdchitietcaban(savedKho);
 
                 listEntities.add(detail);
-                updateBanggia(savedKho, itemRequest.getGiabanledukien(), itemRequest.getGiabansidukien());
+
+                // Cập nhật Bảng giá hiện hành (Logic riêng)
+                updateBanggia(savedKho, itemRequest.getGiabanletaithoidiemnhap(), itemRequest.getGiabansitaithoidiemnhap());
             }
             chitietphieunhapRepository.saveAll(listEntities);
         }
@@ -121,56 +131,48 @@ public class PhieunhapService {
         return phieunhapMapper.toResponse(savedPhieu);
     }
 
-    // Hàm phụ trợ để xử lý Bảng giá (FIXED)
+    // Hàm phụ trợ để xử lý Bảng giá
     private void updateBanggia(Chitietcaban kho, BigDecimal giaLeMoi, BigDecimal giaSiMoi) {
-        // Validate đầu vào
+        // Nếu không nhập giá dự kiến thì không cập nhật bảng giá
         if (giaLeMoi == null && giaSiMoi == null) return;
 
-        // Giá trị mặc định nếu null (để tránh lỗi so sánh)
         BigDecimal giaLeInput = giaLeMoi != null ? giaLeMoi : BigDecimal.ZERO;
         BigDecimal giaSiInput = giaSiMoi != null ? giaSiMoi : BigDecimal.ZERO;
 
-        // 1. Tìm giá đang áp dụng hiện tại (Dựa vào query mới sửa)
-        Banggia giaHienTai = banggiaRepository.findActivePriceByChitietcaban(kho.getId());
+        // 1. Tìm giá đang áp dụng hiện tại (ngayketthuc = null)
+        // Bạn cần đảm bảo Repository có hàm này: findByChitietcabanAndNgayketthucIsNull(Chitietcaban ct)
+        Banggia giaHienTai = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(kho)
+                .orElse(null);
 
         boolean canCreateNew = false;
 
         if (giaHienTai == null) {
-            // Trường hợp 1: Chưa có giá nào -> Tạo mới
+            // Chưa có giá -> Tạo mới
             canCreateNew = true;
         } else {
-            // Trường hợp 2: Đã có giá -> So sánh xem có thay đổi không
-            // Lưu ý: Cần handle null cho giá cũ trong DB để tránh NullPointerException
+            // Đã có giá -> So sánh xem có khác không
             BigDecimal oldLe = giaHienTai.getGiabanle() != null ? giaHienTai.getGiabanle() : BigDecimal.ZERO;
             BigDecimal oldSi = giaHienTai.getGiabansi() != null ? giaHienTai.getGiabansi() : BigDecimal.ZERO;
 
             if (oldLe.compareTo(giaLeInput) != 0 || oldSi.compareTo(giaSiInput) != 0) {
-                // Giá thay đổi -> Đóng giá cũ lại
-                giaHienTai.setNgayketthuc(LocalDate.now()); // Kết thúc ngay hôm nay
+                // Giá thay đổi -> Đóng giá cũ lại (Set ngày kết thúc là hôm nay hoặc hôm qua tùy logic)
+                giaHienTai.setNgayketthuc(LocalDate.now());
                 banggiaRepository.save(giaHienTai);
 
                 canCreateNew = true;
             }
         }
 
-        // 3. Tạo bảng giá mới (Nếu cần)
+        // 3. Tạo bảng giá mới
         if (canCreateNew) {
             Banggia giaMoi = new Banggia();
-
-            // SỬA LỖI: Dùng setChitietcaban (vì biến trong Entity là 'private Chitietcaban chitietcaban')
             giaMoi.setChitietcaban(kho);
-
             giaMoi.setGiabanle(giaLeInput);
             giaMoi.setGiabansi(giaSiInput);
-
-            // Giá mới bắt đầu từ hôm nay (hoặc ngày mai tùy nghiệp vụ, ở đây để hôm nay cho liên tục)
             giaMoi.setNgaybatdau(LocalDate.now());
-
-            // Ngày kết thúc để NULL (nghĩa là đang hiệu lực mãi mãi)
-            giaMoi.setNgayketthuc(null);
-
-            // XÓA DÒNG NÀY: giaMoi.setTrangThai(...); vì không có cột này
+            giaMoi.setNgayketthuc(null); // NULL nghĩa là đang hiệu lực
 
             banggiaRepository.save(giaMoi);
         }
-    }}
+    }
+}

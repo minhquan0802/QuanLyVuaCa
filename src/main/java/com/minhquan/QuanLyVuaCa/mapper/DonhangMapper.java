@@ -18,21 +18,16 @@ public interface DonhangMapper {
 
     DonhangResponse toDonhangResponse(Donhang donhang, String tenKhachHang, String sdtKhachHang);
 
-//    @Mapping(target = "idchitietcaban", source = "idchitietcaban.id")
-//    @Mapping(target = "tenSize", source = "idchitietcaban.idsizeca.sizeca")
-//    @Mapping(target = "tongtiendukien", source = "tongtiendukien")
-//    ChitietDonhangResponse toChitietResponse(Chitietdonhang chitiet);
-
-
-    // 1. Tự tính đơn giá: Dongia = Tongtien / Soluong
     @Mapping(target = "dongia", expression = "java(calculateUnitPrice(entity))")
     @Mapping(source = "idchitietcaban.id", target = "idchitietcaban")
     @Mapping(source = "idchitietcaban.idloaica.tenloaica", target = "tenLoaiCa")
     @Mapping(source = "idchitietcaban.idsizeca.sizeca", target = "tenSize")
+    @Mapping(source = "iddonvitinh.id", target = "iddonvitinh")
+    @Mapping(source = "khoiluongthucte", target = "soluongkgthucte") // Map Kg thực tế
+    @Mapping(source = "khoiluongdukien", target = "soluongkgthuctequydoi") // Map Kg dự kiến
+        // Các trường tongtiendukien, tongtienthucte nếu tên giống nhau MapStruct sẽ tự map, không cần khai báo
 
-    // Các mapping khác giữ nguyên
     ChitietDonhangResponse toChitietResponse(Chitietdonhang entity);
-
     // Hàm phụ trợ để tính toán (viết ngay trong interface Mapper nếu dùng Java 8+)
     default BigDecimal calculateUnitPrice(Chitietdonhang entity) {
         if (entity.getTongtiendukien() != null
@@ -47,8 +42,6 @@ public interface DonhangMapper {
         }
         return BigDecimal.ZERO;
     }
-
-
 
     // 1. Map đơn hàng (Bỏ qua các trường tự sinh hoặc set thủ công)
     @Mapping(target = "iddonhang", ignore = true)
