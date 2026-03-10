@@ -3,7 +3,7 @@
 ## 📖 Giới Thiệu
 **QuanLyVuaCa** là một ứng dụng phần mềm được xây dựng để hỗ trợ quản lý và vận hành các hoạt động kinh doanh tại vựa cá. 
 
-Dự án được thiết kế theo mô hình Client-Server, sử dụng **Spring Boot** cho hệ thống Backend vững chắc và **JavaScript** cho giao diện Frontend linh hoạt, giúp số hóa quy trình quản lý thông tin xuất/nhập, kiểm soát kho bãi và theo dõi doanh thu một cách hiệu quả.
+Dự án được thiết kế theo mô hình Client-Server, sử dụng **Spring Boot** cho hệ thống Backend vững chắc và **JavaScript** cho giao diện Frontend linh hoạt, giúp số hóa quy trình quản lý thông tin xuất/nhập, kiểm soát số lượng tồn và theo dõi doanh thu một cách hiệu quả.
 
 ## 🚀 Công Nghệ Sử Dụng
 
