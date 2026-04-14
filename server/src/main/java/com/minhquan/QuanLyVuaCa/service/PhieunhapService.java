@@ -9,7 +9,10 @@ import com.minhquan.QuanLyVuaCa.Enum.TrangThaiThanhToan;
 import com.minhquan.QuanLyVuaCa.mapper.ChitietphieunhapMapper;
 import com.minhquan.QuanLyVuaCa.mapper.PhieunhapMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,20 +21,22 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PhieunhapService {
 
-    private final PhieunhapRepository phieunhapRepository;
-    private final ChitietphieunhapRepository chitietphieunhapRepository;
-    private final ChitietcabanRepository chitietcabanRepository;
-    private final NhacungcapRepository nhacungcapRepository;
-    private final LoaicaRepository loaicaRepository;
-    private final SizecaRepository sizecaRepository;
+    PhieunhapRepository phieunhapRepository;
+    ChitietphieunhapRepository chitietphieunhapRepository;
+    ChitietcabanRepository chitietcabanRepository;
+    NhacungcapRepository nhacungcapRepository;
+    LoaicaRepository loaicaRepository;
+    SizecaRepository sizecaRepository;
 
-    private final PhieunhapMapper phieunhapMapper;
-    private final ChitietphieunhapMapper chitietphieunhapMapper;
-    private final BanggiaRepository banggiaRepository;
+    PhieunhapMapper phieunhapMapper;
+    ChitietphieunhapMapper chitietphieunhapMapper;
+    BanggiaRepository banggiaRepository;
 
     @Transactional
     public PhieunhapResponse nhapHang(PhieunhapRequest request) {
@@ -54,7 +59,7 @@ public class PhieunhapService {
         // Xử lý Enum Trạng thái thanh toán
         if (request.getTrangthaithanhtoan() != null) {
             try {
-                // Đảm bảo request gửi String đúng format "CHUA_THANH_TOAN" hoặc "DA_THANH_TOAN"
+                // Request gửi String theo format "CHUA_THANH_TOAN" hoặc "DA_THANH_TOAN"
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.valueOf(request.getTrangthaithanhtoan()));
             } catch (IllegalArgumentException e) {
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.CHUA_THANH_TOAN);
@@ -70,7 +75,6 @@ public class PhieunhapService {
                     .map(ChitietPhieunhapRequest::getSoluongnhap)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
-        // [SỬA] Tên field trong Entity là tongsoluongnhap
         phieunhap.setTongsoluong(tongSoluong);
 
         Phieunhap savedPhieu = phieunhapRepository.save(phieunhap);
@@ -85,20 +89,17 @@ public class PhieunhapService {
                 // Link tới phiếu cha
                 detail.setIdphieunhap(savedPhieu);
 
-                // [SỬA] Xóa dòng setSoluongton vì đã bỏ cột này trong DB
-                // detail.setSoluongton(itemRequest.getSoluongnhap()); <-- DELETE
-
-                // [MỚI] Lưu lịch sử giá bán tại thời điểm nhập
+                // Lưu lịch sử giá bán tại thời điểm nhập
                 detail.setGiabanletaithoidiemnhap(itemRequest.getGiabanletaithoidiemnhap());
                 detail.setGiabansitaithoidiemnhap(itemRequest.getGiabansitaithoidiemnhap());
 
                 detail.setTrangthaica(TrangThaiCa.CON_HANG);
+
                 // Ngày thanh lý = Ngày nhập + 2 ngày
                 detail.setNgaythanhly(savedPhieu.getNgaynhap().plusDays(2));
 
                 // --- LOGIC KHO (Bảng chitietcaban) ---
                 // Cần Size để tìm trong kho
-                // (Giả sử request gửi idsizeca dạng Integer/String tùy DTO, ở đây coi là Integer id)
                 Sizeca sizeca = sizecaRepository.findById(itemRequest.getIdsizeca())
                         .orElseThrow(() -> new RuntimeException("Size cá không tồn tại"));
 

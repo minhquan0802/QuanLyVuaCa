@@ -25,8 +25,6 @@ public interface DonhangMapper {
     @Mapping(source = "iddonvitinh.id", target = "iddonvitinh")
     @Mapping(source = "khoiluongthucte", target = "soluongkgthucte") // Map Kg thực tế
     @Mapping(source = "khoiluongdukien", target = "soluongkgthuctequydoi") // Map Kg dự kiến
-        // Các trường tongtiendukien, tongtienthucte nếu tên giống nhau MapStruct sẽ tự map, không cần khai báo
-
     ChitietDonhangResponse toChitietResponse(Chitietdonhang entity);
     // Hàm phụ trợ để tính toán (viết ngay trong interface Mapper nếu dùng Java 8+)
     default BigDecimal calculateUnitPrice(Chitietdonhang entity) {
@@ -43,7 +41,6 @@ public interface DonhangMapper {
         return BigDecimal.ZERO;
     }
 
-    // 1. Map đơn hàng (Bỏ qua các trường tự sinh hoặc set thủ công)
     @Mapping(target = "iddonhang", ignore = true)
     @Mapping(target = "trangthaidonhang", ignore = true) // Set thủ công ở Service
     @Mapping(target = "ngaydat", ignore = true)          // Set thủ công ở Service
