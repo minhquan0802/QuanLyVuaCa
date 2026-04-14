@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+# QuanLyVuaCa - Client
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Giao diện người dùng (Frontend) của hệ thống quản lý vựa cá, xây dựng bằng React.
 
-## Available Scripts
+## Giới thiệu
 
-In the project directory, you can run:
+Ứng dụng web hỗ trợ hai nhóm người dùng:
 
-### `npm start`
+- **Khách hàng**: Duyệt sản phẩm, thêm vào giỏ hàng, đặt hàng và theo dõi đơn hàng.
+- **Quản trị viên**: Quản lý toàn bộ hệ thống thông qua bảng điều khiển admin.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Công nghệ sử dụng
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+| Công nghệ | Phiên bản | Mục đích |
+|---|---|---|
+| React | 19 | Thư viện UI chính |
+| React Router DOM | 7 | Điều hướng trang |
+| Recharts | 3 | Biểu đồ thống kê (Admin Dashboard) |
+| Tailwind CSS | 3 | Styling |
 
-### `npm test`
+## Cấu trúc trang
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Trang công khai
+| Đường dẫn | Trang |
+|---|---|
+| `/` | Đăng nhập |
+| `/register` | Đăng ký tài khoản |
 
-### `npm run build`
+### Trang người dùng (yêu cầu đăng nhập)
+| Đường dẫn | Trang |
+|---|---|
+| `/home` | Trang chủ - danh sách sản phẩm |
+| `/product-detail/:product_id` | Chi tiết sản phẩm |
+| `/cart` | Giỏ hàng |
+| `/checkout` | Thanh toán |
+| `/profile` | Thông tin cá nhân |
+| `/my-orders` | Lịch sử đơn hàng |
+| `/order-success` | Đặt hàng thành công |
+| `/order-failed` | Đặt hàng thất bại |
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Trang quản trị viên (yêu cầu quyền Admin)
+| Đường dẫn | Trang |
+|---|---|
+| `/admin` | Dashboard - thống kê tổng quan |
+| `/admin/QuanLyLoaiCa` | Quản lý loại cá |
+| `/admin/QuanLyBangGia` | Quản lý bảng giá |
+| `/admin/QuanLyKho` | Quản lý kho hàng |
+| `/admin/QuanLyDonHang` | Quản lý đơn hàng |
+| `/admin/QuanLyTaiKhoan` | Quản lý tài khoản |
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Cài đặt và chạy
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Yêu cầu
+- Node.js >= 16
 
-### `npm run eject`
+### Cài đặt dependencies
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+npm install
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Chạy môi trường development
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+npm start
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Ứng dụng chạy tại [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+### Build production
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm run build
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Output nằm trong thư mục `build/`.
 
-### Code Splitting
+## Cấu trúc thư mục
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```
+src/
+├── components/         # Các component dùng chung
+│   ├── admin/          # Layout và Sidebar cho trang Admin
+│   ├── header.js
+│   ├── footer.js
+│   └── product-list.js
+├── pages/              # Các trang của ứng dụng
+│   ├── admin/          # Các trang quản trị
+│   └── ...             # Các trang người dùng
+├── routes/             # Cấu hình điều hướng và bảo vệ route
+│   ├── app-routes.js
+│   ├── PrivateAdminRoute.js
+│   └── ProtectedRoute.js
+└── utils/
+    └── fetchAPI.js     # Tiện ích gọi API
+```
