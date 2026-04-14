@@ -77,60 +77,6 @@ public class VnPayService {
         return env.getProperty("vnpay.base-url") + "?" + queryUrl + "&vnp_SecureHash=" + vnp_SecureHash;
     }
 
-    // Xử lý kết quả trả về từ VNPAY
-//    public int orderReturn(HttpServletRequest request) {
-//        Map<String, String> fields = new HashMap<>();
-//        for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements();) {
-//            String fieldName = params.nextElement();
-//            String fieldValue = request.getParameter(fieldName);
-//            if ((fieldValue != null) && (fieldValue.length() > 0)) {
-//                fields.put(fieldName, fieldValue);
-//            }
-//        }
-//
-//        String vnp_SecureHash = request.getParameter("vnp_SecureHash");
-//        if (fields.containsKey("vnp_SecureHashType")) {
-//            fields.remove("vnp_SecureHashType");
-//        }
-//        if (fields.containsKey("vnp_SecureHash")) {
-//            fields.remove("vnp_SecureHash");
-//        }
-//
-//        try {
-//            String signValue = utils.hmacSHA512(env.getProperty("vnpay.hash-secret"), utils.buildQuery(fields));
-//
-//            // 1. Kiểm tra chữ ký số (Bảo mật)
-//            if (signValue.equals(vnp_SecureHash)) {
-//
-//                // 2. Kiểm tra trạng thái giao dịch từ VNPAY (00 = Thành công)
-//                if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
-//
-//                    String orderId = request.getParameter("vnp_TxnRef");
-//
-//                    // 3. Tìm đơn hàng trong DB
-//                    Donhang donhang = donhangRepository.findById(orderId).orElse(null);
-//
-//                    if (donhang != null) {
-//                        // 4. [LOGIC CẬP NHẬT TRẠNG THÁI]
-//                        // Cập nhật thành HOAN_TAT (Đã thanh toán)
-//                        donhang.setTrangthaidonhang(TrangThaiDonHang.DA_THANH_TOAN);
-//                        donhangRepository.save(donhang);
-//
-//                        return 1; // Return 1: Thành công
-//                    }
-//                } else {
-//                    return 0; // Return 0: Giao dịch lỗi/Hủy
-//                }
-//            } else {
-//                return -1; // Return -1: Sai chữ ký (Có dấu hiệu giả mạo)
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return 0; // Lỗi hệ thống
-//        }
-//        return 0;
-//    }
-
     public int orderReturn(HttpServletRequest request) {
         Map<String, String> fields = new HashMap<>();
         for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements();) {

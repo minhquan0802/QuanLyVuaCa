@@ -44,10 +44,9 @@ public class DonhangService {
     QuydoiRepository quydoiRepository;
     BanggiaRepository banggiaRepository;
 
-    @Transactional // Đảm bảo nếu lỗi trừ kho thì rollback cả đơn hàng
+    @Transactional
     public DonhangResponse createDonhang(DonhangRequestCreation request) {
 
-        // 1. Map & Lưu đơn hàng cha
         Donhang donhang = donhangMapper.toDonhang(request);
 
         if (request.getNgaydat() != null) {
@@ -89,7 +88,7 @@ public class DonhangService {
                     throw new RuntimeException("Thiếu ID chi tiết cá bán (Sản phẩm kho)");
                 }
                 ct.setIdchitietcaban(chitietcabanTemp);
-                // Biến final để dùng trong lambda hoặc tính toán sau này
+
                 Chitietcaban finalChitietcaban = chitietcabanTemp;
 
                 // --- B. Tính toán Tiền & Số lượng quy đổi ---
@@ -108,7 +107,7 @@ public class DonhangService {
                 boolean isKhachSi = false;
                 if (savedDonhang.getIdthongtinkhachhang() != null) {
                     var khach = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang()).orElse(null);
-                    // Ví dụ: idvaitro=5 là Khách sỉ (Check lại ID trong DB của bạn)
+                    // idvaitro=5 là Khách sỉ
                     if (khach != null && khach.getIdvaitro() != null && khach.getIdvaitro().getId() == 5) {
                         isKhachSi = true;
                     }
@@ -169,17 +168,17 @@ public class DonhangService {
             }
         }
 
-        // Cập nhật tổng tiền vào đơn hàng cha (nếu cần thiết)
-        // savedDonhang.setTongtien(tongTienDonHang);
-        // donhangRepository.save(savedDonhang);
-
         // 3. Chuẩn bị dữ liệu trả về
         String tenKhach = "Khách lẻ";
         String sdtKhach = "";
+
         if (savedDonhang.getIdthongtinkhachhang() != null) {
+            // Nếu đơn hàng CÓ ID khách hàng -> Bắt đầu đi tìm trong DB
             var khachOpt = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang());
             if (khachOpt.isPresent()) {
+                // Nếu tìm thấy tài khoản đó trong DB
                 var khach = khachOpt.get();
+                // Cập nhật lại biến tenKhach bằng tên thật trong DB
                 tenKhach = khach.getHo() + " " + khach.getTen();
                 sdtKhach = khach.getSodienthoai();
             }
@@ -195,6 +194,7 @@ public class DonhangService {
 
         // ---- CACH 1 ----
         // Lấy danh sách entity từ DB
+        // Đơn hàng mới nhất sẽ nằm đầu danh sách
         List<Donhang> listEntity = donhangRepository.findAllByOrderByNgaydatDesc();
 
         // Tạo một list rỗng để chứa kết quả
@@ -325,6 +325,41 @@ public class DonhangService {
         return tongTien;
     }
 
+//    @PreAuthorize("isAuthenticated()")
+//    public List<DonhangResponse> getMyOrders() {
+//        // 1. Lấy User hiện tại
+//        var context = SecurityContextHolder.getContext();
+//        String currentEmail = context.getAuthentication().getName();
+//
+//        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
+//                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+//
+//        // 2. Lấy danh sách Entity
+//        // Lưu ý: Đảm bảo bảng donhang lưu ID khách dạng String hay Int để gọi hàm find cho đúng
+//        List<Donhang> myOrders = donhangRepository.findByIdthongtinkhachhang(String.valueOf(currentUser.getIdtaikhoan()));
+//
+//        List<DonhangResponse> responseList = new ArrayList<>();
+//
+//        // 3. Duyệt và map sang DTO
+//        for (Donhang donhang : myOrders) {
+//            // Map sang DTO trước
+//            DonhangResponse response = donhangMapper.toDonhangResponse(donhang,
+//                    currentUser.getHo() + " " + currentUser.getTen(),
+//                    currentUser.getSodienthoai());
+//
+//            // 4. [QUAN TRỌNG] Tính tổng tiền và set vào DTO Response
+//            // Vì Entity Donhang không có trường tongtien, nên ta set thẳng vào Response để trả về FE
+//            BigDecimal calculatedTotal = tinhTongTienDonHang(donhang.getIddonhang());
+//            response.setTongtien(calculatedTotal);
+//
+//            responseList.add(response);
+//        }
+//
+//        // 5. Sắp xếp mới nhất lên đầu
+//        responseList.sort((a, b) -> b.getNgaydat().compareTo(a.getNgaydat()));
+//
+//        return responseList;
+//    }
     @PreAuthorize("isAuthenticated()")
     public List<DonhangResponse> getMyOrders() {
         // 1. Lấy User hiện tại
@@ -334,28 +369,41 @@ public class DonhangService {
         Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        // 2. Lấy danh sách Entity
-        // Lưu ý: Đảm bảo bảng donhang lưu ID khách dạng String hay Int để gọi hàm find cho đúng
+        // 2. Lấy danh sách Entity Đơn hàng
         List<Donhang> myOrders = donhangRepository.findByIdthongtinkhachhang(String.valueOf(currentUser.getIdtaikhoan()));
 
         List<DonhangResponse> responseList = new ArrayList<>();
 
         // 3. Duyệt và map sang DTO
         for (Donhang donhang : myOrders) {
-            // Map sang DTO trước
+            // A. Map thông tin cơ bản sang DTO
             DonhangResponse response = donhangMapper.toDonhangResponse(donhang,
                     currentUser.getHo() + " " + currentUser.getTen(),
                     currentUser.getSodienthoai());
 
-            // 4. [QUAN TRỌNG] Tính tổng tiền và set vào DTO Response
-            // Vì Entity Donhang không có trường tongtien, nên ta set thẳng vào Response để trả về FE
+            // B. Tính tổng tiền (Logic cũ của bạn - Giữ nguyên)
             BigDecimal calculatedTotal = tinhTongTienDonHang(donhang.getIddonhang());
             response.setTongtien(calculatedTotal);
+
+            // --- [MỚI] BỔ SUNG LẤY CHI TIẾT SẢN PHẨM ---
+
+            // C.1 Tìm danh sách chi tiết của đơn hàng này từ DB
+            List<Chitietdonhang> details = chitietdonhangRepository.findByIddonhang(donhang);
+
+            // C.2 Map danh sách Entity -> Danh sách Response DTO (Dùng lại mapper bạn đã có)
+            List<ChitietDonhangResponse> detailResponses = details.stream()
+                    .map(donhangMapper::toChitietResponse)
+                    .collect(Collectors.toList());
+
+            // C.3 Gán danh sách chi tiết vào DonhangResponse (Cần đảm bảo DTO đã có trường này)
+            response.setChiTietDonHangs(detailResponses);
+
+            // -------------------------------------------
 
             responseList.add(response);
         }
 
-        // 5. Sắp xếp mới nhất lên đầu
+        // 4. Sắp xếp mới nhất lên đầu
         responseList.sort((a, b) -> b.getNgaydat().compareTo(a.getNgaydat()));
 
         return responseList;
@@ -393,45 +441,6 @@ public class DonhangService {
             chitietcabanRepository.save(sanphamTrongKho);
         }
     }
-
-    // --- 5. CẬP NHẬT CÂN NẶNG THỰC TẾ (CHO ĐƠN ĐANG ĐÓNG HÀNG) ---
-//    @Transactional
-//    public void updateThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> listUpdates) {
-//        Donhang donhang = donhangRepository.findById(idDonhang)
-//                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
-//
-//        // Chỉ cho phép sửa khi đang đóng hàng
-//        if (donhang.getTrangthaidonhang() != TrangThaiDonHang.DANG_DONG_HANG) {
-//            throw new RuntimeException("Chỉ đơn hàng ĐANG ĐÓNG HÀNG mới được cập nhật cân nặng!");
-//        }
-//
-//        BigDecimal tongTienDonHangMoi = BigDecimal.ZERO;
-//
-//        for (UpdateCanNangRequest request : listUpdates) {
-//            Chitietdonhang ctdh = chitietdonhangRepository.findById(request.getIdChitietdonhang())
-//                    .orElseThrow(() -> new RuntimeException("Chi tiết không tồn tại: " + request.getIdChitietdonhang()));
-//
-//            // 1. Cập nhật khối lượng thực tế
-//            ctdh.setKhoiluongthucte(request.getSoluongkgthucte());
-//
-//            // 2. Tính lại thành tiền thực tế
-//            // Công thức: Tiền thực tế = (Thành tiền dự kiến / Khối lượng dự kiến) * Khối lượng thực tế
-//            // HOẶC: Lấy lại đơn giá gốc từ bảng giá.
-//            // Cách an toàn nhất: Tính ra đơn giá từ dữ liệu cũ (Dự kiến) để đảm bảo không bị đổi giá bán
-//
-//            BigDecimal donGia = BigDecimal.ZERO;
-//            if (ctdh.getKhoiluongdukien().compareTo(BigDecimal.ZERO) > 0) {
-//                donGia = ctdh.getTongtiendukien().divide(ctdh.getKhoiluongdukien(), 2, RoundingMode.HALF_UP);
-//            }
-//
-//            BigDecimal thanhTienMoi = request.getSoluongkgthucte().multiply(donGia);
-//
-//            ctdh.setTongtienthucte(thanhTienMoi);
-//
-//            // Lưu lại chi tiết
-//            chitietdonhangRepository.save(ctdh);
-//        }
-//    }
 
     @Transactional
     public void updateThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> listUpdates) {

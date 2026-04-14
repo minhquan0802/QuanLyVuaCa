@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LoaicaRepository extends JpaRepository<Loaica, Integer> {
     boolean existsByTenloaica(String tenloaica);
+    // Đếm số lượng loại cá đang sử dụng hình ảnh này
+    long countByHinhanhurl(String hinhanhurl);
 }

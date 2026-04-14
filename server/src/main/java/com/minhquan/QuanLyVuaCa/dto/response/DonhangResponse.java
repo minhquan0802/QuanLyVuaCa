@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -20,4 +21,6 @@ public class DonhangResponse {
     LocalDateTime ngaydat;
     TrangThaiDonHang trangthaidonhang;
     BigDecimal tongtien;
+
+    List<ChitietDonhangResponse> chiTietDonHangs;
 }

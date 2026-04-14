@@ -51,7 +51,8 @@ public class SecurityConfig {
                                 "/Loaicas", "/Loaicas/**",
                                 "/Banggias", "/Banggias/**",
                                 "/Chitietcabans", "/Chitietcabans/**",
-                                "/vaitro", "/images/**")
+                                "/vaitro", "/images/**",
+                                "/Donvitinhs")
                             .permitAll()
                         .requestMatchers("/payment/**").permitAll()
                         .requestMatchers("/Sizecas/**").permitAll()
