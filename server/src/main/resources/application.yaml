@@ -6,12 +6,12 @@ server:
 
 spring:
   datasource:
-    url: "jdbc:mysql://localhost:3306/QuanLyVuaCa"
+    url: "jdbc:mysql://localhost:3306/QLVC_Thue"
     username: root
     password: root
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
       naming:
         # Dòng này quan trọng: Bắt Hibernate dùng đúng tên trong @Column, không tự sửa thành snake_case
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
@@ -34,3 +34,18 @@ vnpay:
 
 timezone:
   id: Asia/Ho_Chi_Minh
+
+hoadon:
+  nguoi-ban:
+    ten: "Vựa Cá Điêu Hồng Minh Quân"
+    mst: "CHUA_CO"                        # Thay bằng MST thật khi triển khai
+    dia-chi: "123 Đường Nguyễn Văn A, TP.HCM"
+    dien-thoai: "0909123456"
+    tai-khoan-ngan-hang: ""               # Thêm sau khi có tài khoản ngân hàng
+  chu-ky-so:
+    enabled: true                        # Bật lên khi có USB Token chữ ký số
+    keystore-path: "vuaca_keystore.p12"
+    keystore-password: "demo@2026"
+
+#keytool -genkeypair -alias vuaca_demo -keyalg RSA -keysize 2048 -validity 365 -keystore vuaca_keystore.p12 -storetype PKCS12 -storepass demo@2026 -dname "CN=Vua Ca Dieu Hong Minh Quan, O=VuaCa, L=HCM, C=VN"
+#Delete key: keytool -list -keystore vuaca_keystore.p12 -storetype PKCS12 -storepass demo@2026

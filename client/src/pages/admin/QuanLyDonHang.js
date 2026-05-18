@@ -35,6 +35,10 @@ export default function QuanLyDonHang() {
     // [MỚI] State để kiểm tra xem đã chỉnh sửa cân nặng chưa
     const [isEdited, setIsEdited] = useState(false);
 
+    // State cho xuất hóa đơn VAT
+    const [vatRate, setVatRate] = useState("0.10");
+    const [xuatHoaDonLoading, setXuatHoaDonLoading] = useState(false);
+
     // --- State cho TẠO ĐƠN MỚI ---
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [customers, setCustomers] = useState([]);
@@ -262,6 +266,32 @@ export default function QuanLyDonHang() {
         } catch (error) {
             console.error(error);
             alert("Lỗi kết nối hệ thống!");
+        }
+    };
+
+    const handleXuatHoaDon = async () => {
+        if (!selectedOrder) return;
+        setXuatHoaDonLoading(true);
+        try {
+            const res = await fetchCoXacThuc(
+                `/hoadon/${selectedOrder.iddonhang}/pdf?vatRate=${vatRate}`
+            );
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `HoaDon_${selectedOrder.iddonhang.substring(0, 8)}.pdf`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } else {
+                alert("Lỗi xuất hóa đơn. Vui lòng thử lại.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Lỗi kết nối server!");
+        } finally {
+            setXuatHoaDonLoading(false);
         }
     };
 
@@ -791,6 +821,29 @@ export default function QuanLyDonHang() {
                                         {!["GIAO_HANG_THANH_CONG", "HUY", "DANG_VAN_CHUYEN"].includes(selectedOrder.trangthaidonhang) && (
                                             <button onClick={() => handleUpdateStatus("HUY")} className="px-3 py-2 border border-red-200 text-red-600 rounded-lg font-bold text-xs hover:bg-red-50">Hủy</button>
                                         )}
+                                    </div>
+
+                                    {/* ── Xuất hóa đơn VAT ── */}
+                                    <div className="mt-3 pt-3 border-t border-slate-200">
+                                        <p className="text-xs font-bold text-slate-500 mb-2">XUẤT HÓA ĐƠN VAT</p>
+                                        <div className="flex gap-2 items-center">
+                                            <select
+                                                value={vatRate}
+                                                onChange={e => setVatRate(e.target.value)}
+                                                className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 bg-white"
+                                            >
+                                                <option value="0.05">Thuế 5% (thủy sản tươi)</option>
+                                                <option value="0.10">Thuế 10% (thủy sản chế biến)</option>
+                                            </select>
+                                            <button
+                                                onClick={handleXuatHoaDon}
+                                                disabled={xuatHoaDonLoading}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">receipt_long</span>
+                                                {xuatHoaDonLoading ? "Đang tạo..." : "Xuất PDF"}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
