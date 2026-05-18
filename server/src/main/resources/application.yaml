@@ -2,13 +2,13 @@
 server:
   port: 8080
   servlet:
-    context-path: /QuanLyVuaCa
+    context-path: /quan-ly-vua-ca
 
 spring:
   datasource:
-    url: "jdbc:mysql://localhost:3306/QuanLyVuaCa"
+    url: "jdbc:mysql://localhost:3306/quanlyvuaca"
     username: root
-    password: root
+    password: 123456
   jpa:
     hibernate:
       ddl-auto: validate
@@ -34,3 +34,9 @@ vnpay:
 
 timezone:
   id: Asia/Ho_Chi_Minh
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
