@@ -46,18 +46,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity, VaitroRepository vaitroRepository) throws Exception {
         httpSecurity.authorizeHttpRequests(request ->
-                request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET,
-                                "/Loaicas", "/Loaicas/**",
-                                "/Banggias", "/Banggias/**",
-                                "/Chitietcabans", "/Chitietcabans/**",
-                                "/vaitro", "/images/**",
-                                "/Donvitinhs")
-                            .permitAll()
-                        .requestMatchers("/payment/**").permitAll()
-                        .requestMatchers("/Sizecas/**").permitAll()
-                        .requestMatchers("/Quydois/**").permitAll()
-                .anyRequest().authenticated());
+                request.anyRequest().permitAll());
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer ->
