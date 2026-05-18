@@ -2,7 +2,7 @@
 server:
   port: 8080
   servlet:
-    context-path: /QuanLyVuaCa
+    context-path: /quan-ly-vua-ca
 
 spring:
   datasource:
@@ -34,3 +34,9 @@ vnpay:
 
 timezone:
   id: Asia/Ho_Chi_Minh
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
