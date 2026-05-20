@@ -1,7 +1,6 @@
 package com.minhquan.QuanLyVuaCa.service;
 
-import com.minhquan.QuanLyVuaCa.Enum.TrangThaiTaiKhoan;
-import com.minhquan.QuanLyVuaCa.dto.request.DangnhapRequest;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
@@ -16,7 +15,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;

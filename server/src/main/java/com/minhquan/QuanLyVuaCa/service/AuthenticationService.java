@@ -6,11 +6,9 @@ import com.minhquan.QuanLyVuaCa.dto.request.LogoutRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.RefreshRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.IntrospectResponse;
-import com.minhquan.QuanLyVuaCa.entity.InvalidatedToken;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
-import com.minhquan.QuanLyVuaCa.repository.InvalidatedTokenRepository;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -23,11 +21,12 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -39,8 +38,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
-    TaiKhoanRepository TKRepository;
-    InvalidatedTokenRepository invalidatedTokenRepository;
+    TaiKhoanRepository taiKhoanRepository;
+    RedisTemplate<String, Object> redisTemplate;
+    PasswordEncoder passwordEncoder;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -48,62 +48,95 @@ public class AuthenticationService {
 
     @NonFinal
     @Value("${jwt.valid-duration}")
-    protected long tokenTime;
+    protected long TOKEN_TIME;
 
     @NonFinal
     @Value("${jwt.refreshable-duration}")
-    protected long refreshTime;
+    protected long REFRESH_TIME;
 
-    public IntrospectResponse introspect(IntrospectRequest request)
-            throws JOSEException, ParseException {
-        var token = request.getToken();
-        boolean isValid = true;
-
-        try {
-            verifyToken(token, false);
-
-        } catch (AppExceptions e) {
-            isValid = false;
-        }
-
-        return IntrospectResponse.builder()
-                .valid(isValid)
-                .build();
-    }
+    @NonFinal
+    @Value("${jwt.absolute-duration}")
+    protected long ABSOLUTE_DURATION;
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        var user = TKRepository.findByEmail(request.getEmail())
+        var taiKhoan = taiKhoanRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getMatkhau());
-        if (!authenticated)
+
+        if (!passwordEncoder.matches(request.getPassword(), taiKhoan.getMatkhau()))
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
 
+        long authTime = System.currentTimeMillis();
 
-        var token = generateToken(user);
+        String token = generateToken(taiKhoan, TOKEN_TIME, authTime);
+        String refreshToken = generateToken(taiKhoan, REFRESH_TIME, authTime);
 
         return AuthenticationResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .authenticated(true)
                 .build();
     }
 
-    private String generateToken(Taikhoan taikhoan) {
-        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+    public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
+        var signJwt = verifyToken(request.getToken());
 
+        long authTime = signJwt.getJWTClaimsSet().getLongClaim("auth_time");
+        long absoluteDurationMs = ABSOLUTE_DURATION * 60 * 1000;
+
+        if (System.currentTimeMillis() - authTime > absoluteDurationMs) {
+            throw new AppExceptions(ErrorCode.ABSOLUTE_DURATION);
+        }
+
+        invalidateToken(signJwt);
+
+        var email = signJwt.getJWTClaimsSet().getSubject();
+        var taiKhoan = taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        String newToken = generateToken(taiKhoan, TOKEN_TIME, authTime);
+        String newRefreshToken = generateToken(taiKhoan, REFRESH_TIME, authTime);
+
+        return AuthenticationResponse.builder()
+                .token(newToken)
+                .refreshToken(newRefreshToken)
+                .authenticated(true)
+                .build();
+    }
+
+    public void logout(LogoutRequest request) {
+        try {
+            SignedJWT signToken = SignedJWT.parse(request.getToken());
+            invalidateToken(signToken);
+        } catch (Exception e) {
+            log.error("Token đã không hợp lệ hoặc cấu trúc lỗi", e);
+        }
+    }
+
+    public IntrospectResponse introspect(IntrospectRequest request) {
+        var token = request.getToken();
+        boolean isValid = true;
+        try {
+            verifyToken(token);
+        } catch (Exception e) {
+            isValid = false;
+        }
+        return IntrospectResponse.builder().valid(isValid).build();
+    }
+
+    private String generateToken(Taikhoan taikhoan, long duration, long authTime) {
+        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(taikhoan.getEmail())
                 .issuer("QuanLyVuCa_React_SpringBoot.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(tokenTime, ChronoUnit.SECONDS).toEpochMilli())) //Het han sau 1 tieng
+                        Instant.now().plus(duration, ChronoUnit.MINUTES).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("role", buildScope(taikhoan))
+                .claim("auth_time", authTime)
                 .build();
 
-
         Payload payload = new Payload(claimsSet.toJSONObject());
-
         JWSObject jwsObject = new JWSObject(header, payload);
 
         //Ky token
@@ -111,8 +144,46 @@ public class AuthenticationService {
             jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
             return jwsObject.serialize();
         } catch (JOSEException e) {
-            log.error("Can't create JWS object", e);
+            log.error("Can not create token", e);
             throw new RuntimeException(e);
+        }
+    }
+
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        var verify = signedJWT.verify(verifier);
+
+        if (!(verify && expirationTime.after(new Date())))
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+
+        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        Boolean isBlacklisted = redisTemplate.hasKey("blacklist:" + jwtId);
+
+        if (isBlacklisted) {
+            throw new AppExceptions(ErrorCode.BLACKLIST);
+        }
+
+        return signedJWT;
+    }
+
+
+
+    private void invalidateToken(SignedJWT signToken) throws ParseException {
+        String jwtId = signToken.getJWTClaimsSet().getJWTID();
+        Date expirationTime = signToken.getJWTClaimsSet().getExpirationTime();
+
+        long expiryTimeInSeconds = (expirationTime.getTime() - System.currentTimeMillis()) / 1000;
+
+        if (expiryTimeInSeconds > 0) {
+            redisTemplate.opsForValue().set(
+                    "blacklist:" + jwtId,
+                    "true",
+                    Duration.ofSeconds(expiryTimeInSeconds)
+            );
+            log.info("Token {} đã được đưa vào Redis Blacklist", jwtId);
         }
     }
 
@@ -123,74 +194,5 @@ public class AuthenticationService {
         }
         return scopeJoiner.toString();
     }
-
-    private SignedJWT verifyToken(String token, boolean isRefresh)
-            throws JOSEException, ParseException {
-
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-
-        SignedJWT signedJWT = SignedJWT.parse(token);
-
-        Date expityTime = (isRefresh)
-                ? new Date(signedJWT.getJWTClaimsSet().getIssueTime().toInstant().plus(refreshTime, ChronoUnit.SECONDS).toEpochMilli())
-                : signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        var verified = signedJWT.verify(verifier);
-
-        //Neu chu ky het han hoac khong duoc verified thi cut
-        if(!(verified && expityTime.after(new Date())))
-            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
-
-        if(invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
-            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
-
-        return signedJWT;
-    }
-
-    public void logout(LogoutRequest tokenRequest)
-            throws ParseException, JOSEException {
-        try {
-            var signedToken = verifyToken(tokenRequest.getToken(), true);
-            String jwtID = signedToken.getJWTClaimsSet().getJWTID();
-            Date expityTime = signedToken.getJWTClaimsSet().getExpirationTime();
-
-            InvalidatedToken invalidatedToken = new InvalidatedToken().builder()
-                    .id(jwtID)
-                    .expirationTime(expityTime)
-                    .build();
-
-            invalidatedTokenRepository.save(invalidatedToken);
-        } catch (AppExceptions e) {
-            log.info("Token da het han roi: ", e);
-        }
-    }
-
-    public AuthenticationResponse refreshToken(RefreshRequest requestToken)
-            throws ParseException, JOSEException {
-        var signJWT = verifyToken(requestToken.getToken(),true);
-
-        var jwtID = signJWT.getJWTClaimsSet().getJWTID();
-        var expityTime = signJWT.getJWTClaimsSet().getExpirationTime();
-
-        InvalidatedToken invalidatedToken = new InvalidatedToken().builder()
-                .id(jwtID)
-                .expirationTime(expityTime)
-                .build();
-
-        invalidatedTokenRepository.save(invalidatedToken);
-
-        var email = signJWT.getJWTClaimsSet().getSubject();
-
-        var taiKhoan = TKRepository.findByEmail(email)
-                .orElseThrow(() -> new AppExceptions(ErrorCode.UNAUTHENTICATED));
-
-        var token = generateToken(taiKhoan);
-
-        return AuthenticationResponse.builder()
-                .token(token)
-                .authenticated(true)
-                .build();
-    }
-
 }
 

@@ -30,6 +30,8 @@ public enum ErrorCode {
     PAYLOAD_TOO_LARGE(1013, "Dung luong file vuot qua gioi han cho phep", HttpStatus.PAYLOAD_TOO_LARGE),
     ACCESS_DENIED(1014, "Khong co quyen truy cap tai nguyen", HttpStatus.FORBIDDEN),
     UNAUTHORIZED(1007, "Ban khong co quyen thuc hien hanh dong nay", HttpStatus.UNAUTHORIZED),
+    BLACKLIST(1009, "Token nam trong danh sach den", HttpStatus.UNAUTHORIZED),
+    ABSOLUTE_DURATION(1010, "Da het han", HttpStatus.UNAUTHORIZED),
 
     // ---SIZE CA & CHI TIET CA BAN---
     SIZECA_NOT_EXISTED(1020, "Size ca khong ton tai", HttpStatus.NOT_FOUND),

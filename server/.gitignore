@@ -33,3 +33,5 @@ build/
 .vscode/
 
 .claude
+
+src/main/resources/application-local.yaml

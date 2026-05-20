@@ -1,6 +1,5 @@
 package com.minhquan.QuanLyVuaCa.dto.response;
 
-import com.minhquan.QuanLyVuaCa.Enum.TrangThaiTaiKhoan;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;

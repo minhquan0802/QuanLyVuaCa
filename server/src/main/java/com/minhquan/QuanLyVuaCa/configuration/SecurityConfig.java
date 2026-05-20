@@ -29,24 +29,23 @@ import javax.crypto.spec.SecretKeySpec;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
-    private final String[] PUBLIC_ENDPOINTS = {"/TaiKhoans",
-            "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh",
+    private final String[] PUBLIC_POST_ENDPOINTS = {
+            "/TaiKhoans",
+            "/auth/**",
     };
-
 
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
 
     @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder(10);
-    }
-
-    @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity, VaitroRepository vaitroRepository) throws Exception {
         httpSecurity.authorizeHttpRequests(request ->
-                request.anyRequest().permitAll());
+                request.requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .anyRequest().permitAll());
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer ->
@@ -80,7 +79,7 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-        corsConfiguration.addAllowedOrigin("http://localhost:3000");
+        corsConfiguration.addAllowedOrigin(frontendUrl);
         corsConfiguration.addAllowedMethod("*");
         corsConfiguration.addAllowedHeader("*");
 
