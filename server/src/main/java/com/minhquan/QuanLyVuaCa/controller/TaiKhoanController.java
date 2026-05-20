@@ -19,8 +19,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/TaiKhoans")
-@CrossOrigin(origins = "http://localhost:3000")
+@RequestMapping("/tai-khoan")
 public class TaiKhoanController {
     @Autowired
     private TaiKhoanService taiKhoanService;
@@ -29,7 +28,7 @@ public class TaiKhoanController {
     private ApiResponse<TaikhoanResponse> taoTaikhoan(@Valid @RequestBody TaiKhoanCreationRequest request){
         return ApiResponse.<TaikhoanResponse>builder()
                 .code(200)
-                .message("TaiKhoan created")
+                .message("Tạo tài khoản thành công")
                 .result(taiKhoanService.taoTaiKhoan(request))
                 .build();
     }

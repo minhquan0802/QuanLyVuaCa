@@ -35,7 +35,7 @@ export default function Login() {
         const decodedToken = parseJwt(token);
         const role = decodedToken?.role;
 
-        if (role === 'admin') {
+        if (role === 'ADMIN') {
           navigate('/admin/dashboard');
         } else {
           navigate('/home');
