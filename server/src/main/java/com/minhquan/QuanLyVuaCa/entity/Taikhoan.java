@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Entity
 @Getter
 @Setter
@@ -21,11 +23,6 @@ public class Taikhoan {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "idtaikhoan", nullable = false, length = 36)
     String idtaikhoan;
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "idvaitro", nullable = false)
-    Vaitro idvaitro;
 
     @Size(max = 50)
     @Column(name = "ho", length = 50)
@@ -55,4 +52,6 @@ public class Taikhoan {
     @Column(name = "trangthaitk", columnDefinition = "ENUM('HOAT_DONG','KHOA')")
     TrangThaiTaiKhoan trangthaitk;
 
+    @Column(name = "vaitro", length = 50)
+    String vaitro;
 }

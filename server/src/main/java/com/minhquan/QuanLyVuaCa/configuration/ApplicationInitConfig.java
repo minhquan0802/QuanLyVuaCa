@@ -1,8 +1,7 @@
 package com.minhquan.QuanLyVuaCa.configuration;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
-import com.minhquan.QuanLyVuaCa.entity.Vaitro;
+import com.minhquan.QuanLyVuaCa.enums.VaiTro;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
-import com.minhquan.QuanLyVuaCa.repository.VaitroRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -17,22 +16,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class ApplicationInitConfig {
-
-    final PasswordEncoder passwordEncoder;
+    PasswordEncoder passwordEncoder;
 
     @Bean
-    ApplicationRunner applicationRunner(TaiKhoanRepository repository, VaitroRepository vaitroRepository){
+    ApplicationRunner applicationRunner(TaiKhoanRepository repository){
         return args -> {
             if (repository.findByEmail("admin@gmail.com").isEmpty()){
-                Vaitro adminRole = vaitroRepository.findById(1).orElseGet(() -> {
-                    Vaitro newRole = new Vaitro();
-                    newRole.setTenvaitro("ADMIN"); // Hoặc tên role bạn muốn
-                    return vaitroRepository.save(newRole);
-                });
                 Taikhoan user = Taikhoan.builder()
                         .email("admin@gmail.com")
                         .matkhau(passwordEncoder.encode("123456789"))
-                        .idvaitro(adminRole)
+                        .vaitro(VaiTro.ADMIN.name())
                         .build();
 
                 repository.save(user);

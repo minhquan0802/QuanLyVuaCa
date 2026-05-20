@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
 import java.time.Duration;
@@ -105,8 +106,10 @@ public class AuthenticationService {
 
     public void logout(LogoutRequest request) {
         try {
-            SignedJWT signToken = SignedJWT.parse(request.getToken());
-            invalidateToken(signToken);
+            SignedJWT token = SignedJWT.parse(request.getToken());
+            SignedJWT refreshToken = SignedJWT.parse(request.getRefreshToken());
+            invalidateToken(token);
+            invalidateToken(refreshToken);
         } catch (Exception e) {
             log.error("Token đã không hợp lệ hoặc cấu trúc lỗi", e);
         }
@@ -169,8 +172,6 @@ public class AuthenticationService {
         return signedJWT;
     }
 
-
-
     private void invalidateToken(SignedJWT signToken) throws ParseException {
         String jwtId = signToken.getJWTClaimsSet().getJWTID();
         Date expirationTime = signToken.getJWTClaimsSet().getExpirationTime();
@@ -188,11 +189,10 @@ public class AuthenticationService {
     }
 
     private String buildScope(Taikhoan taikhoan) {
-        StringJoiner scopeJoiner = new StringJoiner(" ");
-        if (taikhoan.getIdvaitro() != null && taikhoan.getIdvaitro().getTenvaitro() != null) {
-            scopeJoiner.add(taikhoan.getIdvaitro().getTenvaitro());
-        }
-        return scopeJoiner.toString();
+        StringJoiner stringJoiner = new StringJoiner(" ");
+        if (!(taikhoan.getVaitro().isEmpty()))
+            stringJoiner.add(taikhoan.getVaitro());
+        return stringJoiner.toString();
     }
 }
 

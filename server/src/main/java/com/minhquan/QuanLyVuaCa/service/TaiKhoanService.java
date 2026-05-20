@@ -5,12 +5,10 @@ import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
-import com.minhquan.QuanLyVuaCa.entity.Vaitro;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.TaikhoanMapper;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
-import com.minhquan.QuanLyVuaCa.repository.VaitroRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -31,46 +29,20 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
 public class TaiKhoanService {
-
     TaiKhoanRepository taiKhoanRepository;
-    VaitroRepository vaitroRepository;
-    TaikhoanMapper mapper;
+    TaikhoanMapper taikhoanMapper;
+    PasswordEncoder passwordEncoder;
 
     public TaikhoanResponse taoTaiKhoan(TaiKhoanCreationRequest request){
         if(taiKhoanRepository.existsByEmail(request.getEmail()))
             throw new AppExceptions(ErrorCode.USER_EXISTED);
 
-        Taikhoan taikhoan = mapper.toTaikhoan(request);
+        Taikhoan taikhoan = taikhoanMapper.toTaikhoan(request);
+        taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
 
-        int roleId = 6;
-
-        if (request.getIdvaitro() != null && !request.getIdvaitro().isEmpty()) {
-            try {
-                roleId = Integer.parseInt(request.getIdvaitro());
-            } catch (NumberFormatException e) {
-                throw new RuntimeException("ID Vai trò không hợp lệ");
-            }
-        }
-
-        Vaitro vaitro = vaitroRepository.findById(roleId)
-                .orElseThrow(() -> new AppExceptions(ErrorCode.IDVAITRO_EMPTY));
-        taikhoan.setIdvaitro(vaitro);
-
-        if(request.getTrangthaitk() != null) {
-            try {
-                taikhoan.setTrangthaitk(TrangThaiTaiKhoan.valueOf(request.getTrangthaitk()));
-            } catch (IllegalArgumentException e) {
-                taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
-            }
-        } else {
-            taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
-        }
-
-
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
         taiKhoanRepository.save(taikhoan);
-        return mapper.toTaikhoanResponse(taikhoan);
+        return taikhoanMapper.toTaikhoanResponse(taikhoan);
     }
 
     @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang')")
@@ -78,20 +50,20 @@ public class TaiKhoanService {
         List<Taikhoan> taikhoans = taiKhoanRepository.findAll();
         List<TaikhoanResponse> responses = new ArrayList<>();
         for (Taikhoan tk : taikhoans) {
-            responses.add(mapper.toTaikhoanResponse(tk));
+            responses.add(taikhoanMapper.toTaikhoanResponse(tk));
         }
         return responses;
     }
 
     @PostAuthorize("returnObject.email ==  authentication.name")
     public TaikhoanResponse timTaiKhoan(String id) {
-        return mapper.toTaikhoanResponse(
+        return taikhoanMapper.toTaikhoanResponse(
                 taiKhoanRepository.findById(id).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED)));
     }
     @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang', 'khachle', 'khachsi')")
     public TaikhoanResponse updateTaiKhoan(String idTaiKhoan,TaiKhoanUpdateRequest request){
         Taikhoan taikhoan = taiKhoanRepository.findById(idTaiKhoan).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
-        mapper.updateTaikhoan(taikhoan,request);
+        taikhoanMapper.updateTaikhoan(taikhoan,request);
 
 
 
@@ -100,7 +72,7 @@ public class TaiKhoanService {
             taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
         }
 
-        return mapper.toTaikhoanResponse(taiKhoanRepository.save(taikhoan));
+        return taikhoanMapper.toTaikhoanResponse(taiKhoanRepository.save(taikhoan));
     }
     @PreAuthorize("hasRole('admin')")
     public void xoaTaiKhoan(String id){
@@ -114,6 +86,6 @@ public class TaiKhoanService {
         String email = context.getAuthentication().getName();
         Taikhoan tk = taiKhoanRepository.findByEmail(email).orElseThrow(
                 () -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
-        return mapper.toTaikhoanResponse(tk);
+        return taikhoanMapper.toTaikhoanResponse(tk);
     }
 }

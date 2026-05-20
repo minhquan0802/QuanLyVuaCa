@@ -102,10 +102,14 @@ function handleLocalLogout() {
 
 // Hàm sử dụng khi User chủ động bấm nút "Đăng xuất" trên giao diện
 export const handleUserLogout = async () => {
+    const accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
     try {
         // Báo cho Backend hủy token trong cơ sở dữ liệu
-        await api.post('/auth/log-out', { token: refreshToken });
+        await api.post('/auth/logout', { 
+            token: accessToken,
+            refresh_token: refreshToken 
+        });
     } catch (e) {
         console.log("Xóa token phía server thất bại hoặc đã hết hạn trước đó");
     } finally {
