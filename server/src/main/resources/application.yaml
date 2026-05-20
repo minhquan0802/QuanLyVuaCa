@@ -1,4 +1,3 @@
-
 server:
   port: 8080
   servlet:
@@ -6,9 +5,9 @@ server:
 
 spring:
   datasource:
-    url: "jdbc:mysql://localhost:3306/quanlyvuaca"
-    username: root
-    password: 123456
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -17,16 +16,23 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     show-sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
 jwt:
-  signerKey: "61b8e4c9638f759c9112471bdfff29f02310f0e6e1053fa9c04d924d3d9869fc"
-  valid-duration: 3600  #Second - 1 hour
-  refreshable-duration: 360000 #Second - 1000 hours
+  signerKey: ${SIGNER_KEY}
+  valid-duration: 30
+  refreshable-duration: 180
+  absolute-duration: 10080
 
 vnpay:
-  tmn-code: RX5WU6CZ
-  hash-secret: FWZI93E3QQMO1O4Z2BRFYWLSSSEWCUIM
-  base-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-  return-url: http://localhost:8080/QuanLyVuaCa/payment/vnpay-callback
+  tmn-code: ${TMN_CODE}
+  hash-secret: ${HASH_SECRET}
+  base-url: ${BASE_URL}
+  return-url: ${RETURN_URL}
   version: 2.1.0
   command: pay
   curr-code: VND
@@ -37,6 +43,9 @@ timezone:
 
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
+    path: ${SWAGGER_UI}
   api-docs:
-    path: /api-docs
+    path: ${API_DOCS}
+
+frontend:
+  url: ${FRONTEND_URL}

@@ -1,6 +1,6 @@
 package com.minhquan.QuanLyVuaCa.entity;
 
-import com.minhquan.QuanLyVuaCa.Enum.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;

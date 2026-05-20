@@ -1,6 +1,6 @@
 package com.minhquan.QuanLyVuaCa.entity;
 
-import com.minhquan.QuanLyVuaCa.Enum.TrangThaiTaiKhoan;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

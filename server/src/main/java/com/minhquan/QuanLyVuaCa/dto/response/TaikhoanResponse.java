@@ -1,6 +1,6 @@
 package com.minhquan.QuanLyVuaCa.dto.response;
 
-import com.minhquan.QuanLyVuaCa.Enum.TrangThaiTaiKhoan;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;

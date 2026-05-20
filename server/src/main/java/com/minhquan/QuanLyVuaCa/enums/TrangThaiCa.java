@@ -1,4 +1,4 @@
-package com.minhquan.QuanLyVuaCa.Enum;
+package com.minhquan.QuanLyVuaCa.enums;
 
 public enum TrangThaiCa {
     CON_HANG,
