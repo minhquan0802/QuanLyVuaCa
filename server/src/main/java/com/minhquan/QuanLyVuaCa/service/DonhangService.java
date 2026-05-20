@@ -104,16 +104,9 @@ public class DonhangService {
                         .orElseThrow(() -> new RuntimeException("Sản phẩm chưa có bảng giá áp dụng (ID Kho: " + finalChitietcaban.getId() + ")"));
 
                 // B3. Xác định giá áp dụng (Sỉ hay Lẻ)
-                boolean isKhachSi = false;
-                if (savedDonhang.getIdthongtinkhachhang() != null) {
-                    var khach = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang()).orElse(null);
-                    // idvaitro=5 là Khách sỉ
-                    if (khach != null && khach.getIdvaitro() != null && khach.getIdvaitro().getId() == 5) {
-                        isKhachSi = true;
-                    }
-                }
 
-                BigDecimal donGiaApDung = isKhachSi ? banggia.getGiabansi() : banggia.getGiabanle();
+
+                BigDecimal donGiaApDung = null;
 
                 // B4. Tính toán
                 BigDecimal soLuongDat = new BigDecimal(ct.getSoluong());
