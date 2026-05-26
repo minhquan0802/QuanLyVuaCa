@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: "jdbc:mysql://localhost:3306/quanlyvuaca"
+    url: "jdbc:mysql://localhost:3306/QuanLyVuaCa"
     username: root
-    password: 123456
+    password: root
   data:
     redis:
       host: redis-12694.crce285.us-east-1-4.ec2.cloud.redislabs.com
