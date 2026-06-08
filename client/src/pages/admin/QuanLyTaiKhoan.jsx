@@ -4,12 +4,10 @@ import api from "../../config/axios";
 
 export default function QuanLyTaiKhoan() {
     const ROLES = [
-        { value: "admin", label: "Chủ vựa cá" },
-        { value: "nhanvienkho", label: "Nhân viên kho" },
-        { value: "nhanvienbanhang", label: "Nhân viên bán hàng" },
-        { value: "nhanvien", label: "Nhân viên" },
-        { value: "khachsi", label: "Khách hàng sỉ" },
-        { value: "khachle", label: "Khách hàng lẻ" },
+        { value: "ADMIN", label: "Quản trị viên" },
+        { value: "STAFF", label: "Nhân viên" },
+        { value: "WHOLESALE_CUSTOMER", label: "Khách hàng sỉ" },
+        { value: "INDIVIDUAL_CUSTOMER", label: "Khách hàng lẻ" },
     ];
 
     const [accounts, setAccounts] = useState([]);
@@ -49,7 +47,7 @@ export default function QuanLyTaiKhoan() {
         matkhau: "",
         sodienthoai: "",
         diachi: "",
-        vaitro: "khachle",
+        vaitro: "INDIVIDUAL_CUSTOMER",
         trangthaitk: "HOAT_DONG"
     });
 
@@ -64,7 +62,7 @@ export default function QuanLyTaiKhoan() {
             matkhau: "",
             sodienthoai: "",
             diachi: "",
-            vaitro: "khachle",
+            vaitro: "INDIVIDUAL_CUSTOMER",
             trangthaitk: "HOAT_DONG"
         });
         setIsModalOpen(true);
@@ -75,7 +73,7 @@ export default function QuanLyTaiKhoan() {
         setShowPassword(false);
         setCurrentUser({
             ...user,
-            vaitro: user.vaitro || "khachle",
+            vaitro: user.vaitro || "INDIVIDUAL_CUSTOMER",
             matkhau: ""
         });
         setIsModalOpen(true);
@@ -138,9 +136,11 @@ export default function QuanLyTaiKhoan() {
     };
 
     const getRoleColor = (vaitro) => {
-        if (vaitro === "admin") return "bg-red-100 text-red-700";
-        if (vaitro === "khachle" || vaitro === "khachsi") return "bg-purple-100 text-purple-700";
-        return "bg-blue-100 text-blue-700";
+        if (vaitro === "ADMIN") return "bg-red-100 text-red-700";
+        if (vaitro === "STAFF") return "bg-blue-100 text-blue-700";
+        if (vaitro === "WHOLESALE_CUSTOMER") return "bg-orange-100 text-orange-700";
+        if (vaitro === "INDIVIDUAL_CUSTOMER") return "bg-purple-100 text-purple-700";
+        return "bg-slate-100 text-slate-600";
     };
 
     return (

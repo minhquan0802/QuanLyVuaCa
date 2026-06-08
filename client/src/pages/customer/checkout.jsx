@@ -3,9 +3,12 @@ import Footer from "../../components/footer"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Checkout() {
     const navigate = useNavigate();
+    const { role: userRole } = useAuth();
+    const isWholesale = userRole === "khachsi";
 
     // --- STATE ---
     const [cartItems, setCartItems] = useState([]);
@@ -33,7 +36,7 @@ export default function Checkout() {
 
         const fetchUserInfo = async () => {
             try {
-                const { data } = await api.get("/tai-khoan/myinfo");
+                const { data } = await api.get("/tai-khoan/my-info");
                 const user = data.result;
                 setUserId(user.id || user.idtaikhoan);
                 setShipInfo(prev => ({
@@ -57,7 +60,7 @@ export default function Checkout() {
 
     const subtotal = cartItems.reduce((sum, item) => sum + calculateItemTotal(item), 0);
     
-    // [SỬA] Phí vận chuyển: Chỉ tính 30k nếu chọn COD
+    // Phí vận chuyển: chỉ COD mới có 30k, VNPAY và thanh toán sau thì miễn phí
     const shippingFee = paymentMethod === 'cod' ? 30000 : 0;
     
     const total = subtotal + shippingFee;
@@ -77,9 +80,10 @@ export default function Checkout() {
         setLoading(true);
         try {
             // [BƯỚC 1] Tạo đơn hàng
+            const paymentTag = paymentMethod === 'later' ? 'THANH_TOAN_SAU' : paymentMethod.toUpperCase();
             const payload = {
                 idthongtinkhachhang: userId,
-                ghichu: `[${paymentMethod.toUpperCase()}] - ${shipInfo.ghichu}`, 
+                ghichu: `[${paymentTag}] - ${shipInfo.ghichu}`,
                 chiTietDonHang: cartItems.map(item => ({
                     idchitietcaban: item.sizeId, 
                     soluong: item.quantity,
@@ -96,12 +100,14 @@ export default function Checkout() {
             const newOrderId = orderData.result.iddonhang; 
 
             // [BƯỚC 2] Xử lý thanh toán
-            if (paymentMethod === 'cod') {
-                alert("Đặt hàng thành công!");
+            if (paymentMethod === 'cod' || paymentMethod === 'later') {
+                alert(paymentMethod === 'later'
+                    ? "Đặt hàng thành công! Chúng tôi sẽ liên hệ xác nhận và thỏa thuận thanh toán với bạn."
+                    : "Đặt hàng thành công!");
                 localStorage.removeItem("cart");
-                window.dispatchEvent(new Event("storage")); 
-                navigate("/my-orders"); 
-            } 
+                window.dispatchEvent(new Event("storage"));
+                navigate("/my-orders");
+            }
             else if (paymentMethod === 'vnpay') {
                 // Gửi số tiền TOTAL (đã bao gồm phí ship nếu có) sang VNPAY
                 const paymentPayload = {
@@ -193,13 +199,26 @@ export default function Checkout() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2">
                                                 <span className="block font-bold text-blue-900">Thanh toán qua VNPAY</span>
-                                                {/* <span className="px-2 py-0.5 rounded bg-red-100 text-red-600 text-[10px] font-bold">MIỄN PHÍ SHIP</span> */}
                                                 <span className="px-2 py-0.5 rounded bg-red-100 text-red-600 text-[10px] font-bold">Thanh toán tại shop</span>
                                             </div>
                                             <span className="text-sm text-slate-500">Quét mã QR, Ví VNPAY, Thẻ ATM/Nội địa</span>
                                         </div>
                                         <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png" alt="VNPAY" className="h-8 object-contain" />
                                     </label>
+
+                                    {isWholesale && (
+                                        <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'later' ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                            <input type="radio" name="payment" value="later" checked={paymentMethod === 'later'} onChange={() => setPaymentMethod('later')} className="size-5 text-orange-500 focus:ring-orange-500" />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="block font-bold text-orange-700">Thanh toán sau</span>
+                                                    <span className="px-2 py-0.5 rounded bg-orange-100 text-orange-600 text-[10px] font-bold">KHÔNG PHÍ SHIP</span>
+                                                </div>
+                                                <span className="text-sm text-slate-500">Thanh toán sau khi nhận hàng hoặc theo kỳ hạn thỏa thuận</span>
+                                            </div>
+                                            <span className="material-symbols-outlined text-3xl text-orange-400">handshake</span>
+                                        </label>
+                                    )}
                                 </div>
                             </section>
                         </div>
@@ -261,7 +280,9 @@ export default function Checkout() {
                                             Đang xử lý...
                                         </>
                                     ) : (
-                                        paymentMethod === 'vnpay' ? 'Thanh Toán VNPAY' : 'Xác Nhận Đặt Hàng'
+                                        paymentMethod === 'vnpay' ? 'Thanh Toán VNPAY'
+                        : paymentMethod === 'later' ? 'Xác Nhận Đặt Hàng (Thanh Toán Sau)'
+                        : 'Xác Nhận Đặt Hàng'
                                     )}
                                 </button>
                             </div>

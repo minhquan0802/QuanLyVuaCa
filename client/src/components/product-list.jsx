@@ -53,26 +53,23 @@ export default function ProductList({ searchTerm }) {
     };
 
     const getDisplayPrice = (fishId) => {
-        if (!userRole) return null;
+        if (userRole !== "khachsi" && userRole !== "khachle") return null;
         const fishIdNum = Number(fishId);
-        
-        const pricesForFish = priceList.filter(p => {
-             const pIdLoaiCa = p.idLoaiCa || (p.chitietcaban && p.chitietcaban.idloaica) || (p.idchitietcaban && p.idchitietcaban.idloaica);
-             if (pIdLoaiCa && typeof pIdLoaiCa === 'object') return Number(pIdLoaiCa.id) === fishIdNum;
-             return Number(pIdLoaiCa) === fishIdNum;
-        });
 
+        const pricesForFish = priceList.filter(p => Number(p.idLoaiCa) === fishIdNum);
         if (pricesForFish.length === 0) return null;
 
-        if (userRole === "khachsi") { 
-            const minPrice = Math.min(...pricesForFish.map(p => p.giaBanSi || p.giabansi)); 
-            return { price: minPrice, label: "Giá sỉ từ" };
-        } 
-        else if (userRole === "khachle") { 
-            const minPrice = Math.min(...pricesForFish.map(p => p.giaBanLe || p.giabanle));
-            return { price: minPrice, label: "Giá lẻ từ" };
+        if (userRole === "khachsi") {
+            const validPrices = pricesForFish.map(p => Number(p.giaBanSi)).filter(v => v > 0);
+            if (validPrices.length === 0) return null;
+            return { price: Math.min(...validPrices), label: "Giá sỉ từ" };
         }
-        return null; 
+        if (userRole === "khachle") {
+            const validPrices = pricesForFish.map(p => Number(p.giaBanLe)).filter(v => v > 0);
+            if (validPrices.length === 0) return null;
+            return { price: Math.min(...validPrices), label: "Giá lẻ từ" };
+        }
+        return null;
     };
 
     const getTotalStock = (fishId) => {

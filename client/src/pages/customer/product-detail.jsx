@@ -104,7 +104,7 @@ export default function ProductDetail() {
     // [CẬP NHẬT] Tính trọng lượng trên 1 đơn vị (Tùy thuộc vào Role và ĐVT đã chọn)
     const getFinalWeightPerUnit = () => {
         // 1. Khách lẻ hoặc chưa chọn ĐVT: Mặc định theo logic cũ (theo Con/Quy đổi)
-        if (userRole !== 'khachsi' || !selectedUnit) {
+        if (userRole !== "khachsi" || !selectedUnit) {
             return getBaseWeightFromConversion();
         }
 
@@ -119,9 +119,9 @@ export default function ProductDetail() {
     };
 
     const currentPricePerKg = (() => {
-        if (!userRole || !selectedOption) return 0;
-        if (userRole === "khachsi") return selectedOption.giaBanSi || selectedOption.giabansi;
-        if (userRole === "khachle") return selectedOption.giaBanLe || selectedOption.giabanle;
+        if (!selectedOption) return 0;
+        if (userRole === "khachsi") return Number(selectedOption.giaBanSi) || 0;
+        if (userRole === "khachle") return Number(selectedOption.giaBanLe) || 0;
         return 0;
     })();
 
@@ -334,7 +334,7 @@ export default function ProductDetail() {
                                 <div className="flex items-center gap-4">
                                     
                                     {/* --- [MỚI] DROPDOWN CHỌN ĐVT CHO KHÁCH SỈ --- */}
-                                    {userRole === 'khachsi' && (
+                                    {userRole === "khachsi" && (
                                         <div className="flex items-center">
                                             <select
                                                 className="h-9 px-2 rounded-lg border border-slate-200 text-sm bg-white font-bold text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"

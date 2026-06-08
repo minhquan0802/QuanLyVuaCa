@@ -69,6 +69,18 @@ export default function ThongTinDonHang() {
         }
     };
 
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm("Bạn có chắc muốn hủy đơn hàng này không?")) return;
+        try {
+            await api.put(`/Donhangs/${orderId}/huy`);
+            setOrders(prev => prev.map(o =>
+                o.iddonhang === orderId ? { ...o, trangthaidonhang: 'HUY' } : o
+            ));
+        } catch (error) {
+            alert("Không thể hủy đơn: " + (error.response?.data?.message || error.message));
+        }
+    };
+
     const filteredOrders = useMemo(() => {
         if (activeTab === 'ALL') return orders;
 
@@ -213,9 +225,8 @@ export default function ThongTinDonHang() {
                                                 <>
                                                     {/* Ảnh sản phẩm */}
                                                     <div className="size-20 bg-slate-100 rounded border border-slate-200 overflow-hidden flex-shrink-0">
-                                                        <img 
-                                                            // Cần đảm bảo backend trả về hinhanhurl trong object chi tiết, nếu không sẽ dùng placeholder
-                                                            src={getImageUrl(firstItem.idchitietcaban?.idloaica?.hinhanhurl || firstItem.hinhanhurl)} 
+                                                        <img
+                                                            src={getImageUrl(firstItem.hinhanhurl)}
                                                             alt="Sản phẩm"
                                                             className="w-full h-full object-cover"
                                                             onError={(e) => {e.target.onerror = null; e.target.src = 'https://placehold.co/100?text=Fish'}}
@@ -274,10 +285,18 @@ export default function ThongTinDonHang() {
                                             </div>
 
                                             <div className="flex justify-end gap-3">
+                                                {order.trangthaidonhang === 'CHO_XAC_NHAN' && (
+                                                    <button
+                                                        onClick={() => handleCancelOrder(order.iddonhang)}
+                                                        className="px-6 py-2 rounded border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+                                                    >
+                                                        Hủy đơn
+                                                    </button>
+                                                )}
                                                 <button className="px-6 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
                                                     Mua lại
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => handleViewDetail(order)}
                                                     className="px-6 py-2 rounded border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
                                                 >

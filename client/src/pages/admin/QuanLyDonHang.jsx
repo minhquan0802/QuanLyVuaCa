@@ -98,10 +98,9 @@ export default function QuanLyDonHang() {
 
             const custData = resCust.data;
             const allUsers = custData.result || [];
-            setCustomers(allUsers.filter(u => {
-                const rId = u.idvaitro?.id || u.idvaitro;
-                return rId === 5 || rId === 6;
-            }));
+            setCustomers(allUsers.filter(u =>
+                u.vaitro === "WHOLESALE_CUSTOMER" || u.vaitro === "INDIVIDUAL_CUSTOMER"
+            ));
 
             const fishData = resFish.data;
             setFishes(fishData.result || []);
@@ -241,8 +240,7 @@ export default function QuanLyDonHang() {
         const customer = customers.find(c => c.idtaikhoan == customerId);
         if (!customer) return 0;
 
-        const roleId = Number(customer.idvaitro?.id || customer.idvaitro);
-        const isWholesale = roleId === 5;
+        const isWholesale = customer.vaitro === "WHOLESALE_CUSTOMER";
 
         const activePrice = priceList.find(p =>
             p.idChitietcaban == repoId && p.trangThai === "Đang áp dụng"
@@ -541,8 +539,7 @@ export default function QuanLyDonHang() {
                             <select className="w-full p-2.5 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none" value={newOrder.idthongtinkhachhang} onChange={(e) => handleCustomerChange(e.target.value)}>
                                 <option value="">-- Chọn khách hàng --</option>
                                 {customers.map(c => {
-                                    const roleId = c.idvaitro?.id || c.idvaitro;
-                                    const roleName = Number(roleId) === 5 ? "Khách sỉ" : "Khách lẻ";
+                                    const roleName = c.vaitro === "WHOLESALE_CUSTOMER" ? "Khách sỉ" : "Khách lẻ";
                                     return <option key={c.idtaikhoan} value={c.idtaikhoan}>{c.ho} {c.ten} ({roleName})</option>;
                                 })}
                             </select>

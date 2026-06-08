@@ -46,8 +46,15 @@ export default function Login() {
             navigate(userInfo?.vaitro === "ADMIN" ? '/admin' : '/home');
 
         } catch (err) {
-            console.error(err);
-            setError(err.message || "Email hoặc mật khẩu không chính xác.");
+            const status = err.response?.status;
+            const code = err.response?.data?.code;
+            if (status === 403 || code === 1028) {
+                setError("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+            } else if (status === 401) {
+                setError("Email hoặc mật khẩu không chính xác.");
+            } else {
+                setError("Có lỗi xảy ra, vui lòng thử lại.");
+            }
         } finally {
             setLoading(false);
         }

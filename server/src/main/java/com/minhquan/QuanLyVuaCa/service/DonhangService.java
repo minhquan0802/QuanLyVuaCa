@@ -68,6 +68,15 @@ public class DonhangService {
         // Kiểm tra xem đơn này có phải COD không (dựa vào ghi chú từ Frontend gửi lên)
         boolean isCOD = request.getGhichu() != null && request.getGhichu().toUpperCase().contains("[COD]");
 
+        // Xác định loại khách hàng để áp giá đúng
+        boolean isWholesale = false;
+        if (request.getIdthongtinkhachhang() != null) {
+            var khachOpt = taikhoanRepository.findById(request.getIdthongtinkhachhang());
+            if (khachOpt.isPresent()) {
+                isWholesale = "WHOLESALE_CUSTOMER".equals(khachOpt.get().getVaitro());
+            }
+        }
+
         // 2. Xử lý chi tiết đơn hàng
         if (request.getChiTietDonHang() != null && !request.getChiTietDonHang().isEmpty()) {
 
@@ -104,9 +113,9 @@ public class DonhangService {
                         .orElseThrow(() -> new RuntimeException("Sản phẩm chưa có bảng giá áp dụng (ID Kho: " + finalChitietcaban.getId() + ")"));
 
                 // B3. Xác định giá áp dụng (Sỉ hay Lẻ)
-
-
-                BigDecimal donGiaApDung = null;
+                BigDecimal donGiaApDung = isWholesale ? banggia.getGiabansi() : banggia.getGiabanle();
+                if (donGiaApDung == null) donGiaApDung = banggia.getGiabanle();
+                if (donGiaApDung == null) donGiaApDung = BigDecimal.ZERO;
 
                 // B4. Tính toán
                 BigDecimal soLuongDat = new BigDecimal(ct.getSoluong());
@@ -182,7 +191,7 @@ public class DonhangService {
 
 
     // --- 2. LẤY TẤT CẢ ĐƠN HÀNG ---
-    @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public List<DonhangResponse> getAllDonhangs() {
 
         // ---- CACH 1 ----
@@ -234,7 +243,7 @@ public class DonhangService {
 
     // --- 3. LẤY CHI TIẾT ĐƠN HÀNG ---
     // Cho phép xem chi tiết (có thể cần logic check chủ sở hữu đơn hàng nếu là khách)
-    @PreAuthorize("hasAnyRole('admin', 'nhanvienkho', 'nhanvien', 'nhanvienbanhang', 'khachle', 'khachsi')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'INDIVIDUAL_CUSTOMER', 'WHOLESALE_CUSTOMER')")
     public List<ChitietDonhangResponse> getChiTietDonHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
@@ -260,9 +269,32 @@ public class DonhangService {
 //                .collect(Collectors.toList());
     }
 
-    // --- 4. CẬP NHẬT TRẠNG THÁI ---
-    // Chỉ Admin và nhân viên bán hàng được duyệt đơn/đổi trạng thái
-    @PreAuthorize("hasAnyRole('admin', 'nhanvienbanhang')")
+    // --- 4. HỦY ĐƠN HÀNG (khách tự hủy khi còn CHO_XAC_NHAN) ---
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public DonhangResponse huyDonHang(String idDonhang) {
+        Donhang donhang = donhangRepository.findById(idDonhang)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+
+        if (donhang.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
+            throw new RuntimeException("Chỉ có thể hủy đơn hàng đang chờ xác nhận");
+        }
+
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        if (!String.valueOf(currentUser.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
+            throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
+        }
+
+        donhang.setTrangthaidonhang(TrangThaiDonHang.HUY);
+        Donhang saved = donhangRepository.save(donhang);
+        return donhangMapper.toDonhangResponse(saved, currentUser.getHo() + " " + currentUser.getTen(), currentUser.getSodienthoai());
+    }
+
+    // --- 5. CẬP NHẬT TRẠNG THÁI (admin/staff) ---
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public DonhangResponse updateStatus(String id, TrangThaiDonHang newStatus) {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + id));
