@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import api from '../../config/axios';
 
 const AdminSidebar = () => {
   const menuItems = [
@@ -9,6 +10,20 @@ const AdminSidebar = () => {
     { path: '/admin/prices', label: 'Quản lý bảng giá', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { path: '/admin/accounts', label: 'Quản lý tài khoản', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
   ];
+
+  function handleLocalLogout() {
+    window.location.href = '/login'; 
+  }
+
+  const handleUserLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      console.log("Lỗi đăng xuất phía server:", e);
+    } finally {
+      handleLocalLogout();
+    }
+  };
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col fixed top-0 left-0 bottom-0 shadow-xl">
@@ -21,8 +36,7 @@ const AdminSidebar = () => {
             key={index}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${
-                isActive ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+              `flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               }`
             }
           >
@@ -38,7 +52,7 @@ const AdminSidebar = () => {
           <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
           </svg>
-          <span className="font-medium">Đăng xuất</span>
+          <span className="font-medium" onClick={handleUserLogout}>Đăng xuất</span>
         </button>
       </div>
     </aside>
