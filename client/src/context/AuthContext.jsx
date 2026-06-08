@@ -18,32 +18,54 @@ export function AuthProvider({ children }) {
 
     // Khi app khởi động: nếu có token thì fetch lại user info
     useEffect(() => {
-        const token = Cookies.get("token");
-        if (!token) { setLoading(false); return; }
+        // const token = Cookies.get("token");
+        // if (!token) { setLoading(false); return; }
 
         api.get("/tai-khoan/my-info")
             .then(({ data }) => setUser(data.result))
             .catch((err) => {
                 // Chỉ xóa token khi server xác nhận token không hợp lệ (401/403)
                 // Không xóa khi mất mạng hoặc lỗi server tạm thời
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    Cookies.remove("token", { path: "/" });
-                }
+                // if (err.response?.status === 401 || err.response?.status === 403) {
+                //     Cookies.remove("token", { path: "/" });
+                // }
+                setUser(null);
             })
             .finally(() => setLoading(false));
     }, []);
 
     const role = ROLE_MAP[user?.vaitro] ?? null;
 
+    // const logout = async () => {
+    //     const token = Cookies.get("token");
+    //     try {
+    //         if (token) await api.post("/auth/logout", { token });
+    //     } catch { /* bỏ qua */ }
+    //     Cookies.remove("token", { path: "/" });
+    //     setUser(null);
+    //     window.location.href = "/";
+    // };
+
     const logout = async () => {
-        const token = Cookies.get("token");
-        try {
-            if (token) await api.post("/auth/logout", { token });
-        } catch { /* bỏ qua */ }
-        Cookies.remove("token", { path: "/" });
-        setUser(null);
-        window.location.href = "/";
-    };
+    try {
+        // console.log("1. Bắt đầu gọi API đăng xuất...");
+        
+        // Gọi API không cần biến token, trình duyệt tự gửi HttpOnly cookie đi
+        const res = await api.post("/auth/logout"); 
+        
+        // console.log("2. Server xóa Cookie thành công!", res);
+    } catch (error) {
+        console.error("2. Lỗi khi gọi API:", error);
+    }
+
+    // Xóa các state rác ở Frontend
+    Cookies.remove("authenticated", { path: "/" });
+    Cookies.remove("role", { path: "/" });
+    setUser(null);
+    
+    window.location.href = "/"; 
+};
+    
 
     return (
         <AuthContext.Provider value={{ user, setUser, role, loading, logout }}>

@@ -85,7 +85,13 @@ export const dangXuat = async () => {
     Cookies.remove('token', { path: '/' });
     Cookies.remove('authenticated', { path: '/' });
     Cookies.remove('role', { path: '/' });
-    window.location.href = '/';
+    
+    // window.location.href = '/';
+    // Chỉ ép tải lại trang nếu user ĐANG Ở TRANG KHÁC (như /home, /admin)
+    // Nếu đang ở sẵn trang chủ '/' (Login) thì không làm gì cả để tránh lặp vô tận
+    if (window.location.pathname !== '/') {
+        window.location.href = '/';
+    }
 };
 
 export const COOKIE_OPTS_EXPORT = COOKIE_OPTS;
