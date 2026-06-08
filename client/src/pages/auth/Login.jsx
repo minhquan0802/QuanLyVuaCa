@@ -37,6 +37,7 @@ export default function Login() {
   };
 
   return (
+    <div className="flex flex-grow items-center justify-center p-4">
     <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md border-t-4 border-blue-600">
       <h2 className="text-2xl font-bold text-center text-blue-800 mb-6">Đăng Nhập</h2>
       {error && <div className="mb-4 text-sm text-red-600 text-center">{error}</div>}
@@ -87,6 +88,7 @@ export default function Login() {
           </Link>
         </div>
       </form>
+    </div>
     </div>
   );
 }

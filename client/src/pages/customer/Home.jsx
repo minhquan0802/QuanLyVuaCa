@@ -12,7 +12,7 @@ const Home = () => {
   return (
     <div className="max-w-7xl mx-auto py-8 w-full">
       <div className="mb-12 text-center">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">Vựa Cá Khang</h1>
+        <h1 className="text-4xl font-bold text-gray-800 mb-4">Vựa Cá Điêu Hồng</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">Chuyên cung cấp các loại cá và hải sản tươi sống, chất lượng cao với giá sỉ và lẻ tốt nhất thị trường.</p>
       </div>
 

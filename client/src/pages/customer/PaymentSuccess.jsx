@@ -11,7 +11,7 @@ const PaymentSuccess = () => {
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Đặt hàng thành công!</h1>
-        <p className="text-gray-600 mb-6">Cảm ơn bạn đã mua sắm tại Vựa Cá Khang. Mã đơn hàng của bạn là <strong>#DH123456</strong>.</p>
+        <p className="text-gray-600 mb-6">Cảm ơn bạn đã mua sắm tại Vựa Cá Điêu Hồng. Mã đơn hàng của bạn là <strong>#DH123456</strong>.</p>
         
         <div className="flex flex-col gap-3">
           <Link to="/orders" className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">

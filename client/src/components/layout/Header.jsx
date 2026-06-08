@@ -1,23 +1,49 @@
-import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../../config/axios';
 
 export default function Header() {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      console.log("Lỗi đăng xuất phía server:", e);
+    } finally {
+      window.location.href = '/login';
+    }
+  };
+
   return (
     <header className="bg-white text-gray-800 p-4 shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto max-w-7xl flex flex-wrap justify-between items-center gap-4">
         {/* Logo */}
         <Link to="/home" className="flex items-center gap-2 text-blue-600">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+            {/* Thân cá */}
+            <path d="M22 12c0 0-4-6-11-5C7 7.5 4 9.5 4 12s3 4.5 7 5c7 1 11-5 11-5z" />
+            {/* Đuôi cá */}
+            <path d="M4 12L1 8v8l3-4z" />
+            {/* Mắt cá */}
+            <circle cx="16" cy="11" r="1" fill="white" />
           </svg>
-          <span className="text-2xl font-bold tracking-tight">Vựa Cá Khang</span>
+          <span className="text-2xl font-bold tracking-tight">Vựa cá Điêu Hồng</span>
         </Link>
 
         {/* Actions: Search, Cart, Profile */}
         <div className="flex items-center gap-4 lg:gap-6">
-          {/* Search form (optional/placeholder) */}
-
-
           {/* Cart */}
           <Link to="/cart" className="relative text-gray-600 hover:text-blue-600 transition p-1">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,13 +55,42 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Profile Dropdown / Link */}
-          <Link to="/profile" className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition p-1 hover:bg-gray-50 rounded-lg">
-            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex justify-center items-center font-bold border border-blue-200">
-              N
-            </div>
-            <span className="hidden sm:block font-medium text-sm">Tài khoản</span>
-          </Link>
+          {/* Account Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen((prev) => !prev)}
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition p-1 hover:bg-gray-50 rounded-lg"
+            >
+              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex justify-center items-center font-bold border border-blue-200">
+                N
+              </div>
+              <span className="hidden sm:block font-medium text-sm">Tài khoản</span>
+            </button>
+
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50">
+                <Link
+                  to="/profile"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Hồ sơ
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-red-500"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
