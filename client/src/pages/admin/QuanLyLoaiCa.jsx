@@ -421,7 +421,7 @@ export default function QuanLyLoaiCa() {
                                 {currentCategory.hinhanhFile && (
                                     <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
                                         <span className="material-symbols-outlined text-sm">check_circle</span>
-                                        {currentCategory.hinhanhFile.name} ({(currentCategory.hinhanhFile.size / 1024).toFixed(0)} KB)
+                                        {currentCategory.hinhanhFile.name} ({(currentCategory.hinhanhFile.size / (1024 * 1024)).toFixed(2)} MB)
                                     </p>
                                 )}
                             </div>
