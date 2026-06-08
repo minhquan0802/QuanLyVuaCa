@@ -3,9 +3,12 @@ import { BrowserRouter } from 'react-router-dom';
 
 import './index.css';
 import AppRoutes from './routes/app-routes';
+import { AuthProvider } from './context/AuthContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <AppRoutes />
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   </BrowserRouter>
 );

@@ -1,37 +1,46 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../config/axios'; // Đường dẫn tới cấu hình axios của bạn
+import { createContext, useContext, useState, useEffect } from "react";
+import Cookies from "js-cookie";
+import api from "../config/axios";
+
+// idvaitro → tên role dùng trong app
+const ROLE_MAP = { 1: "admin", 5: "khachsi", 6: "khachle" };
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }) {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  // Hàm tự động kiểm tra xem user đã đăng nhập chưa bằng cookie (thay thế AutoCheckLogin cũ nếu cần)
-  const checkLoginStatus = async () => {
-    try {
-      const response = await api.get('/tai-khoan/my-info');
-      if (response.data.code === 0) {
-        setUser(response.data.result); // Lưu thông tin user (gồm vaitro) vào state
-      } else {
+    // Khi app khởi động: nếu có token thì fetch lại user info
+    useEffect(() => {
+        const token = Cookies.get("token");
+        if (!token) { setLoading(false); return; }
+
+        api.get("/TaiKhoans/myinfo")
+            .then(({ data }) => setUser(data.result))
+            .catch(() => Cookies.remove("token", { path: "/" }))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const role = ROLE_MAP[user?.idvaitro] ?? null;
+
+    const logout = async () => {
+        const token = Cookies.get("token");
+        try {
+            if (token) await api.post("/auth/logout", { token });
+        } catch { /* bỏ qua */ }
+        Cookies.remove("token", { path: "/" });
         setUser(null);
-      }
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+        window.location.href = "/";
+    };
 
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
+    return (
+        <AuthContext.Provider value={{ user, setUser, role, loading, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+}
 
-  return (
-    <AuthContext.Provider value={{ user, setUser, loading, checkLoginStatus }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+    return useContext(AuthContext);
+}

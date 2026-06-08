@@ -2,76 +2,53 @@ import Header from "../components/header"
 import Footer from "../components/footer"
 import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom";
+import api from "../config/axios";
+import { useAuth } from "../context/AuthContext";
 
 export default function ProductDetail() {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
-    
+    const { role: userRole } = useAuth();
+
     // --- STATE DỮ LIỆU ---
-    const [priceList, setPriceList] = useState([]); 
-    const [stockList, setStockList] = useState([]); 
-    const [selectedOption, setSelectedOption] = useState(null); 
-    const [conversionList, setConversionList] = useState([]); 
-    const [userRole, setUserRole] = useState(null); 
-    
+    const [priceList, setPriceList] = useState([]);
+    const [stockList, setStockList] = useState([]);
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [conversionList, setConversionList] = useState([]);
+
     // [MỚI] State cho Đơn vị tính (chỉ dùng cho khách sỉ)
     const [unitList, setUnitList] = useState([]);
     const [selectedUnit, setSelectedUnit] = useState(null);
     // -----------------
 
     const { product_id } = useParams();
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa";
 
     useEffect(() => {
-        let roleStored = localStorage.getItem("role");
-        if (roleStored) {
-            roleStored = roleStored.replace(/^"|"$/g, '');
-            setUserRole(roleStored);
-        }
-
         const fetchData = async () => {
             try {
                 setLoading(true);
                 // [CẬP NHẬT] Gọi thêm API /Donvitinhs
                 const [resProduct, resPrices, resConversions, resStocks, resUnits] = await Promise.all([
-                    fetch(`${APP_BASE_URL}/Loaicas/${product_id}`),
-                    fetch(`${APP_BASE_URL}/Banggias`),
-                    fetch(`${APP_BASE_URL}/Quydois`),
-                    fetch(`${APP_BASE_URL}/Chitietcabans`),
-                    fetch(`${APP_BASE_URL}/Donvitinhs`) // [MỚI]
+                    api.get(`/Loaicas/${product_id}`),
+                    api.get("/Banggias"),
+                    api.get("/Quydois"),
+                    api.get("/Chitietcabans"),
+                    api.get("/Donvitinhs")
                 ]);
 
-                if (!resProduct.ok) throw new Error("Lỗi kết nối server");
-
-                const dataProd = await resProduct.json();
+                const dataProd = resProduct.data;
                 const productObj = dataProd.result || dataProd;
                 setProduct(productObj);
 
-                if (resConversions.ok) {
-                    const dataConv = await resConversions.json();
-                    setConversionList(dataConv.result || dataConv.data || []);
-                }
-                
-                if (resStocks.ok) {
-                    const dataStock = await resStocks.json();
-                    setStockList(dataStock.result || []);
-                }
+                setConversionList(resConversions.data.result || resConversions.data.data || []);
+                setStockList(resStocks.data.result || []);
 
-                // [MỚI] Xử lý Đơn vị tính
-                if (resUnits.ok) {
-                    const dataUnits = await resUnits.json();
-                    const units = dataUnits.result || [];
-                    setUnitList(units);
-                    
-                    // Mặc định chọn đơn vị "Con" (hoặc đơn vị đầu tiên)
-                    const defaultUnit = units.find(u => u.hesokg === 0) || units[0];
-                    setSelectedUnit(defaultUnit);
-                }
+                const units = resUnits.data.result || [];
+                setUnitList(units);
+                setSelectedUnit(units.find(u => u.hesokg === 0) || units[0]);
 
-                if (resPrices.ok) {
-                    const dataPrice = await resPrices.json();
-                    const allPrices = dataPrice.result || [];
+                const allPrices = resPrices.data.result || [];
                     
                     const relevantPrices = allPrices.filter(p => {
                         const matchId = Number(p.idLoaiCa || (p.chitietcaban && p.chitietcaban.idloaica && p.chitietcaban.idloaica.id) || 0) === Number(product_id); 
@@ -84,7 +61,6 @@ export default function ProductDetail() {
                     if (relevantPrices.length > 0) {
                         setSelectedOption(relevantPrices[0]);
                     }
-                }
 
             } catch (error) {
                 console.error("Lỗi tải dữ liệu:", error);
@@ -110,7 +86,7 @@ export default function ProductDetail() {
         } else {
             relativePath = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
         }
-        return `${APP_BASE_URL}${relativePath}`;
+        return `${import.meta.env.VITE_BE_URL}${relativePath}`;
     };
 
     // Hàm lấy trọng lượng quy đổi từ "Con" (Logic cũ)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { fetchCoXacThuc } from "../../utils/fetchAPI";
+import api from "../../config/axios";
 
 export default function QuanLyBangGia() {
     const [priceList, setPriceList] = useState([]);
@@ -22,25 +22,19 @@ export default function QuanLyBangGia() {
         try {
             setLoading(true);
             const [resPrices, resProducts] = await Promise.all([
-                fetchCoXacThuc("/Banggias"),
-                fetchCoXacThuc("/Chitietcabans") // Lấy danh sách sản phẩm trong kho để dropdown
+                api.get("/Banggias"),
+                api.get("/Chitietcabans") // Lấy danh sách sản phẩm trong kho để dropdown
             ]);
 
-            if (resPrices.ok) {
-                const data = await resPrices.json();
-                // Sắp xếp: Cái nào "Đang áp dụng" lên đầu, sau đó đến mới nhất
-                const sortedData = (data.result || []).sort((a, b) => {
-                    if (a.trangThai === "Đang áp dụng") return -1;
-                    if (b.trangThai === "Đang áp dụng") return 1;
-                    return new Date(b.ngayBatDau) - new Date(a.ngayBatDau);
-                });
-                setPriceList(sortedData);
-            }
-            
-            if (resProducts.ok) {
-                const data = await resProducts.json();
-                setProducts(data.result || []);
-            }
+            // Sắp xếp: Cái nào "Đang áp dụng" lên đầu, sau đó đến mới nhất
+            const sortedData = (resPrices.data.result || []).sort((a, b) => {
+                if (a.trangThai === "Đang áp dụng") return -1;
+                if (b.trangThai === "Đang áp dụng") return 1;
+                return new Date(b.ngayBatDau) - new Date(a.ngayBatDau);
+            });
+            setPriceList(sortedData);
+
+            setProducts(resProducts.data.result || []);
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
         } finally {
@@ -69,20 +63,11 @@ export default function QuanLyBangGia() {
                 giabansi: parseFloat(formData.giabansi)
             };
 
-            const res = await fetchCoXacThuc("/Banggias", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                alert("Thiết lập giá thành công! Giá cũ đã được lưu vào lịch sử.");
-                setIsModalOpen(false);
-                fetchData(); // Reload lại bảng
-                setFormData({ idchitietcaban: "", giabanle: "", giabansi: "" }); // Reset form
-            } else {
-                const err = await res.json();
-                alert("Lỗi: " + (err.message || "Không thể lưu giá"));
-            }
+            await api.post("/Banggias", payload);
+            alert("Thiết lập giá thành công! Giá cũ đã được lưu vào lịch sử.");
+            setIsModalOpen(false);
+            fetchData(); // Reload lại bảng
+            setFormData({ idchitietcaban: "", giabanle: "", giabansi: "" }); // Reset form
         } catch (error) {
             console.error(error);
         }
@@ -92,13 +77,9 @@ export default function QuanLyBangGia() {
     const handleDelete = async (id) => {
         if(!window.confirm("Bạn có chắc muốn xóa dòng lịch sử giá này không?")) return;
         try {
-            const res = await fetchCoXacThuc(`/Banggias/${id}`, { method: "DELETE" });
-            if (res.ok) {
-                setPriceList(priceList.filter(p => p.id !== id)); // Lưu ý: Backend trả về field là 'id' (theo BanggiaResponse)
-                alert("Đã xóa!");
-            } else {
-                alert("Không thể xóa!");
-            }
+            await api.delete(`/Banggias/${id}`);
+            setPriceList(priceList.filter(p => p.id !== id)); // Lưu ý: Backend trả về field là 'id' (theo BanggiaResponse)
+            alert("Đã xóa!");
         } catch (e) { alert("Lỗi kết nối"); }
     };
 

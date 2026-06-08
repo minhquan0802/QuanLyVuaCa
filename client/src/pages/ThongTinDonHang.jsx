@@ -2,7 +2,7 @@ import Header from "../components/header";
 import Footer from "../components/footer";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchCoXacThuc } from "../utils/fetchAPI";
+import api from "../config/axios";
 
 const TABS = [
     { id: 'ALL', label: 'Tất cả' },
@@ -16,8 +16,6 @@ const TABS = [
 
 export default function ThongTinDonHang() {
     const navigate = useNavigate();
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa"; // [1] Thêm Base URL
-    
     // --- STATE DỮ LIỆU CHÍNH ---
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -33,23 +31,18 @@ export default function ThongTinDonHang() {
     const getImageUrl = (urlFromDb) => {
         if (!urlFromDb) return 'https://placehold.co/400x300?text=No+Image';
         if (urlFromDb.startsWith('http')) return urlFromDb;
-        if (urlFromDb.startsWith('/')) return `${APP_BASE_URL}${urlFromDb}`;
-        return `${APP_BASE_URL}/images/loaica/${urlFromDb}`;
+        if (urlFromDb.startsWith('/')) return `${import.meta.env.VITE_BE_URL}${urlFromDb}`;
+        return `${import.meta.env.VITE_BE_URL}/images/loaica/${urlFromDb}`;
     };
 
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const res = await fetchCoXacThuc("/Donhangs/my-orders");
-                if (res.ok) {
-                    const data = await res.json();
-                    const sortedOrders = (data.result || []).sort((a, b) => 
-                        new Date(b.ngaydat) - new Date(a.ngaydat)
-                    );
-                    setOrders(sortedOrders);
-                } else {
-                    console.error("Lỗi tải đơn hàng");
-                }
+                const { data } = await api.get("/Donhangs/my-orders");
+                const sortedOrders = (data.result || []).sort((a, b) =>
+                    new Date(b.ngaydat) - new Date(a.ngaydat)
+                );
+                setOrders(sortedOrders);
             } catch (error) {
                 console.error("Lỗi kết nối:", error);
             } finally {
@@ -67,11 +60,8 @@ export default function ThongTinDonHang() {
         setOrderDetails([]);
 
         try {
-            const res = await fetchCoXacThuc(`/Donhangs/${order.iddonhang}/chitiet`);
-            if (res.ok) {
-                const data = await res.json();
-                setOrderDetails(data.result || []);
-            }
+            const { data } = await api.get(`/Donhangs/${order.iddonhang}/chitiet`);
+            setOrderDetails(data.result || []);
         } catch (error) {
             console.error("Lỗi tải chi tiết:", error);
         } finally {

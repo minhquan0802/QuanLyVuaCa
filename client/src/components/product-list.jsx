@@ -1,54 +1,39 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../config/axios";
+import { useAuth } from "../context/AuthContext";
 
 // [1] Nhận prop searchTerm truyền từ Home.js
 export default function ProductList({ searchTerm }) {
     const [productList, setProductList] = useState([]);
     const [priceList, setPriceList] = useState([]);
-    const [stockList, setStockList] = useState([]); 
-    const [userRole, setUserRole] = useState(null); 
+    const [stockList, setStockList] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+    const { role: userRole } = useAuth();
+
     const navigate = useNavigate();
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa";
 
     const handleProductDetail = (product_id) => {
         navigate(`/product-detail/${product_id}`);
     }
 
     useEffect(() => {
-        let roleStored = localStorage.getItem("role");
-        if (roleStored) {
-            roleStored = roleStored.replace(/^"|"$/g, ''); 
-            setUserRole(roleStored);
-        }
-
         const fetchData = async () => {
             setLoading(true);
             try {
                 const [resProducts, resPrices, resStocks] = await Promise.all([
-                    fetch(`${APP_BASE_URL}/Loaicas`),
-                    fetch(`${APP_BASE_URL}/Banggias`),
-                    fetch(`${APP_BASE_URL}/Chitietcabans`)
+                    api.get("/Loaicas"),
+                    api.get("/Banggias"),
+                    api.get("/Chitietcabans")
                 ]);
 
-                if (resProducts.ok) {
-                    const data = await resProducts.json();
-                    let realData = Array.isArray(data) ? data : (data.result || []);
-                    setProductList(realData);
-                }
+                const productData = resProducts.data;
+                setProductList(Array.isArray(productData) ? productData : (productData.result || []));
 
-                if (resPrices.ok) {
-                    const data = await resPrices.json();
-                    const prices = data.result || [];
-                    const activePrices = prices.filter(p => p.trangThai === "Đang áp dụng" || !p.ngayKetThuc);
-                    setPriceList(activePrices);
-                }
+                const prices = resPrices.data.result || [];
+                setPriceList(prices.filter(p => p.trangThai === "Đang áp dụng" || !p.ngayKetThuc));
 
-                if (resStocks.ok) {
-                    const data = await resStocks.json();
-                    setStockList(data.result || []);
-                }
+                setStockList(resStocks.data.result || []);
 
             } catch (error) {
                 console.error("Lỗi tải dữ liệu:", error);
@@ -63,8 +48,8 @@ export default function ProductList({ searchTerm }) {
     const getImageUrl = (urlFromDb) => {
         if (!urlFromDb) return 'https://placehold.co/400x300?text=No+Image';
         if (urlFromDb.startsWith('http')) return urlFromDb;
-        if (urlFromDb.startsWith('/')) return `${APP_BASE_URL}${urlFromDb}`;
-        return `${APP_BASE_URL}/images/loaica/${urlFromDb}`;
+        if (urlFromDb.startsWith('/')) return `${import.meta.env.VITE_BE_URL}${urlFromDb}`;
+        return `${import.meta.env.VITE_BE_URL}/images/loaica/${urlFromDb}`;
     };
 
     const getDisplayPrice = (fishId) => {

@@ -1,74 +1,49 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import api from "../config/axios";
+import { useAuth } from "../context/AuthContext";
+
+const COOKIE_OPTS = { expires: 1, path: "/", sameSite: "Lax" };
 
 export default function Login() {
     const navigate = useNavigate();
-    
-    // State quản lý form
+    const { setUser } = useAuth();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    
-    // State quản lý trạng thái
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Cấu hình URL API
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa";
-
-    // Hàm giải mã JWT
-    const parseJwt = (token) => {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        } catch (e) { return null; }
-    };
-
     const handleLogin = async (e) => {
+        e.preventDefault();
         setError("");
-        if (e) e.preventDefault();
         if (!email || !password) {
             setError("Vui lòng nhập đầy đủ Email và Mật khẩu.");
             return;
         }
 
         setLoading(true);
-
         try {
-            const res = await fetch(`${APP_BASE_URL}/auth/token`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email, password: password }),
-            });
+            const { data } = await api.post("/auth/token", { email, password });
+            const result = data.result;
 
-            const data = await res.json();
+            if (!result?.authenticated) throw new Error("Đăng nhập thất bại");
 
-            if (!res.ok || !data.result) {
-                throw new Error(data.message || "Đăng nhập thất bại");
-            }
+            // Lưu token vào cookie để axios interceptor tự gắn header
+            Cookies.set("token", result.token, COOKIE_OPTS);
 
-            const { token, authenticated } = data.result;
-            localStorage.setItem("token", token);
-            localStorage.setItem("authenticated", authenticated);
+            // Lấy thông tin user từ server
+            const { data: infoData } = await api.get("/tai-khoan/my-info");
+            const userInfo = infoData.result;
+            console.log("User Info:", userInfo);
 
-            const decodedToken = parseJwt(token);
-            
-            if (decodedToken && decodedToken.role) {
-                const userRole = decodedToken.role.toString().toLowerCase();
-                localStorage.setItem("role", userRole);
+            // Lưu vào React Context
+            setUser(userInfo);
 
-                if (userRole === "admin") {
-                    navigate('/admin');
-                } else {
-                    navigate('/home');
-                }
-            } else {
-                throw new Error("Token không hợp lệ");
-            }
+            // idvaitro: 1 = Admin, 5 = Khách Sỉ, 6 = Khách Lẻ
+            navigate(userInfo?.vaitro === "ADMIN" ? '/admin' : '/home');
 
         } catch (err) {
             console.error(err);

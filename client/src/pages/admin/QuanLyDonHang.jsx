@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { fetchCoXacThuc } from "../../utils/fetchAPI";
+import api from "../../config/axios";
 
 
 const ORDER_STATUS = {
@@ -69,69 +69,57 @@ export default function QuanLyDonHang() {
         try {
             setLoading(true);
             const [resOrders, resCust, resFish, resUnits, resPrices, resConversions] = await Promise.all([
-                fetchCoXacThuc("/Donhangs"),
-                fetchCoXacThuc("/TaiKhoans"),
-                fetchCoXacThuc("/Loaicas"),
-                fetchCoXacThuc("/Donvitinhs"),
-                fetchCoXacThuc("/Banggias"),
-                fetchCoXacThuc("/Quydois")
+                api.get("/Donhangs"),
+                api.get("/TaiKhoans"),
+                api.get("/Loaicas"),
+                api.get("/Donvitinhs"),
+                api.get("/Banggias"),
+                api.get("/Quydois")
             ]);
 
-            if (resOrders.ok) {
-                const data = await resOrders.json();
-                let realData = data.result || data.data || (Array.isArray(data) ? data : []);
+            const ordersData = resOrders.data;
+            let realData = ordersData.result || ordersData.data || (Array.isArray(ordersData) ? ordersData : []);
 
-                // [CẬP NHẬT] Logic sắp xếp: Ưu tiên Trạng thái -> sau đó đến Thời gian
-                realData.sort((a, b) => {
-                    const priorityA = STATUS_PRIORITY[a.trangthaidonhang] || 99;
-                    const priorityB = STATUS_PRIORITY[b.trangthaidonhang] || 99;
+            // [CẬP NHẬT] Logic sắp xếp: Ưu tiên Trạng thái -> sau đó đến Thời gian
+            realData.sort((a, b) => {
+                const priorityA = STATUS_PRIORITY[a.trangthaidonhang] || 99;
+                const priorityB = STATUS_PRIORITY[b.trangthaidonhang] || 99;
 
-                    // 1. So sánh trạng thái trước
-                    if (priorityA !== priorityB) {
-                        return priorityA - priorityB; // Số nhỏ lên đầu
-                    }
+                // 1. So sánh trạng thái trước
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB; // Số nhỏ lên đầu
+                }
 
-                    // 2. Nếu cùng trạng thái -> So sánh thời gian (Mới nhất lên đầu)
-                    return new Date(b.ngaydat) - new Date(a.ngaydat);
-                });
+                // 2. Nếu cùng trạng thái -> So sánh thời gian (Mới nhất lên đầu)
+                return new Date(b.ngaydat) - new Date(a.ngaydat);
+            });
 
-                setOrders(realData);
-            }
+            setOrders(realData);
 
-            if (resCust.ok) {
-                const data = await resCust.json();
-                const allUsers = data.result || [];
-                setCustomers(allUsers.filter(u => {
-                    const rId = u.idvaitro?.id || u.idvaitro;
-                    return rId === 5 || rId === 6;
-                }));
-            }
+            const custData = resCust.data;
+            const allUsers = custData.result || [];
+            setCustomers(allUsers.filter(u => {
+                const rId = u.idvaitro?.id || u.idvaitro;
+                return rId === 5 || rId === 6;
+            }));
 
-            if (resFish.ok) {
-                const data = await resFish.json();
-                setFishes(data.result || []);
-            }
+            const fishData = resFish.data;
+            setFishes(fishData.result || []);
 
-            if (resUnits.ok) {
-                const data = await resUnits.json();
-                setUnits(data.result || []);
-            }
+            const unitsData = resUnits.data;
+            setUnits(unitsData.result || []);
 
-            if (resPrices.ok) {
-                const data = await resPrices.json();
-                setPriceList(data.result || []);
-            }
+            const pricesData = resPrices.data;
+            setPriceList(pricesData.result || []);
+
             // Fetch bảng quy đổi
-            if (resConversions.ok) {
-                const data = await resConversions.json();
-                // Kiểm tra kỹ các trường hợp trả về của API (result, data, hoặc mảng trực tiếp)
-                const listQuyDoi = data.result || data.data || (Array.isArray(data) ? data : []);
+            const convData = resConversions.data;
+            // Kiểm tra kỹ các trường hợp trả về của API (result, data, hoặc mảng trực tiếp)
+            const listQuyDoi = convData.result || convData.data || (Array.isArray(convData) ? convData : []);
+            setConversionList(listQuyDoi);
 
-                setConversionList(listQuyDoi);
-
-                // [DEBUG] In ra để xem dữ liệu đã về chưa
-                // console.log("Dữ liệu Quy đổi tải về:", listQuyDoi); 
-            }
+            // [DEBUG] In ra để xem dữ liệu đã về chưa
+            // console.log("Dữ liệu Quy đổi tải về:", listQuyDoi);
 
         } catch (error) {
             console.error(error);
@@ -165,50 +153,47 @@ export default function QuanLyDonHang() {
         setLoadingDetails(true);
         setIsEdited(false);
         try {
-            const res = await fetchCoXacThuc(`/Donhangs/${order.iddonhang}/chitiet`);
-            if (res.ok) {
-                const data = await res.json();
-                const rawDetails = data.result || [];
+            const { data } = await api.get(`/Donhangs/${order.iddonhang}/chitiet`);
+            const rawDetails = data.result || [];
 
-                // --- 🔴 DEBUG LOG: In ra toàn bộ dữ liệu nhận được ---
-                // console.log("👉 [1] Dữ liệu API trả về (data.result):", rawDetails);
+            // --- 🔴 DEBUG LOG: In ra toàn bộ dữ liệu nhận được ---
+            // console.log("👉 [1] Dữ liệu API trả về (data.result):", rawDetails);
 
-                // if (rawDetails.length > 0) {
-                //     const item = rawDetails[0];
-                //     // console.log("👉 [2] Soi kỹ phần tử đầu tiên:", item);
+            // if (rawDetails.length > 0) {
+            //     const item = rawDetails[0];
+            //     // console.log("👉 [2] Soi kỹ phần tử đầu tiên:", item);
 
-                //     // Kiểm tra xem tên biến chính xác là gì (thường API Java hay trả về camelCase)
-                //     // console.log("   - Check 1 (chữ thường):", item.soluongkgthucte);
-                //     // console.log("   - Check 2 (camelCase):", item.soLuongKgThucTe);
-                //     // console.log("   - Check 3 (tên cũ):", item.khoiluongthucte);
-                // }
-                // -----------------------------------------------------
+            //     // Kiểm tra xem tên biến chính xác là gì (thường API Java hay trả về camelCase)
+            //     // console.log("   - Check 1 (chữ thường):", item.soluongkgthucte);
+            //     // console.log("   - Check 2 (camelCase):", item.soLuongKgThucTe);
+            //     // console.log("   - Check 3 (tên cũ):", item.khoiluongthucte);
+            // }
+            // -----------------------------------------------------
 
-                const mappedDetails = rawDetails.map(d => {
-                    // Xử lý thông minh: Thử lấy cả 2 trường hợp (chữ thường hoặc camelCase)
-                    // Backend Java thường tự đổi "soluongkgthucte" thành "soLuongKgThucTe"
-                    const valThucTe = d.soluongkgthucte ?? d.soLuongKgThucTe ?? d.khoiluongthucte ?? 0;
-                    const valDuKien = d.soluongkgthuctequydoi ?? d.soLuongKgThucTeQuyDoi ?? d.khoiluongdukien ?? 0;
-                    const valTienDuKien = d.tongtiendukien ?? d.tongTienDuKien ?? d.thanhtiendukien ?? 0;
-                    const valTienThucTe = d.tongtienthucte ?? d.tongTienThucTe ?? d.thanhtienthucte ?? 0;
+            const mappedDetails = rawDetails.map(d => {
+                // Xử lý thông minh: Thử lấy cả 2 trường hợp (chữ thường hoặc camelCase)
+                // Backend Java thường tự đổi "soluongkgthucte" thành "soLuongKgThucTe"
+                const valThucTe = d.soluongkgthucte ?? d.soLuongKgThucTe ?? d.khoiluongthucte ?? 0;
+                const valDuKien = d.soluongkgthuctequydoi ?? d.soLuongKgThucTeQuyDoi ?? d.khoiluongdukien ?? 0;
+                const valTienDuKien = d.tongtiendukien ?? d.tongTienDuKien ?? d.thanhtiendukien ?? 0;
+                const valTienThucTe = d.tongtienthucte ?? d.tongTienThucTe ?? d.thanhtienthucte ?? 0;
 
-                    return {
-                        ...d,
-                        // Lưu giá trị chuẩn vào biến mới để dùng trong render
-                        finalSoluongKgThucTe: valThucTe,
-                        finalSoluongKgDuKien: valDuKien,
-                        finalTienDuKien: valTienDuKien,
-                        finalTienThucTe: valTienThucTe,
+                return {
+                    ...d,
+                    // Lưu giá trị chuẩn vào biến mới để dùng trong render
+                    finalSoluongKgThucTe: valThucTe,
+                    finalSoluongKgDuKien: valDuKien,
+                    finalTienDuKien: valTienDuKien,
+                    finalTienThucTe: valTienThucTe,
 
-                        // Logic cũ của bạn
-                        editWeight: valThucTe > 0 ? valThucTe : valDuKien,
-                        calculatedPrice: valDuKien > 0 ? (valTienDuKien / valDuKien) : 0
-                    };
-                });
+                    // Logic cũ của bạn
+                    editWeight: valThucTe > 0 ? valThucTe : valDuKien,
+                    calculatedPrice: valDuKien > 0 ? (valTienDuKien / valDuKien) : 0
+                };
+            });
 
-                // console.log("👉 [3] Dữ liệu sau khi Map:", mappedDetails);
-                setViewDetails(mappedDetails);
-            }
+            // console.log("👉 [3] Dữ liệu sau khi Map:", mappedDetails);
+            setViewDetails(mappedDetails);
         } catch (error) { console.error(error); }
         finally { setLoadingDetails(false); }
     };
@@ -239,29 +224,14 @@ export default function QuanLyDonHang() {
         }));
 
         try {
-            const res = await fetchCoXacThuc(`/Donhangs/${selectedOrder.iddonhang}/cap-nhat-can-nang`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                alert("Đã cập nhật cân nặng thực tế!");
-                setIsEdited(false);
-                fetchInitialData(); 
-            } else {
-                // --- [SỬA ĐỔI]: Đọc lỗi chi tiết từ Backend ---
-                try {
-                    const errData = await res.json();
-                    // Hiển thị message từ Backend (vd: "Kho không đủ hàng!...") hoặc fallback nếu không có
-                    alert("Lỗi: " + (errData.message || "Cập nhật thất bại"));
-                } catch (e) {
-                    alert("Lỗi cập nhật: Không thể đọc phản hồi từ server");
-                }
-            }
+            await api.put(`/Donhangs/${selectedOrder.iddonhang}/cap-nhat-can-nang`, payload);
+            alert("Đã cập nhật cân nặng thực tế!");
+            setIsEdited(false);
+            fetchInitialData();
         } catch (error) {
             console.error(error);
-            alert("Lỗi kết nối hệ thống!");
+            const errMsg = error.response?.data?.message || "Cập nhật thất bại";
+            alert("Lỗi: " + errMsg);
         }
     };
 
@@ -299,39 +269,33 @@ export default function QuanLyDonHang() {
         if (!fishId) return;
 
         try {
-            const res = await fetchCoXacThuc(`/Chitietcabans`);
+            const { data } = await api.get(`/Chitietcabans`);
+            // Kiểm tra xem data trả về nằm trong .result hay .data hay là mảng trực tiếp
+            const allInventory = data.result || data.data || [];
 
-            if (res.ok) {
-                const data = await res.json();
-                // Kiểm tra xem data trả về nằm trong .result hay .data hay là mảng trực tiếp
-                const allInventory = data.result || data.data || [];
+            // console.log("Dữ liệu kho tải về:", allInventory);
 
-                // console.log("Dữ liệu kho tải về:", allInventory); 
+            const validSizes = allInventory
+                .filter(item => {
+                    // Backend có thể trả về nhiều kiểu, mình check hết các trường hợp:
+                    // 1. idLoaiCa (CamelCase)
+                    // 2. idloaica (lowercase) - có thể là object hoặc id trực tiếp
+                    const itemIdLoaiCa = item.idLoaiCa || item.idloaica?.id || item.idloaica;
 
-                const validSizes = allInventory
-                    .filter(item => {
-                        // Backend có thể trả về nhiều kiểu, mình check hết các trường hợp:
-                        // 1. idLoaiCa (CamelCase)
-                        // 2. idloaica (lowercase) - có thể là object hoặc id trực tiếp
-                        const itemIdLoaiCa = item.idLoaiCa || item.idloaica?.id || item.idloaica;
+                    // Debug: Uncomment dòng dưới nếu vẫn không hiện để xem nó so sánh cái gì
+                    // console.log(`So sánh: Kho(${itemIdLoaiCa}) vs Chọn(${fishId})`);
 
-                        // Debug: Uncomment dòng dưới nếu vẫn không hiện để xem nó so sánh cái gì
-                        // console.log(`So sánh: Kho(${itemIdLoaiCa}) vs Chọn(${fishId})`);
+                    return Number(itemIdLoaiCa) === Number(fishId);
+                })
+                .map(item => ({
+                    // Check kỹ tên biến Size (Backend thường trả về idSizeCa hoặc idsizeca)
+                    idsizeca: item.idSizeCa || item.idsizeca,
+                    sizeca: item.tenSize || item.sizeca,
+                    repoId: item.id
+                }));
 
-                        return Number(itemIdLoaiCa) === Number(fishId);
-                    })
-                    .map(item => ({
-                        // Check kỹ tên biến Size (Backend thường trả về idSizeCa hoặc idsizeca)
-                        idsizeca: item.idSizeCa || item.idsizeca,
-                        sizeca: item.tenSize || item.sizeca,
-                        repoId: item.id
-                    }));
-
-                // console.log("Danh sách Size sau khi lọc:", validSizes);
-                setSizes(validSizes);
-            } else {
-                console.error("Lỗi gọi API kho:", res.status);
-            }
+            // console.log("Danh sách Size sau khi lọc:", validSizes);
+            setSizes(validSizes);
         } catch (error) {
             console.error("Lỗi lấy size từ kho:", error);
         }
@@ -479,21 +443,16 @@ export default function QuanLyDonHang() {
         };
 
         try {
-            const res = await fetchCoXacThuc("/Donhangs", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                alert("Tạo đơn hàng thành công!");
-                setIsCreateModalOpen(false);
-                setNewOrder({ idthongtinkhachhang: "", items: [] });
-                fetchInitialData();
-            } else {
-                const err = await res.json();
-                alert("Lỗi: " + (err.message || "Không thể tạo đơn"));
-            }
-        } catch (error) { console.error(error); }
+            await api.post("/Donhangs", payload);
+            alert("Tạo đơn hàng thành công!");
+            setIsCreateModalOpen(false);
+            setNewOrder({ idthongtinkhachhang: "", items: [] });
+            fetchInitialData();
+        } catch (error) {
+            console.error(error);
+            const errMsg = error.response?.data?.message || "Không thể tạo đơn";
+            alert("Lỗi: " + errMsg);
+        }
     };
 
     // const handleUpdateStatus = async (newStatus) => {
@@ -551,18 +510,13 @@ export default function QuanLyDonHang() {
 
         if (!window.confirm(`Xác nhận chuyển trạng thái sang: ${ORDER_STATUS[newStatus].label}?`)) return;
         try {
-            const res = await fetchCoXacThuc(`/Donhangs/${selectedOrder.iddonhang}/status`, {
-                method: "PUT",
-                body: JSON.stringify({ trangthaidonhang: newStatus })
-            });
-            if (res.ok) {
-                // Update local state
-                const updatedOrders = orders.map(o => o.iddonhang === selectedOrder.iddonhang ? { ...o, trangthaidonhang: newStatus } : o);
-                setOrders(updatedOrders);
-                setSelectedOrder({ ...selectedOrder, trangthaidonhang: newStatus });
-                alert("Thành công!");
-                setIsViewModalOpen(false);
-            }
+            await api.put(`/Donhangs/${selectedOrder.iddonhang}/status`, { trangthaidonhang: newStatus });
+            // Update local state
+            const updatedOrders = orders.map(o => o.iddonhang === selectedOrder.iddonhang ? { ...o, trangthaidonhang: newStatus } : o);
+            setOrders(updatedOrders);
+            setSelectedOrder({ ...selectedOrder, trangthaidonhang: newStatus });
+            alert("Thành công!");
+            setIsViewModalOpen(false);
         } catch (error) { console.error(error); }
     };
 

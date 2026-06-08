@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { fetchCoXacThuc } from "../../utils/fetchAPI";
+import api from "../../config/axios";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line
@@ -36,16 +36,12 @@ export default function AdminDashboard() {
             setLoading(true);
             // Gọi API thống kê từ Backend (Sẽ viết ở Phần 2)
             // query param: ?range=TODAY hoặc ?range=MONTH...
-            const res = await fetchCoXacThuc(`/Thongke?range=${timeRange}`);
-            
-            if (res.ok) {
-                const data = await res.json();
-                const result = data.result;
+            const { data } = await api.get(`/Thongke?range=${timeRange}`);
+            const result = data.result;
 
-                setStats(result.tongQuan);
-                setChartData(result.bieuDo);
-                setSupplierReport(result.baoCaoNCC);
-            }
+            setStats(result.tongQuan);
+            setChartData(result.bieuDo);
+            setSupplierReport(result.baoCaoNCC);
         } catch (error) {
             console.error("Lỗi tải thống kê:", error);
         } finally {

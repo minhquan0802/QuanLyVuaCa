@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { fetchCoXacThuc } from "../../utils/fetchAPI"; 
+import api from "../../config/axios";
 
 export default function QuanLyTaiKhoan() {
     // Bảng dịch từ mã trong DB sang Tiếng Việt hiển thị
@@ -28,16 +28,12 @@ export default function QuanLyTaiKhoan() {
             
             // Gọi song song 2 API để tiết kiệm thời gian
             const [resAcc, resRoles] = await Promise.all([
-                fetchCoXacThuc("/TaiKhoans"),
-                fetchCoXacThuc("/vaitro") // FIX 1: Gọi API vai trò
+                api.get("/TaiKhoans"),
+                api.get("/vaitro") // FIX 1: Gọi API vai trò
             ]);
-            
-            if (!resAcc.ok || !resRoles.ok) {
-                throw new Error("Lỗi kết nối server");
-            }
-            
-            const dataAcc = await resAcc.json();
-            const dataRoles = await resRoles.json(); // Data vai trò
+
+            const dataAcc = resAcc.data;
+            const dataRoles = resRoles.data; // Data vai trò
             
             // Xử lý data Tài khoản
             let realAccounts = [];
@@ -115,8 +111,7 @@ export default function QuanLyTaiKhoan() {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
             try {
-                const res = await fetchCoXacThuc(`/TaiKhoans/${id}`, { method: "DELETE" });
-                if (!res.ok) throw new Error("Lỗi khi xóa từ server");
+                await api.delete(`/TaiKhoans/${id}`);
                 setAccounts(accounts.filter(item => item.idtaikhoan !== id));
                 alert("Đã xóa thành công!");
             } catch (error) {
@@ -148,20 +143,10 @@ export default function QuanLyTaiKhoan() {
 
             console.log("Payload:", payload); 
 
-            const res = await fetchCoXacThuc(url, {
-                method: method,
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                let errorMsg = `Lỗi server (${res.status})`;
-                try {
-                    const errData = await res.json();
-                    errorMsg = errData.message || errorMsg;
-                } catch {
-                    errorMsg = await res.text();
-                }
-                throw new Error(errorMsg);
+            if (isEditing) {
+                await api.put(url, payload);
+            } else {
+                await api.post(url, payload);
             }
 
             alert(isEditing ? "Cập nhật thành công!" : "Thêm mới thành công!");

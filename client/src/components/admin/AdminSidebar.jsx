@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { DangXuat } from "../../utils/fetchAPI";
+import { dangXuat } from "../../config/axios";
 
 export default function AdminSidebar() {
     const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function AdminSidebar() {
 
     const handleLogout = () => {
         // Xóa thông tin đăng nhập và chuyển về trang login
-        DangXuat();
+        dangXuat();
     }
 
     return (

@@ -1,17 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user, role, logout } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    
-    // --- STATE QUẢN LÝ USER ---
-    const [user, setUser] = useState(null);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef(null); 
-
-    // --- STATE QUẢN LÝ SỐ LƯỢNG GIỎ HÀNG ---
+    const dropdownRef = useRef(null);
     const [cartCount, setCartCount] = useState(0);
 
     const isActive = (path) => location.pathname === path;
@@ -21,19 +18,6 @@ export default function Header() {
         { label: "Sản phẩm", path: "/home" }, 
     ];
 
-    // --- 1. LOGIC GIẢI MÃ TOKEN ---
-    const parseJwt = (token) => {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            return null;
-        }
-    };
 
     // --- HÀM CẬP NHẬT GIỎ HÀNG ---
     const updateCartCount = () => {
@@ -47,35 +31,18 @@ export default function Header() {
     };
 
     useEffect(() => {
-        // Xử lý User Token
-        const token = localStorage.getItem("token");
-        if (token) {
-            const decoded = parseJwt(token);
-            if (decoded) {
-                setUser({
-                    email: decoded.sub, 
-                    role: decoded.role  
-                });
-            }
-        }
-
-        // Xử lý Click Outside Dropdown
         function handleClickOutside(event) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
-
-        // --- KHỞI TẠO & LẮNG NGHE SỰ KIỆN GIỎ HÀNG ---
-        updateCartCount(); 
+        updateCartCount();
         window.addEventListener("storage", updateCartCount);
-
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
-            window.removeEventListener("storage", updateCartCount); 
+            window.removeEventListener("storage", updateCartCount);
         };
-
     }, []);
 
     const handleNavigation = (path) => {
@@ -85,11 +52,9 @@ export default function Header() {
     };
 
     const handleLogout = () => {
-        localStorage.clear(); 
-        setUser(null);
         setIsDropdownOpen(false);
-        setCartCount(0); 
-        navigate("/");
+        setCartCount(0);
+        logout();
     };
 
     return (
@@ -161,7 +126,7 @@ export default function Header() {
                                                     </button>
 
                                                     {/* --- [MỚI] THEO DÕI ĐƠN HÀNG (Ẩn với Admin) --- */}
-                                                    {user.role !== 'admin' && (
+                                                    {role !== 'admin' && (
                                                         <button 
                                                             onClick={() => handleNavigation('/my-orders')}
                                                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
@@ -171,7 +136,7 @@ export default function Header() {
                                                         </button>
                                                     )}
 
-                                                    {user.role === 'admin' && (
+                                                    {role === 'admin' && (
                                                         <button 
                                                             onClick={() => handleNavigation('/admin')}
                                                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
@@ -265,7 +230,7 @@ export default function Header() {
                                             </button>
 
                                             {/* --- [MỚI] THEO DÕI ĐƠN HÀNG MOBILE (Ẩn với Admin) --- */}
-                                            {user.role !== 'admin' && (
+                                            {role !== 'admin' && (
                                                 <button
                                                     onClick={() => handleNavigation('/my-orders')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3"
@@ -275,7 +240,7 @@ export default function Header() {
                                                 </button>
                                             )}
 
-                                            {user.role === 'admin' && (
+                                            {role === 'admin' && (
                                                 <button
                                                     onClick={() => handleNavigation('/admin')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3"

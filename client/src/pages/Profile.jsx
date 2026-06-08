@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/header";
 import Footer from "../components/footer";
-import { fetchCoXacThuc } from "../utils/fetchAPI"; 
+import api from "../config/axios";
 
 // [CẬP NHẬT] Map ID (số) sang Tên hiển thị
 const ROLE_DEFINITIONS = {
@@ -28,11 +28,7 @@ export default function Profile() {
         const getMyInfo = async () => {
             try {
                 setLoading(true);
-                const res = await fetchCoXacThuc("/TaiKhoans/myinfo");
-
-                if (!res.ok) throw new Error("Không thể tải thông tin tài khoản");
-
-                const data = await res.json();
+                const { data } = await api.get("/TaiKhoans/myinfo");
                 setUser(data.result);
                 setFormData(data.result);
 
@@ -77,23 +73,13 @@ export default function Profile() {
 
     const handleSave = async () => {
         try {
-            const res = await fetchCoXacThuc(`/TaiKhoans/${user.idtaikhoan}`, {
-                method: "PUT",
-                body: JSON.stringify({
-                    ho: formData.ho,
-                    ten: formData.ten,
-                    sodienthoai: formData.sodienthoai,
-                    diachi: formData.diachi,
-                    idvaitro: formData.idvaitro // Gửi ID số về backend
-                })
+            const { data } = await api.put(`/TaiKhoans/${user.idtaikhoan}`, {
+                ho: formData.ho,
+                ten: formData.ten,
+                sodienthoai: formData.sodienthoai,
+                diachi: formData.diachi,
+                idvaitro: formData.idvaitro // Gửi ID số về backend
             });
-
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.message || "Cập nhật thất bại");
-            }
-
-            const data = await res.json();
             setUser(data.result);
             setIsEditing(false);
             alert("Cập nhật hồ sơ thành công!");

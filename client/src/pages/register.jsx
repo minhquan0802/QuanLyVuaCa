@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../config/axios";
 
 export default function Register() {
     const navigate = useNavigate();
@@ -20,8 +21,6 @@ export default function Register() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Cấu hình URL API
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa";
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -63,17 +62,7 @@ export default function Register() {
             };
 
             // 3. Gọi API
-            const res = await fetch(`${APP_BASE_URL}/TaiKhoans`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(newUser),
-            });
-
-            if (!res.ok) {
-                throw new Error("Đăng ký thất bại. Email có thể đã tồn tại.");
-            }
+            await api.post("/TaiKhoans", newUser);
 
             alert("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
             navigate('/');

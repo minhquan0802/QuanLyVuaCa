@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { fetchCoXacThuc } from "../../utils/fetchAPI"; 
+import api from "../../config/axios";
 
 export default function QuanLyLoaiCa() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa";
 
     // --- STATES CHO MODAL SIZE ---
     const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
@@ -22,9 +21,7 @@ export default function QuanLyLoaiCa() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const res = await fetchCoXacThuc("/Loaicas");
-            if (!res.ok) throw new Error("Lỗi kết nối server");
-            const data = await res.json();
+            const { data } = await api.get("/Loaicas");
             
             let realData = [];
             if (Array.isArray(data)) realData = data;
@@ -47,8 +44,8 @@ export default function QuanLyLoaiCa() {
     const getImageUrl = (imageName) => {
         if (!imageName) return 'https://placehold.co/100x100?text=No+Image';
         if (imageName.startsWith('http')) return imageName;
-        if (imageName.startsWith('/')) return `${APP_BASE_URL}${imageName}`;
-        return `${APP_BASE_URL}/images/loaica/${imageName}`;
+        if (imageName.startsWith('/')) return `${import.meta.env.VITE_BE_URL}${imageName}`;
+        return `${import.meta.env.VITE_BE_URL}/images/loaica/${imageName}`;
     };
 
     
@@ -70,10 +67,7 @@ export default function QuanLyLoaiCa() {
             formData.append("mieuta", currentCategory.mieuta);
             if (currentCategory.hinhanhFile) formData.append("hinhanh", currentCategory.hinhanhFile);
 
-            const res = await fetchCoXacThuc("/Loaicas", { method: "POST", body: formData });
-            if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Lỗi server"); }
-            
-            const data = await res.json();
+            const { data } = await api.post("/Loaicas", formData);
             setCategories([...categories, data.result]);
             alert("Thêm thành công!");
             setIsModalOpen(false);
@@ -88,10 +82,7 @@ export default function QuanLyLoaiCa() {
             formData.append("mieuta", currentCategory.mieuta);
             if (currentCategory.hinhanhFile) formData.append("hinhanh", currentCategory.hinhanhFile);
 
-            const res = await fetchCoXacThuc(`/Loaicas/${currentCategory.id}`, { method: "PUT", body: formData });
-            if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Lỗi cập nhật"); }
-
-            const data = await res.json();
+            const { data } = await api.put(`/Loaicas/${currentCategory.id}`, formData);
             setCategories(categories.map(item => item.id === data.result.id ? data.result : item));
             alert("Cập nhật thành công!");
             setIsModalOpen(false);
@@ -108,8 +99,7 @@ export default function QuanLyLoaiCa() {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn muốn xóa loại cá này?")) {
             try {
-                const res = await fetchCoXacThuc(`/Loaicas/${id}`, { method: "DELETE" });
-                if (!res.ok) throw new Error("Không thể xóa (có thể do ràng buộc dữ liệu)");
+                await api.delete(`/Loaicas/${id}`);
                 setCategories(categories.filter(item => item.id !== id));
                 alert("Đã xóa!");
             } catch (error) { alert(error.message); }
@@ -133,24 +123,18 @@ export default function QuanLyLoaiCa() {
         try {
             // Gọi song song 2 API
             const [resInventory, resAllSizes] = await Promise.all([
-                fetchCoXacThuc(`/Chitietcabans`), // Lấy danh sách đang có của cá
-                fetchCoXacThuc(`/Sizecas`)       // Lấy danh sách tất cả size (cho combobox)
+                api.get(`/Chitietcabans`), // Lấy danh sách đang có của cá
+                api.get(`/Sizecas`)       // Lấy danh sách tất cả size (cho combobox)
             ]);
 
             // Xử lý danh sách tồn kho của cá
-            if (resInventory.ok) {
-                const data = await resInventory.json();
-                const allItems = data.result || [];
-                // Lọc ra các dòng thuộc loại cá này
-                const itemsForThisFish = allItems.filter(item => item.tenLoaiCa === fish.tenloaica);
-                setFishInventory(itemsForThisFish);
-            }
+            const allItems = resInventory.data.result || [];
+            // Lọc ra các dòng thuộc loại cá này
+            const itemsForThisFish = allItems.filter(item => item.tenLoaiCa === fish.tenloaica);
+            setFishInventory(itemsForThisFish);
 
             // Xử lý danh sách Size global
-            if (resAllSizes.ok) {
-                const data = await resAllSizes.json();
-                setAllGlobalSizes(data.result || []);
-            }
+            setAllGlobalSizes(resAllSizes.data.result || []);
 
         } catch (error) {
             console.error("Lỗi load dữ liệu:", error);
@@ -166,16 +150,7 @@ export default function QuanLyLoaiCa() {
             if (isCreatingNew) {
                 if (!newSizeName.trim()) { alert("Vui lòng nhập tên size!"); return; }
                 
-                const resSize = await fetchCoXacThuc("/Sizecas", {
-                    method: "POST",
-                    body: JSON.stringify({ sizeca: newSizeName })
-                });
-
-                if (!resSize.ok) {
-                    const err = await resSize.json();
-                    throw new Error(err.message || "Lỗi tạo Size mới");
-                }
-                const sizeData = await resSize.json();
+                const { data: sizeData } = await api.post("/Sizecas", { sizeca: newSizeName });
                 sizeIdToAdd = sizeData.result.idsizeca;
             } else {
                 // TRƯỜNG HỢP 2: Chọn từ list có sẵn
@@ -189,17 +164,8 @@ export default function QuanLyLoaiCa() {
                 soluongton: 0
             };
 
-            const resChitiet = await fetchCoXacThuc("/Chitietcabans", {
-                method: "POST",
-                body: JSON.stringify(chitietPayload)
-            });
-
-            if (resChitiet.ok) {
-                handleOpenSize(selectedFish); // Reload lại dữ liệu
-            } else {
-                const err = await resChitiet.json();
-                alert("Lỗi: " + (err.message || "Có thể size này đã được thêm cho cá này rồi!"));
-            }
+            await api.post("/Chitietcabans", chitietPayload);
+            handleOpenSize(selectedFish); // Reload lại dữ liệu
 
         } catch (error) {
             console.error(error);
@@ -210,13 +176,8 @@ export default function QuanLyLoaiCa() {
     const handleDeleteSize = async (chitietId) => {
         if (!window.confirm("Xóa size này khỏi loại cá?")) return;
         try {
-            const res = await fetchCoXacThuc(`/Chitietcabans/${chitietId}`, { method: "DELETE" });
-            if (res.ok) {
-                setFishInventory(fishInventory.filter(s => s.id !== chitietId));
-            } else {
-                const err = await res.json();
-                alert("Lỗi xóa: " + err.message);
-            }
+            await api.delete(`/Chitietcabans/${chitietId}`);
+            setFishInventory(fishInventory.filter(s => s.id !== chitietId));
         } catch (error) { console.error(error); }
     };
 

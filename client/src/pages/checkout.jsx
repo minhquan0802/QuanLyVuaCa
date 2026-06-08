@@ -2,11 +2,10 @@ import Header from "../components/header"
 import Footer from "../components/footer"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom";
-import { fetchCoXacThuc } from "../utils/fetchAPI";
+import api from "../config/axios";
 
 export default function Checkout() {
     const navigate = useNavigate();
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa"; 
 
     // --- STATE ---
     const [cartItems, setCartItems] = useState([]);
@@ -34,19 +33,16 @@ export default function Checkout() {
 
         const fetchUserInfo = async () => {
             try {
-                const res = await fetchCoXacThuc("/TaiKhoans/myinfo");
-                if (res.ok) {
-                    const data = await res.json();
-                    const user = data.result;
-                    setUserId(user.id || user.idtaikhoan); 
-                    setShipInfo(prev => ({
-                        ...prev,
-                        hoTen: `${user.ho} ${user.ten}`,
-                        sdt: user.sodienthoai || "",
-                        diachi: user.diachi || ""
-                    }));
-                }
-            } catch (error) { console.log("Khách chưa đăng nhập"); }
+                const { data } = await api.get("/TaiKhoans/myinfo");
+                const user = data.result;
+                setUserId(user.id || user.idtaikhoan);
+                setShipInfo(prev => ({
+                    ...prev,
+                    hoTen: `${user.ho} ${user.ten}`,
+                    sdt: user.sodienthoai || "",
+                    diachi: user.diachi || ""
+                }));
+            } catch { console.log("Khách chưa đăng nhập"); }
         };
         fetchUserInfo();
     }, [navigate]);
@@ -69,7 +65,7 @@ export default function Checkout() {
     const getImageUrl = (urlFromDb) => {
         if (!urlFromDb) return 'https://placehold.co/400x300?text=No+Image';
         if (urlFromDb.startsWith('http')) return urlFromDb;
-        return `${APP_BASE_URL}/images/loaica/${urlFromDb}`;
+        return `${import.meta.env.VITE_BE_URL}/images/loaica/${urlFromDb}`;
     };
 
     // --- 3. XỬ LÝ ĐẶT HÀNG ---
@@ -93,15 +89,9 @@ export default function Checkout() {
                 }))
             };
 
-            const resOrder = await fetchCoXacThuc("/Donhangs", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+            const { data: orderData } = await api.post("/Donhangs", payload);
 
-            const orderData = await resOrder.json();
-
-            if (!resOrder.ok) throw new Error(orderData.message || "Lỗi tạo đơn hàng");
+            if (!orderData.result) throw new Error(orderData.message || "Lỗi tạo đơn hàng");
 
             const newOrderId = orderData.result.iddonhang; 
 
@@ -120,15 +110,9 @@ export default function Checkout() {
                     language: "vn"
                 };
 
-                const resPayment = await fetch(`${APP_BASE_URL}/payment/create-payment`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(paymentPayload)
-                });
+                const { data: paymentData } = await api.post("/payment/create-payment", paymentPayload);
 
-                const paymentData = await resPayment.json();
-
-                if (resPayment.ok && paymentData.paymentUrl) {
+                if (paymentData.paymentUrl) {
                     localStorage.removeItem("cart");
                     window.dispatchEvent(new Event("storage")); 
                     window.location.href = paymentData.paymentUrl; 

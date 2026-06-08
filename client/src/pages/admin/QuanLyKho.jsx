@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { fetchCoXacThuc } from "../../utils/fetchAPI";
+import api from "../../config/axios";
 
 export default function QuanLyKho() {
     // --- STATE DỮ LIỆU ---
@@ -41,27 +41,21 @@ export default function QuanLyKho() {
         try {
             setLoading(true);
             const [resInventory, resFish, resSuppliers, resSizes, resPrices] = await Promise.all([
-                fetchCoXacThuc("/Chitietcabans"),
-                fetchCoXacThuc("/Loaicas"),
-                fetchCoXacThuc("/Nhacungcaps"),
-                fetchCoXacThuc("/Sizecas"),
-                fetchCoXacThuc("/Banggias") 
+                api.get("/Chitietcabans"),
+                api.get("/Loaicas"),
+                api.get("/Nhacungcaps"),
+                api.get("/Sizecas"),
+                api.get("/Banggias")
             ]);
 
-            if (resInventory.ok) setInventory((await resInventory.json()).result || []);
-            if (resFish.ok) setFishTypes((await resFish.json()).result || []);
-            if (resSuppliers.ok) {
-                const data = await resSuppliers.json();
-                setSuppliers(data.result || []); 
-            };
-            if (resSizes.ok) setSizes((await resSizes.json()).result || []);
-            
-            if (resPrices.ok) {
-                const data = await resPrices.json();
-                const allPrices = data.result || [];
-                const active = allPrices.filter(p => p.trangThai === "Đang áp dụng" || !p.ngayKetThuc);
-                setPriceList(active);
-            }
+            setInventory(resInventory.data.result || []);
+            setFishTypes(resFish.data.result || []);
+            setSuppliers(resSuppliers.data.result || []);
+            setSizes(resSizes.data.result || []);
+
+            const allPrices = resPrices.data.result || [];
+            const active = allPrices.filter(p => p.trangThai === "Đang áp dụng" || !p.ngayKetThuc);
+            setPriceList(active);
 
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
@@ -257,60 +251,49 @@ export default function QuanLyKho() {
 
         try {
             // 1. Gọi API Nhập Hàng (Tạo phiếu, cập nhật kho)
-            const res = await fetchCoXacThuc("/Phieunhaps", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
+            await api.post("/Phieunhaps", payload);
 
-            if (res.ok) {
-                // 2. [MỚI] GỌI API CẬP NHẬT GIÁ (GIỐNG TRANG QUẢN LÝ BẢNG GIÁ)
-                // Chỉ gọi khi giá nhập vào KHÁC giá hiện tại để tránh spam lịch sử giá
-                const priceUpdatePromises = addedDetails.map(async (detail) => {
-                    // Tìm ID Kho của mặt hàng này
-                    const invItem = inventory.find(i => 
-                        Number(i.idLoaiCa) === Number(importForm.idloaica) && 
-                        Number(i.idSizeCa) === Number(detail.idsizeca)
-                    );
+            // 2. [MỚI] GỌI API CẬP NHẬT GIÁ (GIỐNG TRANG QUẢN LÝ BẢNG GIÁ)
+            // Chỉ gọi khi giá nhập vào KHÁC giá hiện tại để tránh spam lịch sử giá
+            const priceUpdatePromises = addedDetails.map(async (detail) => {
+                // Tìm ID Kho của mặt hàng này
+                const invItem = inventory.find(i =>
+                    Number(i.idLoaiCa) === Number(importForm.idloaica) &&
+                    Number(i.idSizeCa) === Number(detail.idsizeca)
+                );
 
-                    if (invItem && invItem.id) {
-                        // Lấy giá hiện tại để so sánh
-                        const currentPriceObj = findCurrentPrice(importForm.idloaica, detail.idsizeca);
-                        const currentLe = currentPriceObj ? (currentPriceObj.giaBanLe || currentPriceObj.giabanle) : 0;
-                        const currentSi = currentPriceObj ? (currentPriceObj.giaBanSi || currentPriceObj.giabansi) : 0;
-                        
-                        const newLe = parseFloat(detail.giabanledukien);
-                        const newSi = parseFloat(detail.giabansidukien);
+                if (invItem && invItem.id) {
+                    // Lấy giá hiện tại để so sánh
+                    const currentPriceObj = findCurrentPrice(importForm.idloaica, detail.idsizeca);
+                    const currentLe = currentPriceObj ? (currentPriceObj.giaBanLe || currentPriceObj.giabanle) : 0;
+                    const currentSi = currentPriceObj ? (currentPriceObj.giaBanSi || currentPriceObj.giabansi) : 0;
 
-                        // Nếu giá thay đổi, gọi API Bảng giá để cập nhật (Backend sẽ tự đóng giá cũ)
-                        if (newLe !== currentLe || newSi !== currentSi) {
-                            try {
-                                await fetchCoXacThuc("/Banggias", {
-                                    method: "POST",
-                                    body: JSON.stringify({
-                                        idchitietcaban: parseInt(invItem.id),
-                                        giabanle: newLe,
-                                        giabansi: newSi
-                                    })
-                                });
-                            } catch (err) {
-                                console.error("Lỗi cập nhật giá cho sản phẩm kho ID:", invItem.id, err);
-                            }
+                    const newLe = parseFloat(detail.giabanledukien);
+                    const newSi = parseFloat(detail.giabansidukien);
+
+                    // Nếu giá thay đổi, gọi API Bảng giá để cập nhật (Backend sẽ tự đóng giá cũ)
+                    if (newLe !== currentLe || newSi !== currentSi) {
+                        try {
+                            await api.post("/Banggias", {
+                                idchitietcaban: parseInt(invItem.id),
+                                giabanle: newLe,
+                                giabansi: newSi
+                            });
+                        } catch (err) {
+                            console.error("Lỗi cập nhật giá cho sản phẩm kho ID:", invItem.id, err);
                         }
                     }
-                });
+                }
+            });
 
-                // Đợi tất cả các request cập nhật giá hoàn tất
-                await Promise.all(priceUpdatePromises);
+            // Đợi tất cả các request cập nhật giá hoàn tất
+            await Promise.all(priceUpdatePromises);
 
-                alert("Nhập hàng thành công! Kho và Bảng giá đã được cập nhật.");
-                setIsImportModalOpen(false);
-                fetchInitialData(); 
-                setImportForm({ ...importForm, idloaica: "", ghichu: "", tongsoluongnhap: "" });
-                setAddedDetails([]);
-            } else {
-                alert("Lỗi nhập hàng: " + data.message);
-            }
+            alert("Nhập hàng thành công! Kho và Bảng giá đã được cập nhật.");
+            setIsImportModalOpen(false);
+            fetchInitialData();
+            setImportForm({ ...importForm, idloaica: "", ghichu: "", tongsoluongnhap: "" });
+            setAddedDetails([]);
         } catch (error) {
             console.error(error);
             alert("Lỗi kết nối server");
@@ -320,11 +303,9 @@ export default function QuanLyKho() {
     const handleDelete = async (id) => {
         if (!window.confirm("Bạn chắc chắn muốn ngừng kinh doanh mặt hàng này?")) return;
         try {
-            const res = await fetchCoXacThuc(`/Chitietcabans/${id}`, { method: "DELETE" });
-            if (res.ok) {
-                alert("Đã xóa!");
-                setInventory(inventory.filter(item => item.id !== id));
-            }
+            await api.delete(`/Chitietcabans/${id}`);
+            alert("Đã xóa!");
+            setInventory(inventory.filter(item => item.id !== id));
         } catch (error) { console.error(error); }
     };
     

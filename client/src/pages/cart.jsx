@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 export default function Cart() {
 
     const navigate = useNavigate();
-    const APP_BASE_URL = "http://localhost:8080/QuanLyVuaCa"; 
 
     const handleCheckout = () => {
         if (cartItems.length === 0) {
@@ -50,8 +49,8 @@ export default function Cart() {
     const getImageUrl = (urlFromDb) => {
         if (!urlFromDb) return 'https://placehold.co/400x300?text=No+Image';
         if (urlFromDb.startsWith('http')) return urlFromDb;
-        if (urlFromDb.startsWith('/')) return `${APP_BASE_URL}${urlFromDb}`;
-        return `${APP_BASE_URL}/images/loaica/${urlFromDb}`;
+        if (urlFromDb.startsWith('/')) return `${import.meta.env.VITE_BE_URL}${urlFromDb}`;
+        return `${import.meta.env.VITE_BE_URL}/images/loaica/${urlFromDb}`;
     };
 
     // --- HÀM TÍNH TIỀN (Giữ nguyên logic nhân trọng lượng) ---
