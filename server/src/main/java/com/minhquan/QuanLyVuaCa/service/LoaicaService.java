@@ -1,5 +1,7 @@
 package com.minhquan.QuanLyVuaCa.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaCeationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.LoaicaResponse;
@@ -16,12 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -31,7 +32,8 @@ import java.util.Objects;
 public class LoaicaService {
     LoaicaRepository loaicaRepository;
     LoaicaMapper mapper;
-    final String UPLOAD_DIR = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
+//    final String UPLOAD_DIR = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
+    Cloudinary cloudinary; // inject thay vì UPLOAD_DIR
 
     public List<LoaicaResponse> getLoaiCa(){
         List<Loaica> Loaicas = loaicaRepository.findAll();
@@ -97,39 +99,69 @@ public class LoaicaService {
                 .toLowerCase();
     }
 
+//    public String saveImage(MultipartFile file, String fileName) {
+//        try {
+//            String uploadDir = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
+//
+//            // Tạo folder nếu chưa tồn tại
+//            Path uploadPath = Paths.get(uploadDir);
+//            if (!Files.exists(uploadPath)) {
+//                Files.createDirectories(uploadPath);
+//            }
+//            if (!Files.exists(uploadPath)) {
+//                Files.createDirectories(uploadPath);
+//            }
+//
+//            Path filePath = uploadPath.resolve(fileName);
+//            file.transferTo(filePath.toFile());
+//
+//            System.out.println("Đã lưu file ảnh: " + filePath.toAbsolutePath());
+//            return fileName;
+//        } catch (IOException e) {
+//            throw new RuntimeException("Không thể lưu ảnh: " + e.getMessage(), e);
+//        }
+//    }
+
+//    private void deleteFile(String fileName) {
+//        if (fileName == null || fileName.isEmpty()) return;
+//        try {
+//            Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName);
+//            Files.deleteIfExists(filePath);
+//            System.out.println("Đã xóa ảnh cũ: " + filePath.toString());
+//        } catch (IOException e) {
+//            System.err.println("Không thể xóa ảnh cũ: " + e.getMessage());
+//        }
+//    }
+
     public String saveImage(MultipartFile file, String fileName) {
         try {
-            String uploadDir = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
-
-            // Tạo folder nếu chưa tồn tại
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            Path filePath = uploadPath.resolve(fileName);
-            file.transferTo(filePath.toFile());
-
-            System.out.println("Đã lưu file ảnh: " + filePath.toAbsolutePath());
-            return fileName;
+            Map result = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "public_id", "loaica/" + fileName,
+                            "overwrite", true
+                    )
+            );
+            return (String) result.get("secure_url");
         } catch (IOException e) {
-            throw new RuntimeException("Không thể lưu ảnh: " + e.getMessage(), e);
+            throw new RuntimeException("Không thể upload ảnh: " + e.getMessage(), e);
         }
     }
 
-    private void deleteFile(String fileName) {
-        if (fileName == null || fileName.isEmpty()) return;
+    private void deleteFile(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) return;
         try {
-            Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName);
-            Files.deleteIfExists(filePath);
-            System.out.println("Đã xóa ảnh cũ: " + filePath.toString());
-        } catch (IOException e) {
-            System.err.println("Không thể xóa ảnh cũ: " + e.getMessage());
+            // Lấy public_id từ URL: .../loaica/ten-ca.jpg -> loaica/ten-ca
+            String publicId = imageUrl
+                    .substring(imageUrl.indexOf("/loaica/") + 1)
+                    .replaceAll("\\.[^.]+$", "");
+            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+        } catch (Exception e) {
+            log.error("Không thể xóa ảnh cũ: {}", e.getMessage());
         }
     }
+
+
 
     public LoaicaResponse taoLoaica(LoaicaCeationRequest request) {
 
