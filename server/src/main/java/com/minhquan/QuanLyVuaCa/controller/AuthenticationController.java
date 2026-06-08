@@ -1,22 +1,21 @@
 package com.minhquan.QuanLyVuaCa.controller;
+
 import com.minhquan.QuanLyVuaCa.dto.request.AuthenticationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.IntrospectRequest;
-import com.minhquan.QuanLyVuaCa.dto.request.LogoutRequest;
-import com.minhquan.QuanLyVuaCa.dto.request.RefreshRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.IntrospectResponse;
 import com.minhquan.QuanLyVuaCa.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
 
@@ -26,38 +25,81 @@ import java.text.ParseException;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationController {
-    @Autowired
     AuthenticationService service;
+
+    @NonFinal
+    @Value("${jwt.valid-duration}")
+    protected int TOKEN_TIME;
+
+    @NonFinal
+    @Value("${jwt.refreshable-duration}")
+    protected int REFRESH_TIME;
 
     //login
     @PostMapping("/token")
-    ApiResponse<AuthenticationResponse> taoToken(@RequestBody AuthenticationRequest request) {
+    public ApiResponse<AuthenticationResponse> taoToken(@RequestBody AuthenticationRequest request,
+                                                        HttpServletResponse response) {
         var result = service.authenticate(request);
+
+        var cookieResult = service.addCookie(result.getToken(), TOKEN_TIME, result.getRefreshToken(), REFRESH_TIME);
+
+        response.addCookie(cookieResult.getToken());
+        response.addCookie(cookieResult.getRefreshToken());
+
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
                 .build();
     }
 
     @PostMapping("/introspect")
-    ApiResponse<IntrospectResponse> kiemTraToken(@RequestBody IntrospectRequest request){
-        var result = service.introspect(request);
+    public ApiResponse<IntrospectResponse> kiemTraToken(@CookieValue(value = "token", required = false) String token,
+                                                        @CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        var tokenRequest = IntrospectRequest.builder().token(token).build();
+        var tokenResult = service.introspect(tokenRequest);
+
+        if (tokenResult.isValid()) {
+            return ApiResponse.<IntrospectResponse>builder()
+                    .result(tokenResult)
+                    .build();
+        }
+
+        var refreshTokenRequest = IntrospectRequest.builder().token(refreshToken).build();
+        var refreshTokenResult = service.introspect(refreshTokenRequest);
+
         return ApiResponse.<IntrospectResponse>builder()
-                .result(result)
+                .result(IntrospectResponse.builder()
+                        .valid(refreshTokenResult.isValid())
+                        .build())
                 .build();
     }
 
     @PostMapping("/logout")
-    ApiResponse<Void> logout(@RequestBody LogoutRequest request){
-        service.logout(request);
+    public ApiResponse<Void> logout(@CookieValue(value = "token", required = false) String token,
+                                    @CookieValue(value = "refreshToken", required = false) String refreshToken,
+                                    HttpServletResponse response) {
+        service.logout(token, refreshToken);
+
+        var cookieResult = service.addCookie(null, 0, null, 0);
+
+        response.addCookie(cookieResult.getToken());
+        response.addCookie(cookieResult.getRefreshToken());
+
         return ApiResponse.<Void>builder()
                 .message("Đăng xuất thành công")
                 .build();
     }
 
     @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request)
+    public ApiResponse<AuthenticationResponse> refreshToken(@CookieValue(value = "refreshToken", required = false) String refreshToken,
+                                                            HttpServletResponse response)
             throws ParseException, JOSEException {
-        var result = service.refreshToken(request);
+        var result = service.refreshToken(refreshToken);
+
+        var cookieResult = service.addCookie(result.getToken(), TOKEN_TIME, result.getRefreshToken(), REFRESH_TIME);
+
+        response.addCookie(cookieResult.getToken());
+        response.addCookie(cookieResult.getRefreshToken());
+
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
                 .build();

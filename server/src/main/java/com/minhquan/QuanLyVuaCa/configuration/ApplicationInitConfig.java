@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.configuration;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import com.minhquan.QuanLyVuaCa.enums.VaiTro;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import lombok.AccessLevel;
@@ -25,6 +26,7 @@ public class ApplicationInitConfig {
                 Taikhoan user = Taikhoan.builder()
                         .email("admin@gmail.com")
                         .matkhau(passwordEncoder.encode("123456789"))
+                        .trangthaitk(TrangThaiTaiKhoan.HOAT_DONG)
                         .vaitro(VaiTro.ADMIN.name())
                         .build();
 

@@ -31,7 +31,6 @@ public enum ErrorCode {
     ACCESS_DENIED(1014, "Khong co quyen truy cap tai nguyen", HttpStatus.FORBIDDEN),
     UNAUTHORIZED(1007, "Ban khong co quyen thuc hien hanh dong nay", HttpStatus.UNAUTHORIZED),
     BLACKLIST(1009, "Token nam trong danh sach den", HttpStatus.UNAUTHORIZED),
-    ABSOLUTE_DURATION(1010, "Da het han", HttpStatus.UNAUTHORIZED),
 
     // ---SIZE CA & CHI TIET CA BAN---
     SIZECA_NOT_EXISTED(1020, "Size ca khong ton tai", HttpStatus.NOT_FOUND),
@@ -45,9 +44,10 @@ public enum ErrorCode {
     ORDER_STATUS_INVALID(1026, "Trang thai don hang khong hop le de thuc hien hanh dong nay", HttpStatus.BAD_REQUEST),
     INVENTORY_NOT_ENOUGH(1027, "So luong ton kho khong du de thuc hien giao dich", HttpStatus.CONFLICT);
 
-    private int code;
-    private String message;
-    private HttpStatus status;
+    private final int code;
+    private final String message;
+    private final HttpStatus status;
+
     ErrorCode(int code, String message, HttpStatus status) {
         this.code = code;
         this.message = message;

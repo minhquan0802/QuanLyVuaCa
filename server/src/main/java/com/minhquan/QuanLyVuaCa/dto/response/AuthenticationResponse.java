@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -9,7 +10,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AuthenticationResponse {
+    @JsonIgnore
     String token;
+
+    @JsonIgnore
     String refreshToken;
+
     boolean authenticated;
 }

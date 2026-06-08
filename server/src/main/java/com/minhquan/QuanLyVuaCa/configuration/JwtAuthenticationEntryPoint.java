@@ -21,7 +21,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         // 1. Định nghĩa lỗi (Sử dụng ErrorCode 1006 bạn đã khai báo)
         ErrorCode errorCode = ErrorCode.UNAUTHENTICATED;
-
         // 2. Set status code cho response (401)
         response.setStatus(errorCode.getStatus().value());
 

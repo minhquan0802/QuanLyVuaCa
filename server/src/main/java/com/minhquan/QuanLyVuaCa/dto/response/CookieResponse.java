@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.servlet.http.Cookie;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -9,12 +10,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
-    @JsonIgnore
-    String token;
-
-    @JsonIgnore
-    String refreshToken;
-
-    boolean authenticated;
+public class CookieResponse {
+    Cookie token;
+    Cookie refreshToken;
 }

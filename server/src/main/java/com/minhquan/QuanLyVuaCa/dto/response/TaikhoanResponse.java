@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TaikhoanResponse {
     String idtaikhoan;
-    Integer idvaitro;
     String ho;
     String ten;
     String matkhau;
@@ -21,4 +20,5 @@ public class TaikhoanResponse {
     String sodienthoai;
     String diachi;
     TrangThaiTaiKhoan trangthaitk;
+    String vaitro;
 }

@@ -71,7 +71,7 @@ public class TaiKhoanController {
                 .build();
     }
 
-    @GetMapping("/myinfo")
+    @GetMapping("/my-info")
     private ApiResponse<TaikhoanResponse> thongTinTaiKhoan(){
         return ApiResponse.<TaikhoanResponse>builder()
                 .result(taiKhoanService.getMyInfo())

@@ -24,9 +24,8 @@ spring:
 
 jwt:
   signerKey: ${SIGNER_KEY}
-  valid-duration: 30
-  refreshable-duration: 180
-  absolute-duration: 10080
+  valid-duration: 43200
+  refreshable-duration: 604800
 
 vnpay:
   tmn-code: ${TMN_CODE}
