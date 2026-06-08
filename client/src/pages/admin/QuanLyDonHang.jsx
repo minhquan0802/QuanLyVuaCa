@@ -70,7 +70,7 @@ export default function QuanLyDonHang() {
             setLoading(true);
             const [resOrders, resCust, resFish, resUnits, resPrices, resConversions] = await Promise.all([
                 api.get("/Donhangs"),
-                api.get("/TaiKhoans"),
+                api.get("/tai-khoan"),
                 api.get("/Loaicas"),
                 api.get("/Donvitinhs"),
                 api.get("/Banggias"),

@@ -1,20 +1,20 @@
 import { Routes, Route } from 'react-router-dom';
-import Login from '../pages/login';
-import Home from '../pages/home';
-import ProductDetail from '../pages/product-detail';
-import Cart from '../pages/cart';
-import Checkout from '../pages/checkout';
-import Register from '../pages/register';
-import OrderSuccess from '../pages/OrderSuccess';
-import OrderFailed from '../pages/OrderFailed';
-import ThongTinDonHang from '../pages/ThongTinDonHang';
+import Login from '../pages/customer/login';
+import Home from '../pages/customer/home';
+import ProductDetail from '../pages/customer/product-detail';
+import Cart from '../pages/customer/cart';
+import Checkout from '../pages/customer/checkout';
+import Register from '../pages/customer/register';
+import OrderSuccess from '../pages/customer/OrderSuccess';
+import OrderFailed from '../pages/customer/OrderFailed';
+import ThongTinDonHang from '../pages/customer/ThongTinDonHang';
+import Profile from '../pages/customer/Profile';
 
 // Import Admin pages
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import QuanLyLoaiCa from '../pages/admin/QuanLyLoaiCa';
 import QuanLyTaiKhoan from '../pages/admin/QuanLyTaiKhoan';
 import QuanLyDonHang from '../pages/admin/QuanLyDonHang';
-import Profile from '../pages/Profile';
 import QuanLyBangGia from '../pages/admin/QuanLyBangGia';
 import QuanLyKho from '../pages/admin/QuanLyKho';
 // Import Component bảo vệ vừa tạo

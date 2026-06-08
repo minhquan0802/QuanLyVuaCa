@@ -28,7 +28,7 @@ export default function QuanLyTaiKhoan() {
             
             // Gọi song song 2 API để tiết kiệm thời gian
             const [resAcc, resRoles] = await Promise.all([
-                api.get("/TaiKhoans"),
+                api.get("/tai-khoan"),
                 api.get("/vaitro") // FIX 1: Gọi API vai trò
             ]);
 
@@ -111,7 +111,7 @@ export default function QuanLyTaiKhoan() {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
             try {
-                await api.delete(`/TaiKhoans/${id}`);
+                await api.delete(`/tai-khoan/${id}`);
                 setAccounts(accounts.filter(item => item.idtaikhoan !== id));
                 alert("Đã xóa thành công!");
             } catch (error) {
@@ -137,8 +137,8 @@ export default function QuanLyTaiKhoan() {
 
         try {
             const url = isEditing 
-                ? `/TaiKhoans/${currentUser.idtaikhoan}`
-                : `/TaiKhoans`; 
+                ? `/tai-khoan/${currentUser.idtaikhoan}`
+                : `/tai-khoan`; 
             const method = isEditing ? "PUT" : "POST";
 
             console.log("Payload:", payload); 

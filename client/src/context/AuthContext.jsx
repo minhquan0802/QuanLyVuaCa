@@ -2,8 +2,13 @@ import { createContext, useContext, useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import api from "../config/axios";
 
-// idvaitro → tên role dùng trong app
-const ROLE_MAP = { 1: "admin", 5: "khachsi", 6: "khachle" };
+// vaitro (String từ VaiTro enum) → tên role dùng trong app
+const ROLE_MAP = {
+    "ADMIN": "admin",
+    "WHOLESALE_CUSTOMER": "khachsi",
+    "INDIVIDUAL_CUSTOMER": "khachle",
+    "STAFF": "staff",
+};
 
 const AuthContext = createContext(null);
 
@@ -16,13 +21,19 @@ export function AuthProvider({ children }) {
         const token = Cookies.get("token");
         if (!token) { setLoading(false); return; }
 
-        api.get("/TaiKhoans/myinfo")
+        api.get("/tai-khoan/my-info")
             .then(({ data }) => setUser(data.result))
-            .catch(() => Cookies.remove("token", { path: "/" }))
+            .catch((err) => {
+                // Chỉ xóa token khi server xác nhận token không hợp lệ (401/403)
+                // Không xóa khi mất mạng hoặc lỗi server tạm thời
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    Cookies.remove("token", { path: "/" });
+                }
+            })
             .finally(() => setLoading(false));
     }, []);
 
-    const role = ROLE_MAP[user?.idvaitro] ?? null;
+    const role = ROLE_MAP[user?.vaitro] ?? null;
 
     const logout = async () => {
         const token = Cookies.get("token");

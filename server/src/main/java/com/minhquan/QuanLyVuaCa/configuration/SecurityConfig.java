@@ -27,6 +27,7 @@ public class SecurityConfig {
             "/auth/**",
     };
 
+    @Autowired
     private CustomJwtDecoder customJwtDecoder;
 
     @Bean
