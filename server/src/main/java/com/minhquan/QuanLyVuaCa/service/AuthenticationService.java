@@ -72,8 +72,10 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse refreshToken(String refreshToken) throws ParseException, JOSEException {
-        if (refreshToken.isEmpty())
+        // Kiểm tra null trước khi kiểm tra rỗng
+        if (refreshToken == null || refreshToken.isEmpty()) {
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+        }
 
         var signJwt = verifyToken(refreshToken);
 

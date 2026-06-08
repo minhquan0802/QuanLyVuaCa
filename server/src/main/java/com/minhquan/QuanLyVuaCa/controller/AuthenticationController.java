@@ -15,6 +15,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
@@ -73,16 +75,51 @@ public class AuthenticationController {
                 .build();
     }
 
+//    @PostMapping("/logout")
+//    public ApiResponse<Void> logout(@CookieValue(value = "token", required = false) String token,
+//                                    @CookieValue(value = "refreshToken", required = false) String refreshToken,
+//                                    HttpServletResponse response) {
+//        service.logout(token, refreshToken);
+//
+//        var cookieResult = service.addCookie(null, 0, null, 0);
+//        response.addCookie(cookieResult.getToken());
+//        response.addCookie(cookieResult.getRefreshToken());
+//
+//        return ApiResponse.<Void>builder()
+//                .message("Đăng xuất thành công")
+//                .build();
+//    }
+
+
     @PostMapping("/logout")
     public ApiResponse<Void> logout(@CookieValue(value = "token", required = false) String token,
                                     @CookieValue(value = "refreshToken", required = false) String refreshToken,
                                     HttpServletResponse response) {
+
+        // Xóa token trong database/blacklist (nếu có)
         service.logout(token, refreshToken);
 
-        var cookieResult = service.addCookie(null, 0, null, 0);
+        // 1. Tạo ResponseCookie "báo tử" cho token
+        ResponseCookie deleteTokenCookie = ResponseCookie.from("token", "")
+                .httpOnly(true)
+                .secure(false) // Nếu bạn dùng https thì đổi thành true
+                .path("/")
+                .maxAge(0) // 0 có nghĩa là xóa ngay lập tức
+                .sameSite("Lax") // CHI TIẾT QUAN TRỌNG NHẤT
+                .build();
 
-        response.addCookie(cookieResult.getToken());
-        response.addCookie(cookieResult.getRefreshToken());
+        // 2. Tạo ResponseCookie "báo tử" cho refreshToken
+        ResponseCookie deleteRefreshCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        // 3. Gắn thẳng vào Header của response
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie.toString());
 
         return ApiResponse.<Void>builder()
                 .message("Đăng xuất thành công")
