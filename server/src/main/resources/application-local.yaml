@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: "jdbc:mysql://localhost:3306/quanlyvuaca"
+    username: root
+    password: 123456
+  data:
+    redis:
+      host: redis-12694.crce285.us-east-1-4.ec2.cloud.redislabs.com
+      port: 12694
+      password: PGBkP4PuhjZAKQ2xQbdOpZr2cNTcFEHI
+
+jwt:
+  signerKey: "61b8e4c9638f759c9112471bdfff29f02310f0e6e1053fa9c04d924d3d9869fc"
+
+vnpay:
+  tmn-code: RX5WU6CZ
+  hash-secret: FWZI93E3QQMO1O4Z2BRFYWLSSSEWCUIM
+  base-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:8080/QuanLyVuaCa/payment/vnpay-callback
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+
+frontend:
+  url: http://localhost:5173
