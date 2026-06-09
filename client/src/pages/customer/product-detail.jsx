@@ -9,7 +9,7 @@ export default function ProductDetail() {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
-    const { role: userRole } = useAuth();
+    const { role: userRole, user } = useAuth();
 
     // --- STATE DỮ LIỆU ---
     const [priceList, setPriceList] = useState([]);
@@ -383,20 +383,27 @@ export default function ProductDetail() {
                                     )}
                                 </div>
 
-                                <button 
-                                    onClick={handleAddToCart}
-                                    disabled={!selectedOption || currentStock <= 0 || currentPricePerKg === 0}
-                                    className={`w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base shadow-lg transition-all duration-300 ${
-                                        !selectedOption || currentStock <= 0 || currentPricePerKg === 0 
-                                        ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                                        : "bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 hover:-translate-y-0.5"
-                                    }`}
-                                >
-                                    <span className="material-symbols-outlined text-[20px]">
-                                        {currentStock <= 0 ? "remove_shopping_cart" : "add_shopping_cart"}
-                                    </span>
-                                    {currentStock <= 0 ? "Hết hàng" : (selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size")}
-                                </button>
+                                {user ? (
+                                    <button
+                                        onClick={handleAddToCart}
+                                        disabled={!selectedOption || currentStock <= 0 || currentPricePerKg === 0}
+                                        className={`w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base shadow-lg transition-all duration-300 ${
+                                            !selectedOption || currentStock <= 0 || currentPricePerKg === 0
+                                            ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                                            : "bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 hover:-translate-y-0.5"
+                                        }`}
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">
+                                            {currentStock <= 0 ? "remove_shopping_cart" : "add_shopping_cart"}
+                                        </span>
+                                        {currentStock <= 0 ? "Hết hàng" : (selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size")}
+                                    </button>
+                                ) : (
+                                    <a href="/" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all">
+                                        <span className="material-symbols-outlined text-[20px]">login</span>
+                                        Đăng nhập để đặt hàng
+                                    </a>
+                                )}
                             </div>
 
                         </div>

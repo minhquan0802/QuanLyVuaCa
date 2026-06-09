@@ -48,8 +48,12 @@ export default function QuanLyDonHang() {
     // Form tạo đơn
     const [newOrder, setNewOrder] = useState({
         idthongtinkhachhang: "",
+        tenKhachLe: "",
+        sdtKhachLe: "",
         items: []
     });
+    const [isPaymentPopupOpen, setIsPaymentPopupOpen] = useState(false);
+    const [completedOrderTotal, setCompletedOrderTotal] = useState(0);
 
     // Form thêm sản phẩm con
     const [currentItem, setCurrentItem] = useState({
@@ -236,26 +240,42 @@ export default function QuanLyDonHang() {
 
     // Hàm tự động tính giá
     const getAutoPrice = (repoId, customerId) => {
-        if (!repoId || !customerId) return 0;
-        const customer = customers.find(c => c.idtaikhoan == customerId);
-        if (!customer) return 0;
-
-        const isWholesale = customer.vaitro === "WHOLESALE_CUSTOMER";
-
+        if (!repoId) return 0;
         const activePrice = priceList.find(p =>
             p.idChitietcaban == repoId && p.trangThai === "Đang áp dụng"
         );
-
         if (!activePrice) return 0;
-        return isWholesale ? activePrice.giaBanSi : activePrice.giaBanLe;
+        if (!customerId) return activePrice.giaBanLe ?? 0; // Khách lẻ vãng lai: luôn dùng giá lẻ
+        const customer = customers.find(c => c.idtaikhoan == customerId);
+        if (!customer) return activePrice.giaBanLe ?? 0;
+        return customer.vaitro === "WHOLESALE_CUSTOMER" ? activePrice.giaBanSi : activePrice.giaBanLe;
     };
 
     // --- LOGIC TẠO ĐƠN HÀNG ---
     const handleCustomerChange = (customerId) => {
-        setNewOrder({ ...newOrder, idthongtinkhachhang: customerId });
-        if (currentItem.repoId) {
-            const newPrice = getAutoPrice(currentItem.repoId, customerId);
-            setCurrentItem(prev => ({ ...prev, pricePerKg: newPrice }));
+        setNewOrder(prev => ({ ...prev, idthongtinkhachhang: customerId }));
+
+        if (!customerId) {
+            // Khách lẻ vãng lai: tự động chọn đơn vị Kg (hesokg = 1)
+            const kgUnit = units.find(u => Number(u.hesokg) === 1);
+            if (kgUnit) {
+                const unitId = kgUnit.iddvt || kgUnit.id;
+                const newPrice = currentItem.repoId ? getAutoPrice(currentItem.repoId, "") : 0;
+                const estKg = parseFloat((currentItem.quantity * 1).toFixed(2));
+                setCurrentItem(prev => ({
+                    ...prev,
+                    unitId,
+                    unitName: kgUnit.tendvt,
+                    factor: 1,
+                    estimatedKg: estKg,
+                    pricePerKg: newPrice,
+                }));
+            }
+        } else {
+            if (currentItem.repoId) {
+                const newPrice = getAutoPrice(currentItem.repoId, customerId);
+                setCurrentItem(prev => ({ ...prev, pricePerKg: newPrice }));
+            }
         }
     };
 
@@ -388,9 +408,6 @@ export default function QuanLyDonHang() {
         if (!currentItem.fishId || !currentItem.sizeId || !currentItem.unitId) {
             alert("Vui lòng chọn đầy đủ thông tin!"); return;
         }
-        if (!newOrder.idthongtinkhachhang) {
-            alert("Vui lòng chọn khách hàng trước!"); return;
-        }
         if (currentItem.pricePerKg === 0) {
             alert("Sản phẩm này chưa được thiết lập giá bán!"); return;
         }
@@ -422,29 +439,40 @@ export default function QuanLyDonHang() {
         setNewOrder({ ...newOrder, items: newOrder.items.filter(i => i.id !== id) });
     };
 
+    const handleClosePaymentPopup = () => {
+        setIsPaymentPopupOpen(false);
+        setNewOrder({ idthongtinkhachhang: "", tenKhachLe: "", sdtKhachLe: "", items: [] });
+        setCurrentItem({ fishId: "", sizeId: "", repoId: "", unitId: "", unitName: "", factor: 0, quantity: 1, estimatedKg: 0, pricePerKg: 0 });
+    };
+
     const handleSubmitOrder = async () => {
-        if (!newOrder.idthongtinkhachhang) { alert("Chưa chọn khách hàng!"); return; }
         if (newOrder.items.length === 0) { alert("Đơn hàng rỗng!"); return; }
 
+        const isKhachLe = !newOrder.idthongtinkhachhang;
+        const tongTien = newOrder.items.reduce((sum, i) => sum + i.total, 0);
+
         const payload = {
-            idthongtinkhachhang: newOrder.idthongtinkhachhang,
-            trangthaidonhang: "DANG_DONG_HANG",
+            idthongtinkhachhang: isKhachLe ? null : newOrder.idthongtinkhachhang,
+            tenKhachLe: isKhachLe ? newOrder.tenKhachLe : null,
+            sdtKhachLe: isKhachLe ? newOrder.sdtKhachLe : null,
+            trangthaidonhang: "DA_THANH_TOAN",
+            ghichu: "[POS]",
             chiTietDonHang: newOrder.items.map(item => ({
                 idchitietcaban: item.repoId,
                 iddonvitinh: item.unitId,
                 soluong: item.quantity,
-                soluongkgthucte: item.unitName === 'Con' ? item.estimatedKg : 0,
-                soluongkgthuctequydoi: item.unitName !== 'Con' ? item.estimatedKg : 0,
+                soluongkgthucte: item.estimatedKg,
+                soluongkgthuctequydoi: item.estimatedKg,
                 tongtiendukien: item.total,
-                tongtienthucte: 0
+                tongtienthucte: item.total
             }))
         };
 
         try {
             await api.post("/Donhangs", payload);
-            alert("Tạo đơn hàng thành công!");
             setIsCreateModalOpen(false);
-            setNewOrder({ idthongtinkhachhang: "", items: [] });
+            setCompletedOrderTotal(tongTien);
+            setIsPaymentPopupOpen(true);
             fetchInitialData();
         } catch (error) {
             console.error(error);
@@ -537,13 +565,25 @@ export default function QuanLyDonHang() {
                         <div>
                             <label className="block text-sm font-bold text-slate-700 mb-1">Khách hàng</label>
                             <select className="w-full p-2.5 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none" value={newOrder.idthongtinkhachhang} onChange={(e) => handleCustomerChange(e.target.value)}>
-                                <option value="">-- Chọn khách hàng --</option>
+                                <option value="">Khách lẻ (Vãng lai)</option>
                                 {customers.map(c => {
                                     const roleName = c.vaitro === "WHOLESALE_CUSTOMER" ? "Khách sỉ" : "Khách lẻ";
                                     return <option key={c.idtaikhoan} value={c.idtaikhoan}>{c.ho} {c.ten} ({roleName})</option>;
                                 })}
                             </select>
                         </div>
+                        {!newOrder.idthongtinkhachhang && (
+                            <div className="space-y-2">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase">Tên khách hàng</label>
+                                    <input type="text" placeholder="Để trống = Khách vãng lai" className="w-full p-2 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm" value={newOrder.tenKhachLe} onChange={(e) => setNewOrder({ ...newOrder, tenKhachLe: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase">Số điện thoại</label>
+                                    <input type="text" placeholder="Không bắt buộc" className="w-full p-2 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm" value={newOrder.sdtKhachLe} onChange={(e) => setNewOrder({ ...newOrder, sdtKhachLe: e.target.value })} />
+                                </div>
+                            </div>
+                        )}
                         <div className="border-t border-slate-200"></div>
                         <div className="space-y-3">
                             <h4 className="font-bold text-slate-700">Thông tin sản phẩm</h4>
@@ -578,7 +618,7 @@ export default function QuanLyDonHang() {
                                     <input type="number" min="1" className="w-full p-2 border rounded-lg text-center font-bold focus:ring-1 focus:ring-blue-500" value={currentItem.quantity} onChange={(e) => handleQuantityChange(e.target.value)} />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase">Kg (Ước lượng)</label>
+                                    <label className="text-xs font-bold text-slate-500 uppercase">Số Kg (Thực tế)</label>
                                     <input type="number" disabled={currentItem.factor > 0} className={`w-full p-2 border rounded-lg text-center font-bold ${currentItem.factor > 0 ? 'bg-gray-100 text-slate-500' : 'bg-white text-blue-600 border-blue-300'}`} value={currentItem.estimatedKg} onChange={(e) => setCurrentItem({ ...currentItem, estimatedKg: parseFloat(e.target.value) || 0 })} />
                                 </div>
                             </div>
@@ -627,6 +667,36 @@ export default function QuanLyDonHang() {
                             <button onClick={handleSubmitOrder} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200 text-lg transition-all active:scale-95">Hoàn tất đơn hàng</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderPaymentPopup = () => (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                <div className="px-6 py-4 border-b border-green-100 bg-green-50 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
+                    <div>
+                        <h3 className="font-bold text-lg text-green-800">Đơn hàng đã tạo!</h3>
+                        <p className="text-sm text-green-600">Tổng tiền: <strong>{completedOrderTotal.toLocaleString()}đ</strong></p>
+                    </div>
+                </div>
+                <div className="p-6">
+                    <p className="text-center font-bold text-slate-700 mb-4">Chọn hình thức thu tiền:</p>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <button onClick={handleClosePaymentPopup} className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all">
+                            <span className="material-symbols-outlined text-3xl text-slate-600">payments</span>
+                            <span className="font-bold text-slate-700">Tiền mặt</span>
+                        </button>
+                        <button onClick={handleClosePaymentPopup} className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all">
+                            <span className="material-symbols-outlined text-3xl text-slate-600">qr_code_2</span>
+                            <span className="font-bold text-slate-700">Quét QR</span>
+                        </button>
+                    </div>
+                    <button onClick={handleClosePaymentPopup} className="w-full py-2 text-slate-400 text-sm hover:text-slate-600 transition-colors">
+                        Bỏ qua
+                    </button>
                 </div>
             </div>
         </div>
@@ -688,6 +758,7 @@ export default function QuanLyDonHang() {
             </div>
             {/* Render Create Modal */}
             {isCreateModalOpen && renderCreateModal()}
+            {isPaymentPopupOpen && renderPaymentPopup()}
 
             {/* Render View Modal (Giữ nguyên) */}
             {isViewModalOpen && selectedOrder && (

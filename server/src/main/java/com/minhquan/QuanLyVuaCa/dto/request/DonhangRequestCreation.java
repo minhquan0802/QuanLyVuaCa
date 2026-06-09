@@ -19,4 +19,6 @@ public class DonhangRequestCreation {
     TrangThaiDonHang trangthaidonhang;
     List<ChitietDonhangRequest> chiTietDonHang;
     String ghichu;
+    String tenKhachLe;
+    String sdtKhachLe;
 }
