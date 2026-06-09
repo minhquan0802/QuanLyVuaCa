@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import axios from "axios";
 import api from "../config/axios";
 
 // vaitro (String từ VaiTro enum) → tên role dùng trong app
@@ -16,21 +17,12 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Khi app khởi động: nếu có token thì fetch lại user info
+    // Khi app khởi động: dùng axios thuần (bypass interceptor) để check session.
+    // Nếu 401 → chỉ đơn giản là guest, KHÔNG redirect — tránh vòng lặp chuyển trang.
     useEffect(() => {
-        // const token = Cookies.get("token");
-        // if (!token) { setLoading(false); return; }
-
-        api.get("/tai-khoan/my-info")
+        axios.get(`${import.meta.env.VITE_BE_URL}/tai-khoan/my-info`, { withCredentials: true })
             .then(({ data }) => setUser(data.result))
-            .catch((err) => {
-                // Chỉ xóa token khi server xác nhận token không hợp lệ (401/403)
-                // Không xóa khi mất mạng hoặc lỗi server tạm thời
-                // if (err.response?.status === 401 || err.response?.status === 403) {
-                //     Cookies.remove("token", { path: "/" });
-                // }
-                setUser(null);
-            })
+            .catch(() => setUser(null))
             .finally(() => setLoading(false));
     }, []);
 

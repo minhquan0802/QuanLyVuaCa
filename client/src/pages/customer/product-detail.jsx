@@ -121,8 +121,8 @@ export default function ProductDetail() {
     const currentPricePerKg = (() => {
         if (!selectedOption) return 0;
         if (userRole === "khachsi") return Number(selectedOption.giaBanSi) || 0;
-        if (userRole === "khachle") return Number(selectedOption.giaBanLe) || 0;
-        return 0;
+        // khachle hoặc guest đều thấy giá lẻ
+        return Number(selectedOption.giaBanLe) || 0;
     })();
 
     const currentStock = (() => {
@@ -271,7 +271,7 @@ export default function ProductDetail() {
                             </div>
 
                             <div className="mb-5 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                                {userRole && currentPricePerKg > 0 ? (
+                                {currentPricePerKg > 0 ? (
                                     <>
                                         <p className="text-xs font-bold text-blue-800 uppercase mb-1">
                                             Giá {userRole === 'khachsi' ? 'bán sỉ' : 'bán lẻ'}:
