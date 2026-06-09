@@ -45,7 +45,8 @@ export default function Register() {
                 email: email,
                 matkhau: password,
                 sodienthoai: phoneNumber || null,
-                diachi: address || null
+                diachi: address || null,
+                vaitro: "CUSTOMER"
             };
 
             await api.post("/tai-khoan", newUser);
