@@ -5,28 +5,23 @@ import api from "../../config/axios";
 export default function Register() {
     const navigate = useNavigate();
     
-    // State quản lý form
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
-    const [phoneNumber, setPhoneNumber] = useState(""); // Thêm sđt
-    const [address, setAddress] = useState("");         // Thêm địa chỉ
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [address, setAddress] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     
-    // State hiển thị mật khẩu
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    // State xử lý lỗi/loading
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-
     const handleRegister = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setError("");
 
-        // 1. Validate các trường BẮT BUỘC (Tên, Email, Pass)
         if (!fullName || !email || !password || !confirmPassword) {
             setError("Vui lòng điền các thông tin bắt buộc (*).");
             return;
@@ -40,39 +35,34 @@ export default function Register() {
         setLoading(true);
 
         try {
-            // 2. Xử lý dữ liệu
             const nameParts = fullName.trim().split(" ");
             const ten = nameParts.length > 0 ? nameParts.pop() : "";
             const ho = nameParts.join(" ");
 
-            const newId = crypto.randomUUID();
-
-            // Tạo object User với đầy đủ thông tin
             const newUser = {
-                idtaikhoan: newId,
                 ho: ho,
                 ten: ten,
                 email: email,
                 matkhau: password,
-                // Các trường không bắt buộc: gửi chuỗi rỗng hoặc null nếu không nhập
                 sodienthoai: phoneNumber || null,
-                diachi: address || null,
-                idvaitro: 3, 
-                trangthaitk: "HOAT_DONG"
+                diachi: address || null
             };
 
-            // 3. Gọi API
             await api.post("/tai-khoan", newUser);
 
             alert("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
             navigate('/');
 
         } catch (err) {
-            console.error("Lỗi đăng ký:", err);
-            if (err.message.includes("Failed to fetch")) {
+            const status = err.response?.status;
+            const message = err.response?.data?.message;
+
+            if (status === 400 && message) {
+                setError(message);
+            } else if (err.message.includes("Failed to fetch")) {
                 setError("Lỗi kết nối Server (CORS/Network). Vui lòng kiểm tra Backend.");
             } else {
-                setError("Có lỗi xảy ra: " + err.message);
+                setError(message || "Có lỗi xảy ra, vui lòng thử lại.");
             }
         } finally {
             setLoading(false);
@@ -85,7 +75,6 @@ export default function Register() {
 
     return (
         <div className="font-body min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden selection:bg-blue-200 selection:text-blue-900">
-            {/* CSS Fix: Ẩn con mắt mặc định của trình duyệt (Edge/IE) để tránh bị 2 con mắt */}
             <style>{`
                 input::-ms-reveal,
                 input::-ms-clear {
@@ -93,15 +82,12 @@ export default function Register() {
                 }
             `}</style>
 
-            {/* Background Decoration */}
             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-400/20 blur-[120px] animate-pulse"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-400/20 blur-[120px]"></div>
 
-            {/* Main Content */}
             <div className="w-full max-w-md p-4 relative z-10 my-10">
                 <div className="flex flex-col items-center p-8 sm:p-10 bg-white shadow-2xl shadow-blue-100 rounded-3xl ring-1 ring-slate-200">
 
-                    {/* Logo Section */}
                     <div className="mb-6 flex flex-col items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
                         <div className="flex items-center justify-center size-12 rounded-full bg-blue-50 text-blue-600 mb-1 ring-1 ring-blue-100 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                             <span className="material-symbols-outlined text-3xl">phishing</span>
@@ -124,7 +110,6 @@ export default function Register() {
 
                     <form className="w-full flex flex-col gap-4" onSubmit={handleRegister}>
 
-                        {/* Full Name */}
                         <div className="group">
                             <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Họ và Tên <span className="text-red-500">*</span></label>
                             <div className="relative">
@@ -139,7 +124,6 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Email */}
                         <div className="group">
                             <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Địa chỉ Email <span className="text-red-500">*</span></label>
                             <div className="relative">
@@ -154,7 +138,6 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Phone Number (Optional) */}
                         <div className="group">
                             <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Số điện thoại <span className="text-slate-400 font-normal text-xs">(Tùy chọn)</span></label>
                             <div className="relative">
@@ -169,7 +152,6 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Address (Optional) */}
                         <div className="group">
                             <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Địa chỉ <span className="text-slate-400 font-normal text-xs">(Tùy chọn)</span></label>
                             <div className="relative">
@@ -184,7 +166,6 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Password */}
                         <div className="group">
                             <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Mật khẩu <span className="text-red-500">*</span></label>
                             <div className="relative">
@@ -208,7 +189,6 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Confirm Password */}
                         <div className="group">
                             <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Xác nhận Mật khẩu <span className="text-red-500">*</span></label>
                             <div className="relative">
@@ -232,7 +212,6 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={loading}
@@ -246,7 +225,6 @@ export default function Register() {
                         </button>
                     </form>
 
-                    {/* Login Link */}
                     <div className="mt-6 text-center text-sm text-slate-500">
                         Đã có tài khoản? <a href="#" onClick={handleLogin} className="font-bold text-blue-600 hover:text-blue-800 transition-colors">Đăng nhập ngay</a>
                     </div>

@@ -1,26 +1,17 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
-
-const COOKIE_OPTS = { expires: 1, path: '/', sameSite: 'Lax' };
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BE_URL,
     withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-    const token = Cookies.get('token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-});
-
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, newToken = null) => {
+const processQueue = (error) => {
     failedQueue.forEach(({ resolve, reject }) => {
         if (error) reject(error);
-        else resolve(newToken);
+        else resolve();
     });
     failedQueue = [];
 };
@@ -37,9 +28,10 @@ api.interceptors.response.use(
         if (isRefreshing) {
             return new Promise((resolve, reject) => {
                 failedQueue.push({ resolve, reject });
-            }).then((newToken) => {
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            }).then(() => {
                 return api(originalRequest);
+            }).catch((err) => {
+                return Promise.reject(err);
             });
         }
 
@@ -47,19 +39,13 @@ api.interceptors.response.use(
         isRefreshing = true;
 
         try {
-            const token = Cookies.get('token');
-            const { data } = await axios.post(
+            await axios.post(
                 `${import.meta.env.VITE_BE_URL}/auth/refresh`,
-                { token },
+                {},
                 { withCredentials: true }
             );
-            const newToken = data.result.token;
-
-            Cookies.set('token', newToken, COOKIE_OPTS);
-            api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-            processQueue(null, newToken);
-
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            
+            processQueue(null);
             return api(originalRequest);
         } catch (refreshError) {
             processQueue(refreshError);
@@ -72,28 +58,19 @@ api.interceptors.response.use(
 );
 
 export const dangXuat = async () => {
-    const token = Cookies.get('token');
     try {
-        if (token) {
-            await axios.post(
-                `${import.meta.env.VITE_BE_URL}/auth/logout`,
-                { token },
-                { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
-            );
-        }
-    } catch { /* ignore */ }
-    Cookies.remove('token', { path: '/' });
-    Cookies.remove('authenticated', { path: '/' });
-    Cookies.remove('role', { path: '/' });
+        await axios.post(
+            `${import.meta.env.VITE_BE_URL}/auth/logout`,
+            {},
+            { withCredentials: true }
+        );
+    } catch { 
+        /* ignore */ 
+    }
     
-    // window.location.href = '/';
-    // Chỉ ép tải lại trang nếu user ĐANG Ở TRANG KHÁC (như /home, /admin)
-    // Nếu đang ở sẵn trang chủ '/' (Login) thì không làm gì cả để tránh lặp vô tận
     if (window.location.pathname !== '/') {
         window.location.href = '/';
     }
 };
-
-export const COOKIE_OPTS_EXPORT = COOKIE_OPTS;
 
 export default api;
