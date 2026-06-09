@@ -40,4 +40,3 @@ dist-ssr
 *.sln
 *.sw?
 
-../server/src/main/resources/application-local.yaml

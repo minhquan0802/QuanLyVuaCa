@@ -29,10 +29,12 @@ export default function AppRoutes() {
 
 
 
+            {/* Public routes - không cần đăng nhập */}
+            <Route path='/home' element={<Home />} />
+            <Route path='/product-detail' element={<ProductDetail />} />
+            <Route path='/product-detail/:product_id' element={<ProductDetail />} />
+
             <Route element={<ProtectedRoute />}>
-                <Route path='/home' element={<Home />} />
-                <Route path='/product-detail' element={<ProductDetail />} />
-                <Route path='/product-detail/:product_id' element={<ProductDetail />} />
                 <Route path='/cart' element={<Cart />} />
                 <Route path='/checkout' element={<Checkout />} />
                 <Route path='/profile' element={<Profile />} />

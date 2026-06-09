@@ -61,6 +61,13 @@ public class DonhangService {
             donhang.setTrangthaidonhang(TrangThaiDonHang.CHO_XAC_NHAN);
         }
 
+        // Khách lẻ: auto-fill tên nếu FE bỏ trống
+        if (request.getIdthongtinkhachhang() == null || request.getIdthongtinkhachhang().isBlank()) {
+            if (donhang.getTenKhachLe() == null || donhang.getTenKhachLe().isBlank()) {
+                donhang.setTenKhachLe("Khách vãng lai");
+            }
+        }
+
         // Lưu đơn hàng trước để có ID gán cho chi tiết
         Donhang savedDonhang = donhangRepository.save(donhang);
         BigDecimal tongTienDonHang = BigDecimal.ZERO;
@@ -171,19 +178,23 @@ public class DonhangService {
         }
 
         // 3. Chuẩn bị dữ liệu trả về
-        String tenKhach = "Khách lẻ";
-        String sdtKhach = "";
+        String tenKhach;
+        String sdtKhach;
 
         if (savedDonhang.getIdthongtinkhachhang() != null) {
-            // Nếu đơn hàng CÓ ID khách hàng -> Bắt đầu đi tìm trong DB
             var khachOpt = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang());
             if (khachOpt.isPresent()) {
-                // Nếu tìm thấy tài khoản đó trong DB
                 var khach = khachOpt.get();
-                // Cập nhật lại biến tenKhach bằng tên thật trong DB
                 tenKhach = khach.getHo() + " " + khach.getTen();
                 sdtKhach = khach.getSodienthoai();
+            } else {
+                tenKhach = "Khách vãng lai";
+                sdtKhach = "";
             }
+        } else {
+            tenKhach = (savedDonhang.getTenKhachLe() != null && !savedDonhang.getTenKhachLe().isBlank())
+                    ? savedDonhang.getTenKhachLe() : "Khách vãng lai";
+            sdtKhach = savedDonhang.getSdtKhachLe() != null ? savedDonhang.getSdtKhachLe() : "";
         }
 
         return donhangMapper.toDonhangResponse(savedDonhang, tenKhach, sdtKhach);
@@ -204,20 +215,25 @@ public class DonhangService {
 
         // Duyệt từng đơn hàng bằng vòng lặp
         for (Donhang donhang : listEntity) {
-            String tenKhach = "Khách lẻ";
-            String sdtKhach = "";
+            String tenKhach;
+            String sdtKhach;
 
-            // Tìm thông tin khách hàng
             if (donhang.getIdthongtinkhachhang() != null) {
                 Optional<Taikhoan> khachOpt = taikhoanRepository.findById(donhang.getIdthongtinkhachhang());
                 if (khachOpt.isPresent()) {
                     Taikhoan khach = khachOpt.get();
                     tenKhach = khach.getHo() + " " + khach.getTen();
                     sdtKhach = khach.getSodienthoai();
+                } else {
+                    tenKhach = "Khách vãng lai";
+                    sdtKhach = "";
                 }
+            } else {
+                tenKhach = (donhang.getTenKhachLe() != null && !donhang.getTenKhachLe().isBlank())
+                        ? donhang.getTenKhachLe() : "Khách vãng lai";
+                sdtKhach = donhang.getSdtKhachLe() != null ? donhang.getSdtKhachLe() : "";
             }
 
-            // Map sang Response và thêm vào list kết quả
             DonhangResponse response = donhangMapper.toDonhangResponse(donhang, tenKhach, sdtKhach);
             responseList.add(response);
         }

@@ -31,6 +31,15 @@ public class SecurityConfig {
             "/auth/**",
     };
 
+    private final String[] PUBLIC_GET_ENDPOINTS = {
+            "/Loaicas",
+            "/Loaicas/**",
+            "/Chitietcabans",
+            "/Banggias",
+            "/Quydois",
+            "/Donvitinhs",
+    };
+
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
 
@@ -38,6 +47,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(request ->
                 request.requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated());
 
