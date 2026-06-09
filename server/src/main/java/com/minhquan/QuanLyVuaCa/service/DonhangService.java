@@ -269,7 +269,31 @@ public class DonhangService {
 //                .collect(Collectors.toList());
     }
 
-    // --- 4. HỦY ĐƠN HÀNG (khách tự hủy khi còn CHO_XAC_NHAN) ---
+    // --- 4. XÁC NHẬN ĐÃ NHẬN HÀNG (khách sỉ tự xác nhận khi DANG_VAN_CHUYEN) ---
+    @Transactional
+    @PreAuthorize("hasAnyRole('WHOLESALE_CUSTOMER')")
+    public DonhangResponse xacNhanNhanHang(String idDonhang) {
+        Donhang donhang = donhangRepository.findById(idDonhang)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+
+        if (donhang.getTrangthaidonhang() != TrangThaiDonHang.DANG_VAN_CHUYEN) {
+            throw new RuntimeException("Đơn hàng không ở trạng thái đang giao");
+        }
+
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        if (!String.valueOf(currentUser.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
+            throw new RuntimeException("Bạn không có quyền xác nhận đơn hàng này");
+        }
+
+        donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
+        Donhang saved = donhangRepository.save(donhang);
+        return donhangMapper.toDonhangResponse(saved, currentUser.getHo() + " " + currentUser.getTen(), currentUser.getSodienthoai());
+    }
+
+    // --- 5. HỦY ĐƠN HÀNG (khách tự hủy khi còn CHO_XAC_NHAN) ---
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public DonhangResponse huyDonHang(String idDonhang) {

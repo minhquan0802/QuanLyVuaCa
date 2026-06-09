@@ -730,16 +730,16 @@ export default function QuanLyDonHang() {
 
                                     <div className="flex gap-2 overflow-x-auto pb-1">
                                         {/* Các nút chuyển trạng thái cũ */}
-                                        {(selectedOrder.trangthaidonhang === "CHO_XAC_NHAN" || selectedOrder.trangthaidonhang === "DA_THANH_TOAN") && (
+                                        {selectedOrder.trangthaidonhang === "CHO_XAC_NHAN" && (
                                             <button onClick={() => handleUpdateStatus("DANG_DONG_HANG")} className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs hover:bg-blue-700 whitespace-nowrap">Bắt đầu đóng hàng</button>
                                         )}
                                         {selectedOrder.trangthaidonhang === "DANG_DONG_HANG" && (
-                                            <button onClick={() => handleUpdateStatus("DANG_VAN_CHUYEN")} className="flex-1 py-2 bg-purple-600 text-white rounded-lg font-bold text-xs hover:bg-purple-700 whitespace-nowrap">Giao Vận chuyển</button>
+                                            <button onClick={() => handleUpdateStatus("DANG_VAN_CHUYEN")} className="flex-1 py-2 bg-purple-600 text-white rounded-lg font-bold text-xs hover:bg-purple-700 whitespace-nowrap">Giao vận chuyển</button>
                                         )}
                                         {selectedOrder.trangthaidonhang === "DANG_VAN_CHUYEN" && (
-                                            <button onClick={() => handleUpdateStatus("GIAO_HANG_THANH_CONG")} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 whitespace-nowrap">Hoàn tất</button>
+                                            <button onClick={() => handleUpdateStatus("GIAO_HANG_THANH_CONG")} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 whitespace-nowrap">Hoàn tất giao hàng</button>
                                         )}
-                                        {!["GIAO_HANG_THANH_CONG", "HUY", "DANG_VAN_CHUYEN"].includes(selectedOrder.trangthaidonhang) && (
+                                        {["CHO_XAC_NHAN", "DANG_DONG_HANG"].includes(selectedOrder.trangthaidonhang) && (
                                             <button onClick={() => handleUpdateStatus("HUY")} className="px-3 py-2 border border-red-200 text-red-600 rounded-lg font-bold text-xs hover:bg-red-50">Hủy</button>
                                         )}
                                     </div>
