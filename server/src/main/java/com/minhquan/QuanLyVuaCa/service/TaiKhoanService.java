@@ -56,7 +56,7 @@ public class TaiKhoanService {
                 taiKhoanRepository.findById(id).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'INDIVIDUAL_CUSTOMER', 'WHOLESALE_CUSTOMER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     public TaikhoanResponse updateTaiKhoan(String idTaiKhoan, TaiKhoanUpdateRequest request) {
         Taikhoan taikhoan = taiKhoanRepository.findById(idTaiKhoan).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
         taikhoanMapper.updateTaikhoan(taikhoan, request);

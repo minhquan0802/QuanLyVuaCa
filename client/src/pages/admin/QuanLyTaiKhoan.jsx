@@ -6,15 +6,13 @@ export default function QuanLyTaiKhoan() {
     const ROLES = [
         { value: "ADMIN", label: "Quản trị viên" },
         { value: "STAFF", label: "Nhân viên" },
-        { value: "WHOLESALE_CUSTOMER", label: "Khách hàng sỉ" },
-        { value: "INDIVIDUAL_CUSTOMER", label: "Khách hàng lẻ" },
+        { value: "CUSTOMER", label: "Khách hàng" },
     ];
 
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
 
-    // --- 1. Fetch Data ---
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -36,7 +34,6 @@ export default function QuanLyTaiKhoan() {
         fetchData();
     }, []);
 
-    // --- 2. Modal Logic ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentUser, setCurrentUser] = useState({
@@ -47,7 +44,7 @@ export default function QuanLyTaiKhoan() {
         matkhau: "",
         sodienthoai: "",
         diachi: "",
-        vaitro: "INDIVIDUAL_CUSTOMER",
+        vaitro: "CUSTOMER",
         trangthaitk: "HOAT_DONG"
     });
 
@@ -62,7 +59,7 @@ export default function QuanLyTaiKhoan() {
             matkhau: "",
             sodienthoai: "",
             diachi: "",
-            vaitro: "INDIVIDUAL_CUSTOMER",
+            vaitro: "CUSTOMER",
             trangthaitk: "HOAT_DONG"
         });
         setIsModalOpen(true);
@@ -73,13 +70,12 @@ export default function QuanLyTaiKhoan() {
         setShowPassword(false);
         setCurrentUser({
             ...user,
-            vaitro: user.vaitro || "INDIVIDUAL_CUSTOMER",
+            vaitro: user.vaitro || "CUSTOMER",
             matkhau: ""
         });
         setIsModalOpen(true);
     };
 
-    // --- 3. CRUD Actions ---
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
             try {
@@ -103,16 +99,13 @@ export default function QuanLyTaiKhoan() {
             email: currentUser.email,
             sodienthoai: currentUser.sodienthoai,
             diachi: currentUser.diachi,
-            trangthaitk: currentUser.trangthaitk
+            ...(isEditing && { trangthaitk: currentUser.trangthaitk })
         };
 
         try {
             const url = isEditing 
                 ? `/tai-khoan/${currentUser.idtaikhoan}`
                 : `/tai-khoan`; 
-            const method = isEditing ? "PUT" : "POST";
-
-            console.log("Payload:", payload); 
 
             if (isEditing) {
                 await api.put(url, payload);
@@ -122,7 +115,7 @@ export default function QuanLyTaiKhoan() {
 
             alert(isEditing ? "Cập nhật thành công!" : "Thêm mới thành công!");
             setIsModalOpen(false);
-            fetchData(); // Reload lại để cập nhật list mới nhất từ server
+            fetchData();
 
         } catch (error) {
             alert("Có lỗi xảy ra: " + error.message);
@@ -138,15 +131,13 @@ export default function QuanLyTaiKhoan() {
     const getRoleColor = (vaitro) => {
         if (vaitro === "ADMIN") return "bg-red-100 text-red-700";
         if (vaitro === "STAFF") return "bg-blue-100 text-blue-700";
-        if (vaitro === "WHOLESALE_CUSTOMER") return "bg-orange-100 text-orange-700";
-        if (vaitro === "INDIVIDUAL_CUSTOMER") return "bg-purple-100 text-purple-700";
+        if (vaitro === "CUSTOMER") return "bg-green-100 text-green-700";
         return "bg-slate-100 text-slate-600";
     };
 
     return (
         <AdminLayout title="Quản Lý Tài Khoản">
             
-            {/* Toolbar */}
             <div className="flex justify-between items-center mb-6">
                 <div className="relative w-96">
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
@@ -158,7 +149,6 @@ export default function QuanLyTaiKhoan() {
                 </button>
             </div>
 
-            {/* Table */}
             <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -201,7 +191,6 @@ export default function QuanLyTaiKhoan() {
                 </div>
             </div>
 
-            {/* Modal Form */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
@@ -225,14 +214,13 @@ export default function QuanLyTaiKhoan() {
                                 <input type="email" required className="input-field" value={currentUser.email} onChange={e => setCurrentUser({...currentUser, email: e.target.value})} />
                             </div>
                             
-                            {/* FIX 4: Ô mật khẩu có mắt xem */}
                             <div className="md:col-span-2 relative">
                                 <label className="label-text">Mật khẩu</label>
                                 <div className="relative">
                                     <input 
                                         type={showPassword ? "text" : "password"} 
                                         required={!isEditing} 
-                                        className="input-field pr-10" // Padding right để tránh đè icon
+                                        className="input-field pr-10" 
                                         value={currentUser.matkhau} 
                                         onChange={e => setCurrentUser({...currentUser, matkhau: e.target.value})} 
                                         placeholder={isEditing ? "Để trống nếu không muốn đổi mật khẩu" : "Nhập mật khẩu..."} 
@@ -261,20 +249,21 @@ export default function QuanLyTaiKhoan() {
                             <div>
                                 <label className="label-text">Vai trò</label>
                                 <select className="input-field" value={currentUser.vaitro} onChange={e => setCurrentUser({...currentUser, vaitro: e.target.value})}>
-                                    {ROLES.map(role => (
+                                    ={ROLES.map(role => (
                                         <option key={role.value} value={role.value}>{role.label}</option>
                                     ))}
                                 </select>
                             </div>
 
-                            {/* FIX 2: Combobox Trạng thái */}
-                            <div>
-                                <label className="label-text">Trạng thái</label>
-                                <select className="input-field" value={currentUser.trangthaitk} onChange={e => setCurrentUser({...currentUser, trangthaitk: e.target.value})}>
-                                    <option value="HOAT_DONG">Hoạt động</option>
-                                    <option value="KHOA">Khóa</option>
-                                </select>
-                            </div>
+                            {isEditing && (
+                                <div>
+                                    <label className="label-text">Trạng thái</label>
+                                    <select className="input-field" value={currentUser.trangthaitk} onChange={e => setCurrentUser({...currentUser, trangthaitk: e.target.value})}>
+                                        <option value="HOAT_DONG">Hoạt động</option>
+                                        <option value="KHOA">Khóa</option>
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t mt-2">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium">Hủy</button>

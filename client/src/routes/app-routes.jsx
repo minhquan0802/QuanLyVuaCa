@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
-import Login from '../pages/customer/login';
+import Login from '../pages/auth/login';
 import Home from '../pages/customer/home';
 import ProductDetail from '../pages/customer/product-detail';
 import Cart from '../pages/customer/cart';
 import Checkout from '../pages/customer/checkout';
-import Register from '../pages/customer/register';
+import Register from '../pages/auth/register';
 import OrderSuccess from '../pages/customer/OrderSuccess';
 import OrderFailed from '../pages/customer/OrderFailed';
 import ThongTinDonHang from '../pages/customer/ThongTinDonHang';
