@@ -10,8 +10,9 @@ import java.math.BigDecimal;
 public class ChitietDonhangResponse {
     String idchitietdonhang;
     Integer idchitietcaban;
-    String tenLoaiCa; // "Cá Điêu Hồng"
-    String tenSize;   // "1kg - 2kg"
+    String tenLoaiCa;
+    String tenSize;
+    String hinhanhurl;
     Integer soluong;
     BigDecimal dongia;
     BigDecimal tongtiendukien;

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Header from "../components/header";
-import Footer from "../components/footer";
-import api from "../config/axios";
+﻿import { useState } from "react";
+import Header from "../../components/header";
+import Footer from "../../components/footer";
+import api from "../../config/axios";
+import { useAuth } from "../../context/AuthContext";
 
 // [CẬP NHẬT] Map ID (số) sang Tên hiển thị
 const ROLE_DEFINITIONS = {
@@ -15,32 +15,12 @@ const ROLE_DEFINITIONS = {
 };
 
 export default function Profile() {
-    const navigate = useNavigate();
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { user, setUser, loading } = useAuth();
 
     // State cho chế độ chỉnh sửa
-    const [isEditing, setIsEditing] = useState(false); 
-    const [formData, setFormData] = useState({});      
-
-    // Fetch dữ liệu ban đầu
-    useEffect(() => {
-        const getMyInfo = async () => {
-            try {
-                setLoading(true);
-                const { data } = await api.get("/TaiKhoans/myinfo");
-                setUser(data.result);
-                setFormData(data.result);
-
-            } catch (error) {
-                console.error("Lỗi:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        getMyInfo();
-    }, [navigate]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({});
+    const [isSaving, setIsSaving] = useState(false);
 
     // [CẬP NHẬT] Hàm lấy tên hiển thị dựa trên ID (số)
     const getDisplayRole = (roleId) => {
@@ -72,21 +52,23 @@ export default function Profile() {
     };
 
     const handleSave = async () => {
+        setIsSaving(true);
         try {
-            const { data } = await api.put(`/TaiKhoans/${user.idtaikhoan}`, {
+            const { data } = await api.put(`/tai-khoan/${user.idtaikhoan}`, {
                 ho: formData.ho,
                 ten: formData.ten,
                 sodienthoai: formData.sodienthoai,
                 diachi: formData.diachi,
-                idvaitro: formData.idvaitro // Gửi ID số về backend
+                idvaitro: formData.idvaitro
             });
             setUser(data.result);
             setIsEditing(false);
             alert("Cập nhật hồ sơ thành công!");
-
         } catch (error) {
             console.error("Lỗi save:", error);
-            alert("Có lỗi xảy ra: " + error.message);
+            alert("Có lỗi xảy ra: " + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -101,7 +83,13 @@ export default function Profile() {
         );
     }
 
-    if (!user) return null;
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <p className="text-slate-500">Không thể tải thông tin hồ sơ.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 font-body flex flex-col">
@@ -160,12 +148,16 @@ export default function Profile() {
                                             >
                                                 Hủy
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={handleSave}
-                                                className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 shadow-lg shadow-green-200 transition-all active:scale-95 flex items-center gap-2"
+                                                disabled={isSaving}
+                                                className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 shadow-lg shadow-green-200 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60"
                                             >
-                                                <span className="material-symbols-outlined text-[20px]">save</span>
-                                                Lưu
+                                                {isSaving
+                                                    ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    : <span className="material-symbols-outlined text-[20px]">save</span>
+                                                }
+                                                {isSaving ? "Đang lưu..." : "Lưu"}
                                             </button>
                                         </div>
                                     )}

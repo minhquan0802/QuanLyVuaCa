@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 
@@ -51,48 +51,67 @@ export default function QuanLyLoaiCa() {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [currentCategory, setCurrentCategory] = useState({ id: null, tenloaica: "", mieuta: "", hinhanhurl: "" });
+    const [imagePreview, setImagePreview] = useState(null);
+    const fileInputRef = useRef(null);
 
     const handleMoTabThemMoi = () => {
         setIsEditing(false);
         setCurrentCategory({ id: null, tenloaica: "", mieuta: "", hinhanhurl: "" });
+        setImagePreview(null);
         setIsModalOpen(true);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setCurrentCategory(prev => ({ ...prev, hinhanhFile: file }));
+        setImagePreview(URL.createObjectURL(file));
     };
 
     const handleSave = async (e) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             const formData = new FormData();
             formData.append("tenloaica", currentCategory.tenloaica);
-            formData.append("mieuta", currentCategory.mieuta);
+            formData.append("mieuta", currentCategory.mieuta || "");
             if (currentCategory.hinhanhFile) formData.append("hinhanh", currentCategory.hinhanhFile);
 
             const { data } = await api.post("/Loaicas", formData);
-            setCategories([...categories, data.result]);
-            alert("Thêm thành công!");
+            setCategories(prev => [...prev, data.result]);
             setIsModalOpen(false);
-        } catch (error) { alert("Lỗi: " + error.message); }
+        } catch (error) {
+            alert("Lỗi: " + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             const formData = new FormData();
             formData.append("tenloaica", currentCategory.tenloaica);
-            formData.append("mieuta", currentCategory.mieuta);
+            formData.append("mieuta", currentCategory.mieuta || "");
             if (currentCategory.hinhanhFile) formData.append("hinhanh", currentCategory.hinhanhFile);
 
             const { data } = await api.put(`/Loaicas/${currentCategory.id}`, formData);
-            setCategories(categories.map(item => item.id === data.result.id ? data.result : item));
-            alert("Cập nhật thành công!");
+            setCategories(prev => prev.map(item => item.id === data.result.id ? data.result : item));
             setIsModalOpen(false);
-            setCurrentCategory(prev => ({ ...prev, hinhanhFile: null }));
-        } catch (error) { alert("Lỗi: " + error.message); }
+        } catch (error) {
+            alert("Lỗi: " + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleEdit = (category) => {
         setIsEditing(true);
-        setCurrentCategory(category);
+        setCurrentCategory({ ...category, hinhanhFile: null });
+        setImagePreview(null);
         setIsModalOpen(true);
     };
 
@@ -339,21 +358,93 @@ export default function QuanLyLoaiCa() {
                 </div>
             )}
 
-            {/* Modal Loại cá giữ nguyên... */}
-            {isModalOpen && ( /* ... */ <div className="hidden">Placeholder</div>)} 
-            {/* (Phần Modal thêm loại cá ở cuối file bạn giữ nguyên như cũ nhé) */}
-             {isModalOpen && (
+            {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h3 className="font-bold text-lg text-slate-800">{isEditing ? "Cập nhật Loại Cá" : "Thêm Loại Cá Mới"}</h3>
-                            <button onClick={() => setIsModalOpen(false)}><span className="material-symbols-outlined text-slate-400">close</span></button>
+                            <button onClick={() => setIsModalOpen(false)} disabled={isSaving}>
+                                <span className="material-symbols-outlined text-slate-400">close</span>
+                            </button>
                         </div>
                         <form onSubmit={isEditing ? handleUpdate : handleSave} className="p-6 space-y-4">
-                            <div><label className="block text-sm font-bold text-slate-700 mb-1">Tên loại cá</label><input type="text" required value={currentCategory.tenloaica} onChange={(e) => setCurrentCategory({ ...currentCategory, tenloaica: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none" /></div>
-                            <div><label className="block text-sm font-bold text-slate-700 mb-1">Hình ảnh</label><input type="file" onChange={(e) => setCurrentCategory({ ...currentCategory, hinhanhFile: e.target.files[0] })} className="w-full px-4 py-2 rounded-lg border" /></div>
-                            <div><label className="block text-sm font-bold text-slate-700 mb-1">Miêu tả</label><textarea rows="3" value={currentCategory.mieuta} onChange={(e) => setCurrentCategory({ ...currentCategory, mieuta: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none"></textarea></div>
-                            <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium">Hủy</button><button type="submit" className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg">{isEditing ? "Lưu thay đổi" : "Thêm mới"}</button></div>
+                            {/* Tên loại cá */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Tên loại cá <span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={currentCategory.tenloaica}
+                                    onChange={(e) => setCurrentCategory({ ...currentCategory, tenloaica: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none"
+                                    placeholder="VD: Cá Trắm, Cá Chép..."
+                                />
+                            </div>
+
+                            {/* Hình ảnh — upload lên Cloudinary qua BE */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Hình ảnh</label>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+
+                                {/* Vùng preview / click to upload */}
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="relative w-full h-44 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all overflow-hidden group"
+                                >
+                                    {(imagePreview || (isEditing && currentCategory.hinhanhurl)) ? (
+                                        <>
+                                            <img
+                                                src={imagePreview || getImageUrl(currentCategory.hinhanhurl)}
+                                                alt="preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                                <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>
+                                                <span className="text-white text-xs font-bold">Đổi ảnh</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2 text-slate-400 pointer-events-none">
+                                            <span className="material-symbols-outlined text-4xl">cloud_upload</span>
+                                            <p className="text-sm font-medium">Click để chọn ảnh</p>
+                                            <p className="text-xs">JPG, PNG, WEBP — sẽ upload lên Cloudinary</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {currentCategory.hinhanhFile && (
+                                    <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-sm">check_circle</span>
+                                        {currentCategory.hinhanhFile.name} ({(currentCategory.hinhanhFile.size / (1024 * 1024)).toFixed(2)} MB)
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Miêu tả */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Miêu tả</label>
+                                <textarea
+                                    rows="3"
+                                    value={currentCategory.mieuta || ""}
+                                    onChange={(e) => setCurrentCategory({ ...currentCategory, mieuta: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none resize-none"
+                                    placeholder="Mô tả ngắn về loại cá..."
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium disabled:opacity-50">Hủy</button>
+                                <button type="submit" disabled={isSaving} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg disabled:opacity-60 flex items-center gap-2">
+                                    {isSaving && <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                                    {isSaving ? "Đang lưu..." : (isEditing ? "Lưu thay đổi" : "Thêm mới")}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>

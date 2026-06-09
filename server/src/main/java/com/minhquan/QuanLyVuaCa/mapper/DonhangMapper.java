@@ -21,6 +21,7 @@ public interface DonhangMapper {
     @Mapping(target = "dongia", expression = "java(calculateUnitPrice(entity))")
     @Mapping(source = "idchitietcaban.id", target = "idchitietcaban")
     @Mapping(source = "idchitietcaban.idloaica.tenloaica", target = "tenLoaiCa")
+    @Mapping(source = "idchitietcaban.idloaica.hinhanhurl", target = "hinhanhurl")
     @Mapping(source = "idchitietcaban.idsizeca.sizeca", target = "tenSize")
     @Mapping(source = "iddonvitinh.id", target = "iddonvitinh")
     @Mapping(source = "khoiluongthucte", target = "soluongkgthucte") // Map Kg thực tế

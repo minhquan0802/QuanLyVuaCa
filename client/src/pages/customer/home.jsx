@@ -1,6 +1,6 @@
-import Header from "../components/header"
-import Footer from "../components/footer"
-import ProductList from "../components/product-list"
+﻿import Header from "../../components/header"
+import Footer from "../../components/footer"
+import ProductList from "../../components/product-list"
 import { useState } from "react" // [1] Import useState
 
 export default function Home() {

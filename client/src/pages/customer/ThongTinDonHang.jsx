@@ -1,8 +1,13 @@
-import Header from "../components/header";
-import Footer from "../components/footer";
+﻿import Header from "../../components/header";
+import Footer from "../../components/footer";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../config/axios";
+import api from "../../config/axios";
+import { useAuth } from "../../context/AuthContext";
+
+const BANK_ID = import.meta.env.VITE_BANK_ID || "MB";
+const BANK_ACCOUNT = import.meta.env.VITE_BANK_ACCOUNT || "0123456789";
+const BANK_NAME = import.meta.env.VITE_BANK_NAME || "SHOP VUA CA";
 
 const TABS = [
     { id: 'ALL', label: 'Tất cả' },
@@ -16,16 +21,29 @@ const TABS = [
 
 export default function ThongTinDonHang() {
     const navigate = useNavigate();
+    const { role: userRole } = useAuth();
+    const isWholesale = userRole === "khachsi";
+
     // --- STATE DỮ LIỆU CHÍNH ---
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('ALL'); 
+    const [activeTab, setActiveTab] = useState('ALL');
 
     // --- STATE CHO MODAL CHI TIẾT ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [orderDetails, setOrderDetails] = useState([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
+
+    // --- STATE CHO MODAL THANH TOÁN ---
+    const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+    const [payOrder, setPayOrder] = useState(null);
+    const [tinhTrang, setTinhTrang] = useState(null);
+    const [loadingTinhTrang, setLoadingTinhTrang] = useState(false);
+    const [payType, setPayType] = useState('full');       // 'full' | 'partial'
+    const [payMethod, setPayMethod] = useState('vnpay');  // 'vnpay' | 'bank'
+    const [partialAmount, setPartialAmount] = useState('');
+    const [payLoading, setPayLoading] = useState(false);
 
     // [2] Helper lấy ảnh (Copy từ ProductList)
     const getImageUrl = (urlFromDb) => {
@@ -66,6 +84,93 @@ export default function ThongTinDonHang() {
             console.error("Lỗi tải chi tiết:", error);
         } finally {
             setLoadingDetails(false);
+        }
+    };
+
+    const handleConfirmReceived = async (orderId) => {
+        if (!window.confirm("Xác nhận bạn đã nhận được hàng?")) return;
+        try {
+            await api.put(`/Donhangs/${orderId}/xac-nhan-nhan-hang`);
+            setOrders(prev => prev.map(o =>
+                o.iddonhang === orderId ? { ...o, trangthaidonhang: 'GIAO_HANG_THANH_CONG' } : o
+            ));
+        } catch (error) {
+            alert("Lỗi: " + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const handleOpenPayModal = async (order) => {
+        setPayOrder(order);
+        setIsPayModalOpen(true);
+        setPayType('full');
+        setPayMethod('vnpay');
+        setPartialAmount('');
+        setLoadingTinhTrang(true);
+        try {
+            const { data } = await api.get(`/Thanhtoan/${order.iddonhang}/tinh-trang`);
+            setTinhTrang(data.result);
+        } catch (e) {
+            setTinhTrang(null);
+        } finally {
+            setLoadingTinhTrang(false);
+        }
+    };
+
+    const getSoTienThanhToan = () => {
+        if (!tinhTrang) return 0;
+        if (payType === 'full') return Number(tinhTrang.conNo);
+        return Number(partialAmount) || 0;
+    };
+
+    const getVietQrUrl = (amount) => {
+        const info = encodeURIComponent(`TT DH ${payOrder?.iddonhang?.substring(0, 8).toUpperCase()}`);
+        return `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACCOUNT}-compact2.png?amount=${amount}&addInfo=${info}&accountName=${encodeURIComponent(BANK_NAME)}`;
+    };
+
+    const handleConfirmPay = async () => {
+        const soTien = getSoTienThanhToan();
+        if (soTien <= 0) { alert("Số tiền không hợp lệ"); return; }
+
+        setPayLoading(true);
+        try {
+            if (payMethod === 'vnpay') {
+                const { data } = await api.post("/payment/create-payment", {
+                    orderId: payOrder.iddonhang,
+                    bankCode: "NCB",
+                    language: "vn",
+                    soTienThanhToan: soTien
+                });
+                if (data.paymentUrl) {
+                    window.location.href = data.paymentUrl;
+                } else {
+                    alert("Lỗi tạo link VNPAY");
+                }
+            } else {
+                // Chuyển khoản: ghi nhận chờ admin xác nhận
+                await api.post("/Thanhtoan/chuyen-khoan", {
+                    iddonhang: payOrder.iddonhang,
+                    sotien: soTien,
+                    ghichu: `Chuyển khoản qua VietQR`
+                });
+                alert("Đã ghi nhận! Vui lòng chuyển khoản và chờ admin xác nhận.");
+                setIsPayModalOpen(false);
+            }
+        } catch (e) {
+            alert("Lỗi: " + (e.response?.data?.message || e.message));
+        } finally {
+            setPayLoading(false);
+        }
+    };
+
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm("Bạn có chắc muốn hủy đơn hàng này không?")) return;
+        try {
+            await api.put(`/Donhangs/${orderId}/huy`);
+            setOrders(prev => prev.map(o =>
+                o.iddonhang === orderId ? { ...o, trangthaidonhang: 'HUY' } : o
+            ));
+        } catch (error) {
+            alert("Không thể hủy đơn: " + (error.response?.data?.message || error.message));
         }
     };
 
@@ -213,9 +318,8 @@ export default function ThongTinDonHang() {
                                                 <>
                                                     {/* Ảnh sản phẩm */}
                                                     <div className="size-20 bg-slate-100 rounded border border-slate-200 overflow-hidden flex-shrink-0">
-                                                        <img 
-                                                            // Cần đảm bảo backend trả về hinhanhurl trong object chi tiết, nếu không sẽ dùng placeholder
-                                                            src={getImageUrl(firstItem.idchitietcaban?.idloaica?.hinhanhurl || firstItem.hinhanhurl)} 
+                                                        <img
+                                                            src={getImageUrl(firstItem.hinhanhurl)}
                                                             alt="Sản phẩm"
                                                             className="w-full h-full object-cover"
                                                             onError={(e) => {e.target.onerror = null; e.target.src = 'https://placehold.co/100?text=Fish'}}
@@ -273,13 +377,41 @@ export default function ThongTinDonHang() {
                                                 </span>
                                             </div>
 
-                                            <div className="flex justify-end gap-3">
-                                                <button className="px-6 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+                                            <div className="flex justify-end gap-3 flex-wrap">
+                                                {/* Hủy đơn khi chờ xác nhận */}
+                                                {order.trangthaidonhang === 'CHO_XAC_NHAN' && (
+                                                    <button
+                                                        onClick={() => handleCancelOrder(order.iddonhang)}
+                                                        className="px-5 py-2 rounded border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+                                                    >
+                                                        Hủy đơn
+                                                    </button>
+                                                )}
+                                                {/* Xác nhận đã nhận hàng: chỉ khách sỉ, khi DANG_VAN_CHUYEN */}
+                                                {isWholesale && order.trangthaidonhang === 'DANG_VAN_CHUYEN' && (
+                                                    <button
+                                                        onClick={() => handleConfirmReceived(order.iddonhang)}
+                                                        className="px-5 py-2 rounded bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors"
+                                                    >
+                                                        Đã nhận hàng
+                                                    </button>
+                                                )}
+                                                {/* Thanh toán: chỉ khách sỉ, khi GIAO_HANG_THANH_CONG */}
+                                                {isWholesale && order.trangthaidonhang === 'GIAO_HANG_THANH_CONG' && (
+                                                    <button
+                                                        onClick={() => handleOpenPayModal(order)}
+                                                        className="px-5 py-2 rounded bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors flex items-center gap-1"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">payments</span>
+                                                        Thanh toán
+                                                    </button>
+                                                )}
+                                                <button className="px-5 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
                                                     Mua lại
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => handleViewDetail(order)}
-                                                    className="px-6 py-2 rounded border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
+                                                    className="px-5 py-2 rounded border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
                                                 >
                                                     Xem chi tiết
                                                 </button>
@@ -363,6 +495,147 @@ export default function ThongTinDonHang() {
                                 className="px-5 py-2 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 transition-colors"
                             >
                                 Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL THANH TOÁN */}
+            {isPayModalOpen && payOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[95vh]">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-orange-50">
+                            <div>
+                                <h3 className="font-bold text-lg text-orange-700">Thanh toán đơn hàng</h3>
+                                <p className="text-xs text-slate-500">#{payOrder.iddonhang.substring(0, 8).toUpperCase()}</p>
+                            </div>
+                            <button onClick={() => setIsPayModalOpen(false)} className="text-slate-400 hover:text-red-500">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto flex-1 space-y-5">
+                            {/* Tình trạng nợ */}
+                            {loadingTinhTrang ? (
+                                <div className="text-center py-4 text-slate-400">Đang tải...</div>
+                            ) : tinhTrang ? (
+                                <div className="grid grid-cols-3 gap-3 text-center">
+                                    <div className="bg-slate-50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-400 mb-1">Tổng đơn</p>
+                                        <p className="font-bold text-slate-700">{Number(tinhTrang.tongTien).toLocaleString()}đ</p>
+                                    </div>
+                                    <div className="bg-green-50 rounded-xl p-3">
+                                        <p className="text-xs text-green-500 mb-1">Đã trả</p>
+                                        <p className="font-bold text-green-600">{Number(tinhTrang.daTra).toLocaleString()}đ</p>
+                                    </div>
+                                    <div className="bg-red-50 rounded-xl p-3">
+                                        <p className="text-xs text-red-400 mb-1">Còn nợ</p>
+                                        <p className="font-bold text-red-600">{Number(tinhTrang.conNo).toLocaleString()}đ</p>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            {/* Chọn số tiền */}
+                            <div>
+                                <p className="text-sm font-bold text-slate-600 mb-2">Số tiền thanh toán</p>
+                                <div className="flex gap-3">
+                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payType === 'full' ? 'border-orange-500 bg-orange-50' : 'border-slate-200'}`}>
+                                        <input type="radio" name="payType" checked={payType === 'full'} onChange={() => setPayType('full')} className="text-orange-500" />
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-700">Trả hết</p>
+                                            <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString() : 0}đ</p>
+                                        </div>
+                                    </label>
+                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payType === 'partial' ? 'border-orange-500 bg-orange-50' : 'border-slate-200'}`}>
+                                        <input type="radio" name="payType" checked={payType === 'partial'} onChange={() => setPayType('partial')} className="text-orange-500" />
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-700">Trả một phần</p>
+                                            <p className="text-xs text-slate-400">Nhập số tiền</p>
+                                        </div>
+                                    </label>
+                                </div>
+                                {payType === 'partial' && (
+                                    <input
+                                        type="number"
+                                        value={partialAmount}
+                                        onChange={e => setPartialAmount(e.target.value)}
+                                        className="mt-3 w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-400 text-sm"
+                                        placeholder="Nhập số tiền muốn trả (VNĐ)"
+                                        min={1000}
+                                        max={tinhTrang?.conNo}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Chọn phương thức */}
+                            <div>
+                                <p className="text-sm font-bold text-slate-600 mb-2">Phương thức thanh toán</p>
+                                <div className="flex gap-3">
+                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'vnpay' ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}>
+                                        <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="text-blue-500" />
+                                        <div className="flex items-center gap-2">
+                                            <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png" alt="VNPAY" className="h-6 object-contain" />
+                                            <span className="text-sm font-bold text-slate-700">VNPAY</span>
+                                        </div>
+                                    </label>
+                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'bank' ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}>
+                                        <input type="radio" name="payMethod" checked={payMethod === 'bank'} onChange={() => setPayMethod('bank')} className="text-blue-500" />
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-700">Chuyển khoản</p>
+                                            <p className="text-xs text-slate-400">Quét QR ngân hàng</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* QR chuyển khoản */}
+                            {payMethod === 'bank' && getSoTienThanhToan() > 0 && (
+                                <div className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl">
+                                    <p className="text-xs text-slate-500">Quét mã để chuyển khoản</p>
+                                    <img
+                                        src={getVietQrUrl(getSoTienThanhToan())}
+                                        alt="VietQR"
+                                        className="w-48 h-48 object-contain rounded-lg"
+                                    />
+                                    <p className="text-xs font-bold text-slate-600">{BANK_ID} - {BANK_ACCOUNT}</p>
+                                    <p className="text-sm font-bold text-orange-600">{getSoTienThanhToan().toLocaleString()}đ</p>
+                                </div>
+                            )}
+
+                            {/* Lịch sử thanh toán */}
+                            {tinhTrang?.lichSuThanhToan?.length > 0 && (
+                                <div>
+                                    <p className="text-sm font-bold text-slate-600 mb-2">Lịch sử thanh toán</p>
+                                    <div className="space-y-2">
+                                        {tinhTrang.lichSuThanhToan.map(item => (
+                                            <div key={item.idthanhtoan} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
+                                                <div>
+                                                    <span className="font-medium">{Number(item.sotien).toLocaleString()}đ</span>
+                                                    <span className="text-slate-400 ml-2 text-xs">({item.phuongthuc})</span>
+                                                </div>
+                                                <span className={`text-xs px-2 py-0.5 rounded font-bold ${item.trangthai === 'DA_THANH_TOAN' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                    {item.trangthai === 'DA_THANH_TOAN' ? 'Đã xác nhận' : 'Chờ xác nhận'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                            <button onClick={() => setIsPayModalOpen(false)} className="px-5 py-2 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
+                                Đóng
+                            </button>
+                            <button
+                                onClick={handleConfirmPay}
+                                disabled={payLoading || getSoTienThanhToan() <= 0}
+                                className={`px-5 py-2 rounded-xl text-white font-bold transition-all ${payLoading || getSoTienThanhToan() <= 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
+                            >
+                                {payLoading ? 'Đang xử lý...' : payMethod === 'vnpay' ? 'Thanh toán VNPAY' : 'Xác nhận đã chuyển khoản'}
                             </button>
                         </div>
                     </div>

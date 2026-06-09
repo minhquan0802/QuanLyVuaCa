@@ -9,17 +9,22 @@ import org.springframework.stereotype.Component;
 public class CustomCookieTokenResolver implements BearerTokenResolver {
     @Override
     public String resolve(HttpServletRequest request) {
-        // Tìm trong giỏ Cookie của Request
+        // Ưu tiên Authorization header (axios luôn gửi header này)
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        // Fallback: đọc từ cookie (dùng khi gọi từ trình duyệt trực tiếp)
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                // Nếu thấy cái Cookie tên là "token" (Access Token) thì lấy giá trị của nó đưa cho Spring Security
                 if ("token".equals(cookie.getName())) {
                     return cookie.getValue();
                 }
             }
         }
-        // Nếu không có trả về null để báo là chưa đăng nhập
+
         return null;
     }
 }

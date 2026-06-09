@@ -1,9 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { dangXuat } from "../../config/axios";
+import { useAuth } from "../../context/AuthContext"; 
 
 export default function AdminSidebar() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { logout } = useAuth();
 
     // Danh sách menu theo yêu cầu của bạn
     const menuItems = [
@@ -23,7 +24,7 @@ export default function AdminSidebar() {
 
     const handleLogout = () => {
         // Xóa thông tin đăng nhập và chuyển về trang login
-        dangXuat();
+        logout();
     }
 
     return (

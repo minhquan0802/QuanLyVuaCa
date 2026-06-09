@@ -71,6 +71,24 @@ public class DonhangController {
                 .result(donhangService.getMyOrders())
                 .build();
     }
+    @PutMapping("/{id}/xac-nhan-nhan-hang")
+    public ApiResponse<DonhangResponse> xacNhanNhanHang(@PathVariable String id) {
+        return ApiResponse.<DonhangResponse>builder()
+                .code(200)
+                .message("Xác nhận nhận hàng thành công")
+                .result(donhangService.xacNhanNhanHang(id))
+                .build();
+    }
+
+    @PutMapping("/{id}/huy")
+    public ApiResponse<DonhangResponse> huyDonHang(@PathVariable String id) {
+        return ApiResponse.<DonhangResponse>builder()
+                .code(200)
+                .message("Hủy đơn hàng thành công")
+                .result(donhangService.huyDonHang(id))
+                .build();
+    }
+
     @PutMapping("/{id}/cap-nhat-can-nang")
     public ApiResponse<String> updateCanNang(@PathVariable String id, @RequestBody List<UpdateCanNangRequest> request) {
         donhangService.updateThucTeDonHang(id, request);

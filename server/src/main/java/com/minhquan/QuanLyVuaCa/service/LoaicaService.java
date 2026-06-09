@@ -71,11 +71,11 @@ public class LoaicaService {
                     .substring(newFile.getOriginalFilename().lastIndexOf("."));
             String finalFileName = baseName + extension;
 
-            // C. Lưu file mới
-            saveImage(newFile, finalFileName);
+            // C. Upload lên Cloudinary và lấy URL
+            String cloudinaryUrl = saveImage(newFile, finalFileName);
 
-            // D. Cập nhật tên ảnh mới vào DB
-            loaica.setHinhanhurl(finalFileName);
+            // D. Cập nhật Cloudinary URL vào DB
+            loaica.setHinhanhurl(cloudinaryUrl);
         }
         // Nếu không có file mới, giữ nguyên hinhanhurl cũ
 
@@ -135,10 +135,12 @@ public class LoaicaService {
 
     public String saveImage(MultipartFile file, String fileName) {
         try {
+            // Bỏ extension khỏi public_id để Cloudinary quản lý format, và deleteFile strip đúng
+            String publicIdName = fileName.replaceAll("\\.[^.]+$", ""); // "ca-tram.jpg" → "ca-tram"
             Map result = cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
-                            "public_id", "loaica/" + fileName,
+                            "public_id", "loaica/" + publicIdName,
                             "overwrite", true
                     )
             );
@@ -176,18 +178,13 @@ public class LoaicaService {
         MultipartFile file = request.getHinhanh(); // MultipartFile từ FE
 
         if (file != null && !file.isEmpty()) {
-
-            // Tạo tên file chuẩn: slug + extension
-            String baseName = slugify(request.getTenloaica()); // ví dụ "Cá Trắm" -> "ca-tram"
+            String baseName = slugify(request.getTenloaica());
             String extension = Objects.requireNonNull(file.getOriginalFilename())
-                    .substring(file.getOriginalFilename().lastIndexOf(".")); // .jpg, .png
-
+                    .substring(file.getOriginalFilename().lastIndexOf("."));
             String finalFileName = baseName + extension;
 
-            saveImage(file, finalFileName);
-
-            // Lưu tên file vào DB
-            loaica.setHinhanhurl(finalFileName);
+            String cloudinaryUrl = saveImage(file, finalFileName);
+            loaica.setHinhanhurl(cloudinaryUrl);
         }
 
         Loaica saved = loaicaRepository.save(loaica);

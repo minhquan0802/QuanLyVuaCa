@@ -24,6 +24,7 @@ public enum ErrorCode {
     ADDRESS_INVALID(1016, "Dia chi khong duoc de trong", HttpStatus.BAD_REQUEST),
 // ----------------
 
+    ACCOUNT_LOCKED(1028, "Tai khoan da bi khoa", HttpStatus.FORBIDDEN),
     UNAUTHENTICATED(1006, "Ban chua dang nhap", HttpStatus.UNAUTHORIZED),
     LOAICA_NOT_EXISTED(1011, "Loai ca khong ton tai", HttpStatus.NOT_FOUND),
     DATA_EXISTED(1012, "Da ton tai data", HttpStatus.CONFLICT),

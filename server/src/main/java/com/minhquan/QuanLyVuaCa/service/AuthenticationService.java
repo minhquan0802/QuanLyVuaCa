@@ -6,6 +6,7 @@ import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.CookieResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.IntrospectResponse;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
@@ -61,6 +62,9 @@ public class AuthenticationService {
         if (!passwordEncoder.matches(request.getPassword(), taiKhoan.getMatkhau()))
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
 
+        if (TrangThaiTaiKhoan.KHOA.equals(taiKhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.ACCOUNT_LOCKED);
+
         String token = generateToken(taiKhoan, TOKEN_TIME);
         String refreshToken = generateToken(taiKhoan, REFRESH_TIME);
 
@@ -72,8 +76,10 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse refreshToken(String refreshToken) throws ParseException, JOSEException {
-        if (refreshToken.isEmpty())
+        // Kiểm tra null trước khi kiểm tra rỗng
+        if (refreshToken == null || refreshToken.isEmpty()) {
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+        }
 
         var signJwt = verifyToken(refreshToken);
 
@@ -82,6 +88,9 @@ public class AuthenticationService {
         var email = signJwt.getJWTClaimsSet().getSubject();
         var taiKhoan = taiKhoanRepository.findByEmail(email)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        if (TrangThaiTaiKhoan.KHOA.equals(taiKhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.ACCOUNT_LOCKED);
 
         String newToken = generateToken(taiKhoan, TOKEN_TIME);
         String newRefreshToken = generateToken(taiKhoan, REFRESH_TIME);
@@ -184,7 +193,7 @@ public class AuthenticationService {
 
     private String buildScope(Taikhoan taikhoan) {
         StringJoiner stringJoiner = new StringJoiner(" ");
-        if (!(taikhoan.getVaitro().isEmpty()))
+        if (taikhoan.getVaitro() != null && !taikhoan.getVaitro().isEmpty())
             stringJoiner.add("ROLE_" + taikhoan.getVaitro());
         return stringJoiner.toString();
     }

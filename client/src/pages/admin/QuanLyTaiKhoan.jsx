@@ -3,52 +3,28 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 
 export default function QuanLyTaiKhoan() {
-    // Bảng dịch từ mã trong DB sang Tiếng Việt hiển thị
-    const ROLE_TRANSLATION = {
-        "admin": "Chủ vựa cá",
-        "nhanvienkho": "Nhân viên kho",
-        "nhanvienbanhang": "Nhân viên bán hàng",
-        "nhanvien": "Nhân viên",
-        "khachsi": "Khách hàng sỉ",
-        "khachle": "Khách hàng lẻ"
-    };
-
+    const ROLES = [
+        { value: "ADMIN", label: "Quản trị viên" },
+        { value: "STAFF", label: "Nhân viên" },
+        { value: "WHOLESALE_CUSTOMER", label: "Khách hàng sỉ" },
+        { value: "INDIVIDUAL_CUSTOMER", label: "Khách hàng lẻ" },
+    ];
 
     const [accounts, setAccounts] = useState([]);
-    const [roles, setRoles] = useState([]); // FIX 1: State lưu danh sách vai trò từ API
     const [loading, setLoading] = useState(true);
-    
-    // FIX 4: State ẩn/hiện mật khẩu
     const [showPassword, setShowPassword] = useState(false);
 
-    // --- 1. Fetch Data (Tài khoản & Vai trò) ---
+    // --- 1. Fetch Data ---
     const fetchData = async () => {
         try {
             setLoading(true);
-            
-            // Gọi song song 2 API để tiết kiệm thời gian
-            const [resAcc, resRoles] = await Promise.all([
-                api.get("/TaiKhoans"),
-                api.get("/vaitro") // FIX 1: Gọi API vai trò
-            ]);
-
-            const dataAcc = resAcc.data;
-            const dataRoles = resRoles.data; // Data vai trò
-            
-            // Xử lý data Tài khoản
+            const res = await api.get("/tai-khoan");
+            const data = res.data;
             let realAccounts = [];
-            if (dataAcc.result && Array.isArray(dataAcc.result)) realAccounts = dataAcc.result;
-            else if (Array.isArray(dataAcc)) realAccounts = dataAcc;
-            else if (dataAcc.data) realAccounts = dataAcc.data;
-
-            // Xử lý data Vai trò
-            let realRoles = [];
-            if (dataRoles.result) realRoles = dataRoles.result;
-            else if (Array.isArray(dataRoles)) realRoles = dataRoles;
-
+            if (data.result && Array.isArray(data.result)) realAccounts = data.result;
+            else if (Array.isArray(data)) realAccounts = data;
+            else if (data.data) realAccounts = data.data;
             setAccounts(realAccounts);
-            setRoles(realRoles); // Lưu vào state
-
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
         } finally {
@@ -71,23 +47,22 @@ export default function QuanLyTaiKhoan() {
         matkhau: "",
         sodienthoai: "",
         diachi: "",
-        idvaitro: "", // Để rỗng ban đầu, sẽ set default khi mở modal
+        vaitro: "INDIVIDUAL_CUSTOMER",
         trangthaitk: "HOAT_DONG"
     });
 
     const handleAddNew = () => {
         setIsEditing(false);
-        setShowPassword(false); // Reset mắt mật khẩu
+        setShowPassword(false);
         setCurrentUser({
-            idtaikhoan: "", 
+            idtaikhoan: "",
             ho: "",
             ten: "",
             email: "",
             matkhau: "",
             sodienthoai: "",
             diachi: "",
-            // Lấy vai trò đầu tiên trong list làm default hoặc 6 (Khách lẻ) nếu list rỗng
-            idvaitro: roles.length > 0 ? roles[0].id : 6, 
+            vaitro: "INDIVIDUAL_CUSTOMER",
             trangthaitk: "HOAT_DONG"
         });
         setIsModalOpen(true);
@@ -96,13 +71,10 @@ export default function QuanLyTaiKhoan() {
     const handleEdit = (user) => {
         setIsEditing(true);
         setShowPassword(false);
-        // Lấy ID vai trò an toàn (vì user.idvaitro có thể là object {id, tenvaitro} hoặc số)
-        const roleId = user.idvaitro?.id || user.idvaitro || (roles.length > 0 ? roles[0].id : 3);
-        
         setCurrentUser({
             ...user,
-            idvaitro: roleId,
-            matkhau: "" // Reset mật khẩu khi sửa
+            vaitro: user.vaitro || "INDIVIDUAL_CUSTOMER",
+            matkhau: ""
         });
         setIsModalOpen(true);
     };
@@ -111,7 +83,7 @@ export default function QuanLyTaiKhoan() {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
             try {
-                await api.delete(`/TaiKhoans/${id}`);
+                await api.delete(`/tai-khoan/${id}`);
                 setAccounts(accounts.filter(item => item.idtaikhoan !== id));
                 alert("Đã xóa thành công!");
             } catch (error) {
@@ -123,22 +95,21 @@ export default function QuanLyTaiKhoan() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        const payload = { 
-            idvaitro: parseInt(currentUser.idvaitro), 
+        const payload = {
+            vaitro: currentUser.vaitro,
             ho: currentUser.ho,
             ten: currentUser.ten,
-            // Logic mật khẩu: Nếu sửa và để trống -> gửi null để BE không update pass
             matkhau: (isEditing && !currentUser.matkhau) ? null : currentUser.matkhau,
             email: currentUser.email,
             sodienthoai: currentUser.sodienthoai,
             diachi: currentUser.diachi,
-            trangthaitk: currentUser.trangthaitk // FIX 2: Đảm bảo gửi đúng chuỗi "HOAT_DONG" hoặc "KHOA"
+            trangthaitk: currentUser.trangthaitk
         };
 
         try {
             const url = isEditing 
-                ? `/TaiKhoans/${currentUser.idtaikhoan}`
-                : `/TaiKhoans`; 
+                ? `/tai-khoan/${currentUser.idtaikhoan}`
+                : `/tai-khoan`; 
             const method = isEditing ? "PUT" : "POST";
 
             console.log("Payload:", payload); 
@@ -158,31 +129,18 @@ export default function QuanLyTaiKhoan() {
         }
     };
 
-    // FIX 3: Helper lấy tên vai trò chính xác từ list roles đã fetch
-    const getRoleName = (roleInput) => {
-        if (!roleInput) return "Chưa phân quyền";
-        
-        let tenGoc = "";
-
-        // Trường hợp backend trả về nguyên object role (khi get list user)
-        if (typeof roleInput === 'object' && roleInput.tenvaitro) {
-            tenGoc = roleInput.tenvaitro;
-        }
-
-        // Trường hợp backend trả về ID
-        const roleId = roleInput;
-        const role = roles.find(r => r.id === Number(roleId));
-        if (role) tenGoc = role.tenvaitro;
-
-        return ROLE_TRANSLATION[tenGoc] || tenGoc || "Tên vai trò không xác định";
+    const getRoleName = (vaitro) => {
+        if (!vaitro) return "Chưa phân quyền";
+        const found = ROLES.find(r => r.value === vaitro);
+        return found ? found.label : vaitro;
     };
 
-    const getRoleColor = (roleInput) => {
-        const roleId = roleInput?.id || roleInput;
-        // Logic màu sắc đơn giản hóa
-        if (Number(roleId) === 1) return "bg-red-100 text-red-700"; // Admin (ví dụ ID 1 là Admin)
-        if (Number(roleId) === 6) return "bg-purple-100 text-purple-700"; 
-        return "bg-blue-100 text-blue-700";
+    const getRoleColor = (vaitro) => {
+        if (vaitro === "ADMIN") return "bg-red-100 text-red-700";
+        if (vaitro === "STAFF") return "bg-blue-100 text-blue-700";
+        if (vaitro === "WHOLESALE_CUSTOMER") return "bg-orange-100 text-orange-700";
+        if (vaitro === "INDIVIDUAL_CUSTOMER") return "bg-purple-100 text-purple-700";
+        return "bg-slate-100 text-slate-600";
     };
 
     return (
@@ -223,8 +181,8 @@ export default function QuanLyTaiKhoan() {
                                     <td className="p-4">{item.email}</td>
                                     <td className="p-4">{item.sodienthoai || "-"}</td>
                                     <td className="p-4">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${getRoleColor(item.idvaitro)}`}>
-                                            {getRoleName(item.idvaitro)}
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${getRoleColor(item.vaitro)}`}>
+                                            {getRoleName(item.vaitro)}
                                         </span>
                                     </td>
                                     <td className="p-4">
@@ -300,17 +258,12 @@ export default function QuanLyTaiKhoan() {
                                 <input type="text" className="input-field" value={currentUser.diachi} onChange={e => setCurrentUser({...currentUser, diachi: e.target.value})} />
                             </div>
 
-                            {/* FIX 1: Combobox Vai trò động từ API */}
                             <div>
                                 <label className="label-text">Vai trò</label>
-                                <select className="input-field" value={currentUser.idvaitro} onChange={e => setCurrentUser({...currentUser, idvaitro: e.target.value})}>
-                                    {roles.length > 0 ? (
-                                        roles.map(role => (
-                                            <option key={role.id} value={role.id}>{role.tenvaitro}</option>
-                                        ))
-                                    ) : (
-                                        <option value="">Đang tải vai trò...</option>
-                                    )}
+                                <select className="input-field" value={currentUser.vaitro} onChange={e => setCurrentUser({...currentUser, vaitro: e.target.value})}>
+                                    {ROLES.map(role => (
+                                        <option key={role.value} value={role.value}>{role.label}</option>
+                                    ))}
                                 </select>
                             </div>
 

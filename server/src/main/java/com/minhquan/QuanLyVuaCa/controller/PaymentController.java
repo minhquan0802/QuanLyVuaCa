@@ -5,6 +5,7 @@ import com.minhquan.QuanLyVuaCa.service.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,10 +18,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/payment")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000") // Cho phép Frontend gọi
+@CrossOrigin(origins = "http://localhost:5173") // Cho phép Frontend gọi
 public class PaymentController {
 
     private final VnPayService vnPayService;
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     // API 1: Tạo URL thanh toán
     // Frontend gọi API này sau khi đã tạo đơn hàng thành công và có orderId
@@ -45,21 +49,28 @@ public class PaymentController {
         // 1. Gọi Service để kiểm tra hash và update DB
         int status = vnPayService.orderReturn(request);
 
-        String orderId = request.getParameter("vnp_TxnRef");
+        String txnRef = request.getParameter("vnp_TxnRef");
         String totalPrice = request.getParameter("vnp_Amount");
         String transactionTime = request.getParameter("vnp_PayDate");
 
+        boolean isPartialPayment = txnRef != null && txnRef.startsWith("DEBT-");
+
         // 2. Điều hướng về Frontend dựa trên kết quả
         if (status == 1) {
-            // Thành công -> Về trang Success
-            String redirectUrl = String.format(
-                    "http://localhost:3000/order-success?orderId=%s&totalPrice=%s&time=%s",
-                    orderId, totalPrice, transactionTime
-            );
+            String redirectUrl;
+            if (isPartialPayment) {
+                // Thanh toán từng phần → về trang theo dõi đơn hàng
+                redirectUrl = frontendUrl + "/my-orders";
+            } else {
+                // Thanh toán khi checkout → về trang order-success
+                redirectUrl = String.format(
+                        "%s/order-success?orderId=%s&totalPrice=%s&time=%s",
+                        frontendUrl, txnRef, totalPrice, transactionTime
+                );
+            }
             response.sendRedirect(redirectUrl);
         } else {
-            // Thất bại -> Về trang Failed
-            String redirectUrl = "http://localhost:3000/order-failed?error=" +
+            String redirectUrl = frontendUrl + "/order-failed?error=" +
                     URLEncoder.encode("Thanh toán thất bại", StandardCharsets.UTF_8);
             response.sendRedirect(redirectUrl);
         }

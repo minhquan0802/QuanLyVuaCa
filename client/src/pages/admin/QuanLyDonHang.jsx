@@ -70,7 +70,7 @@ export default function QuanLyDonHang() {
             setLoading(true);
             const [resOrders, resCust, resFish, resUnits, resPrices, resConversions] = await Promise.all([
                 api.get("/Donhangs"),
-                api.get("/TaiKhoans"),
+                api.get("/tai-khoan"),
                 api.get("/Loaicas"),
                 api.get("/Donvitinhs"),
                 api.get("/Banggias"),
@@ -98,10 +98,9 @@ export default function QuanLyDonHang() {
 
             const custData = resCust.data;
             const allUsers = custData.result || [];
-            setCustomers(allUsers.filter(u => {
-                const rId = u.idvaitro?.id || u.idvaitro;
-                return rId === 5 || rId === 6;
-            }));
+            setCustomers(allUsers.filter(u =>
+                u.vaitro === "WHOLESALE_CUSTOMER" || u.vaitro === "INDIVIDUAL_CUSTOMER"
+            ));
 
             const fishData = resFish.data;
             setFishes(fishData.result || []);
@@ -241,8 +240,7 @@ export default function QuanLyDonHang() {
         const customer = customers.find(c => c.idtaikhoan == customerId);
         if (!customer) return 0;
 
-        const roleId = Number(customer.idvaitro?.id || customer.idvaitro);
-        const isWholesale = roleId === 5;
+        const isWholesale = customer.vaitro === "WHOLESALE_CUSTOMER";
 
         const activePrice = priceList.find(p =>
             p.idChitietcaban == repoId && p.trangThai === "Đang áp dụng"
@@ -541,8 +539,7 @@ export default function QuanLyDonHang() {
                             <select className="w-full p-2.5 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none" value={newOrder.idthongtinkhachhang} onChange={(e) => handleCustomerChange(e.target.value)}>
                                 <option value="">-- Chọn khách hàng --</option>
                                 {customers.map(c => {
-                                    const roleId = c.idvaitro?.id || c.idvaitro;
-                                    const roleName = Number(roleId) === 5 ? "Khách sỉ" : "Khách lẻ";
+                                    const roleName = c.vaitro === "WHOLESALE_CUSTOMER" ? "Khách sỉ" : "Khách lẻ";
                                     return <option key={c.idtaikhoan} value={c.idtaikhoan}>{c.ho} {c.ten} ({roleName})</option>;
                                 })}
                             </select>
@@ -733,16 +730,16 @@ export default function QuanLyDonHang() {
 
                                     <div className="flex gap-2 overflow-x-auto pb-1">
                                         {/* Các nút chuyển trạng thái cũ */}
-                                        {(selectedOrder.trangthaidonhang === "CHO_XAC_NHAN" || selectedOrder.trangthaidonhang === "DA_THANH_TOAN") && (
+                                        {selectedOrder.trangthaidonhang === "CHO_XAC_NHAN" && (
                                             <button onClick={() => handleUpdateStatus("DANG_DONG_HANG")} className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs hover:bg-blue-700 whitespace-nowrap">Bắt đầu đóng hàng</button>
                                         )}
                                         {selectedOrder.trangthaidonhang === "DANG_DONG_HANG" && (
-                                            <button onClick={() => handleUpdateStatus("DANG_VAN_CHUYEN")} className="flex-1 py-2 bg-purple-600 text-white rounded-lg font-bold text-xs hover:bg-purple-700 whitespace-nowrap">Giao Vận chuyển</button>
+                                            <button onClick={() => handleUpdateStatus("DANG_VAN_CHUYEN")} className="flex-1 py-2 bg-purple-600 text-white rounded-lg font-bold text-xs hover:bg-purple-700 whitespace-nowrap">Giao vận chuyển</button>
                                         )}
                                         {selectedOrder.trangthaidonhang === "DANG_VAN_CHUYEN" && (
-                                            <button onClick={() => handleUpdateStatus("GIAO_HANG_THANH_CONG")} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 whitespace-nowrap">Hoàn tất</button>
+                                            <button onClick={() => handleUpdateStatus("GIAO_HANG_THANH_CONG")} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 whitespace-nowrap">Hoàn tất giao hàng</button>
                                         )}
-                                        {!["GIAO_HANG_THANH_CONG", "HUY", "DANG_VAN_CHUYEN"].includes(selectedOrder.trangthaidonhang) && (
+                                        {["CHO_XAC_NHAN", "DANG_DONG_HANG"].includes(selectedOrder.trangthaidonhang) && (
                                             <button onClick={() => handleUpdateStatus("HUY")} className="px-3 py-2 border border-red-200 text-red-600 rounded-lg font-bold text-xs hover:bg-red-50">Hủy</button>
                                         )}
                                     </div>

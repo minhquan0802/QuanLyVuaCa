@@ -1,6 +1,6 @@
-import { useSearchParams, useNavigate } from "react-router-dom";
-import Header from "../components/header";
-import Footer from "../components/footer";
+﻿import { useSearchParams, useNavigate } from "react-router-dom";
+import Header from "../../components/header";
+import Footer from "../../components/footer";
 
 export default function OrderFailed() {
     const [searchParams] = useSearchParams();
