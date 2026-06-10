@@ -131,7 +131,7 @@ export default function Header() {
                                     </>
                                 ) : (
                                     <button
-                                        onClick={() => handleNavigation('/')}
+                                        onClick={() => handleNavigation('/login')}
                                         className="hidden md:flex items-center justify-center size-10 rounded-full text-white hover:bg-white/20 transition-all duration-300 cursor-pointer"
                                         title="Đăng nhập"
                                     >

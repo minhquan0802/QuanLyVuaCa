@@ -19,6 +19,13 @@ import QuanLyTaiKhoan from '../pages/admin/QuanLyTaiKhoan';
 import QuanLyDonHang from '../pages/admin/QuanLyDonHang';
 import QuanLyBangGia from '../pages/admin/QuanLyBangGia';
 import QuanLyKho from '../pages/admin/QuanLyKho';
+import ThemSuaLoaiCa from '../pages/admin/ThemSuaLoaiCa';
+import KichCoLoaiCa from '../pages/admin/KichCoLoaiCa';
+import ThemSuaTaiKhoan from '../pages/admin/ThemSuaTaiKhoan';
+import ThemBangGia from '../pages/admin/ThemBangGia';
+import TaoDonHang from '../pages/admin/TaoDonHang';
+import ChiTietDonHang from '../pages/admin/ChiTietDonHang';
+import NhapHang from '../pages/admin/NhapHang';
 
 // Components
 import ProtectedRoute from './ProtectedRoute';
@@ -38,10 +45,11 @@ function CustomerLayout() {
 export default function AppRoutes() {
     return (
         <Routes>
-            <Route path='/' element={<Login />} />
+            <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
 
             <Route element={<CustomerLayout />}>
+                <Route path='/' element={<Home />} />
                 <Route path='/home' element={<Home />} />
                 <Route path='/product-detail' element={<ProductDetail />} />
                 <Route path='/product-detail/:product_id' element={<ProductDetail />} />
@@ -59,10 +67,19 @@ export default function AppRoutes() {
             <Route element={<ProtectedRoute />}>
                 <Route path='/admin' element={<AdminDashboard />} />
                 <Route path='/admin/QuanLyLoaiCa' element={<QuanLyLoaiCa />} />
+                <Route path='/admin/QuanLyLoaiCa/them' element={<ThemSuaLoaiCa />} />
+                <Route path='/admin/QuanLyLoaiCa/sua/:id' element={<ThemSuaLoaiCa />} />
+                <Route path='/admin/QuanLyLoaiCa/kich-co/:loaicaId' element={<KichCoLoaiCa />} />
                 <Route path='/admin/QuanLyTaiKhoan' element={<QuanLyTaiKhoan />} />
+                <Route path='/admin/QuanLyTaiKhoan/them' element={<ThemSuaTaiKhoan />} />
+                <Route path='/admin/QuanLyTaiKhoan/sua/:id' element={<ThemSuaTaiKhoan />} />
                 <Route path='/admin/QuanLyDonHang' element={<QuanLyDonHang />} />
+                <Route path='/admin/QuanLyDonHang/tao-don' element={<TaoDonHang />} />
+                <Route path='/admin/QuanLyDonHang/chi-tiet/:id' element={<ChiTietDonHang />} />
                 <Route path='/admin/QuanLyBangGia' element={<QuanLyBangGia />} />
+                <Route path='/admin/QuanLyBangGia/them' element={<ThemBangGia />} />
                 <Route path='/admin/QuanLyKho' element={<QuanLyKho />} />
+                <Route path='/admin/QuanLyKho/nhap-hang' element={<NhapHang />} />
             </Route>
         </Routes>
     );
