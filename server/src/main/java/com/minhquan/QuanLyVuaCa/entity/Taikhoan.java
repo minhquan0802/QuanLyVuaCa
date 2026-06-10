@@ -49,7 +49,8 @@ public class Taikhoan {
     String diachi;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trangthaitk", columnDefinition = "ENUM('HOAT_DONG','KHOA')")
+    @Column(name = "trangthaitk", columnDefinition =
+            "ENUM('CHO_XAC_THUC_EMAIL','CHO_DUYET','HOAT_DONG','KHOA')")
     TrangThaiTaiKhoan trangthaitk;
 
     @Column(name = "vaitro", length = 50)
