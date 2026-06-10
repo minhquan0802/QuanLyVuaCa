@@ -8,6 +8,8 @@ import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.TaikhoanMapper;
+import com.minhquan.QuanLyVuaCa.repository.ChitietGioHangRepository;
+import com.minhquan.QuanLyVuaCa.repository.GioHangRepository;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +17,11 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -32,6 +32,8 @@ public class TaiKhoanService {
     TaiKhoanRepository taiKhoanRepository;
     TaikhoanMapper taikhoanMapper;
     PasswordEncoder passwordEncoder;
+    GioHangRepository gioHangRepository;
+    ChitietGioHangRepository chitietGioHangRepository;
 
     public TaikhoanResponse taoTaiKhoan(TaiKhoanCreationRequest request) {
         if (taiKhoanRepository.existsByEmail(request.getEmail()))
@@ -68,8 +70,14 @@ public class TaiKhoanService {
         return taikhoanMapper.toTaikhoanResponse(taiKhoanRepository.save(taikhoan));
     }
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void xoaTaiKhoan(String id) {
+        gioHangRepository.findAllByIdtaikhoan_Idtaikhoan(id)
+                .forEach(g -> {
+                    chitietGioHangRepository.deleteByIdgiohang(g.getIdgiohang());
+                    gioHangRepository.delete(g);
+                });
         taiKhoanRepository.deleteById(id);
     }
 

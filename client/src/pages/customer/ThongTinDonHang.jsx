@@ -21,8 +21,8 @@ const TABS = [
 
 export default function ThongTinDonHang() {
     const navigate = useNavigate();
-    const { role: userRole } = useAuth();
-    const isWholesale = userRole === "khachsi";
+    const { user } = useAuth();
+    const isWholesale = user?.vaitro === "CUSTOMER" || user?.vaitro === "WHOLESALE_CUSTOMER";
 
     // --- STATE DỮ LIỆU CHÍNH ---
     const [orders, setOrders] = useState([]);

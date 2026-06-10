@@ -9,7 +9,7 @@ export default function ProductList({ searchTerm }) {
     const [priceList, setPriceList] = useState([]);
     const [stockList, setStockList] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { role: userRole } = useAuth();
+    const { user } = useAuth();
 
     const navigate = useNavigate();
 
@@ -53,23 +53,20 @@ export default function ProductList({ searchTerm }) {
     };
 
     const getDisplayPrice = (fishId) => {
-        if (userRole !== "khachsi" && userRole !== "khachle") return null;
         const fishIdNum = Number(fishId);
-
         const pricesForFish = priceList.filter(p => Number(p.idLoaiCa) === fishIdNum);
         if (pricesForFish.length === 0) return null;
 
-        if (userRole === "khachsi") {
+        if (user?.vaitro === "CUSTOMER" || user?.vaitro === "WHOLESALE_CUSTOMER") {
             const validPrices = pricesForFish.map(p => Number(p.giaBanSi)).filter(v => v > 0);
             if (validPrices.length === 0) return null;
             return { price: Math.min(...validPrices), label: "Giá sỉ từ" };
         }
-        if (userRole === "khachle") {
-            const validPrices = pricesForFish.map(p => Number(p.giaBanLe)).filter(v => v > 0);
-            if (validPrices.length === 0) return null;
-            return { price: Math.min(...validPrices), label: "Giá lẻ từ" };
-        }
-        return null;
+
+        // khachle hoặc guest đều thấy giá lẻ
+        const validPrices = pricesForFish.map(p => Number(p.giaBanLe)).filter(v => v > 0);
+        if (validPrices.length === 0) return null;
+        return { price: Math.min(...validPrices), label: "Giá lẻ từ" };
     };
 
     const getTotalStock = (fishId) => {
