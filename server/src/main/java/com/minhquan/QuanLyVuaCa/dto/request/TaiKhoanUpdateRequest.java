@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TaiKhoanUpdateRequest {
-    String vaitro;
     String ho;
     String ten;
     String matkhau;
@@ -20,4 +19,5 @@ public class TaiKhoanUpdateRequest {
     String sodienthoai;
     String diachi;
     TrangThaiTaiKhoan trangthaitk;
+    String vaitro;
 }

@@ -22,8 +22,8 @@ export default function QuanLyKho() {
         idncc: "",
         ngaynhap: new Date().toISOString().split('T')[0],
         trangthaithanhtoan: "CHUA_THANH_TOAN",
-        tongsoluongnhap: "", 
         ghichu: ""
+        // Đã xóa trường tongsoluongnhap
     });
 
     const [currentDetail, setCurrentDetail] = useState({
@@ -165,20 +165,9 @@ export default function QuanLyKho() {
 
     // --- LOGIC THÊM CHI TIẾT ---
     const handleAddDetail = () => {
-        if (!importForm.tongsoluongnhap || importForm.tongsoluongnhap <= 0) {
-            showToast("Vui lòng nhập Tổng số lượng dự kiến ở cột bên trái trước!", "error");
-            return;
-        }
         if (!currentDetail.idsizeca) return showToast("Vui lòng chọn Size!", "error");
         if (currentDetail.soluongnhap <= 0) return showToast("Số lượng nhập phải > 0", "error");
         if (currentDetail.gianhap <= 0) return showToast("Giá nhập phải > 0", "error");
-
-        const currentSum = addedDetails.reduce((sum, item) => sum + Number(item.soluongnhap), 0);
-        const newSum = currentSum + Number(currentDetail.soluongnhap);
-        if (newSum > Number(importForm.tongsoluongnhap)) {
-            showToast(`Tổng lượng nhập (${newSum}kg) sẽ vượt quá tổng dự kiến (${importForm.tongsoluongnhap}kg).`, "error");
-            return;
-        }
 
         let finalLe = Number(currentDetail.giabanledukien);
         let finalSi = Number(currentDetail.giabansidukien);
@@ -227,6 +216,7 @@ export default function QuanLyKho() {
         return addedDetails.reduce((sum, item) => sum + (item.soluongnhap * item.gianhap), 0);
     };
 
+    // Hàm tự động tính tổng cân nặng dựa vào danh sách đã thêm
     const calculateTotalWeight = () => {
         return addedDetails.reduce((sum, item) => sum + Number(item.soluongnhap), 0);
     };
@@ -234,14 +224,7 @@ export default function QuanLyKho() {
     // --- SUBMIT VÀ CẬP NHẬT GIÁ ---
     const handleSubmitImport = async () => {
         if (!importForm.idloaica || !importForm.idncc) return showToast("Vui lòng chọn Loại cá và Nhà cung cấp!", "error");
-        if (!importForm.tongsoluongnhap) return showToast("Vui lòng nhập Tổng số lượng nhập!", "error");
         if (addedDetails.length === 0) return showToast("Phiếu nhập chưa có chi tiết lô hàng nào!", "error");
-
-        const totalDetails = calculateTotalWeight();
-        if (totalDetails !== Number(importForm.tongsoluongnhap)) {
-            showToast(`Tổng chi tiết (${totalDetails}kg) chưa khớp với Tổng khai báo (${importForm.tongsoluongnhap}kg).`, "error");
-            return;
-        }
 
         const payload = {
             idloaica: parseInt(importForm.idloaica),
@@ -294,7 +277,8 @@ export default function QuanLyKho() {
             showToast("Nhập hàng thành công! Kho và Bảng giá đã được cập nhật.", "success");
             setIsImportModalOpen(false);
             fetchInitialData();
-            setImportForm({ ...importForm, idloaica: "", ghichu: "", tongsoluongnhap: "" });
+            // Đã xóa trạng thái tongsoluongnhap lúc reset
+            setImportForm({ ...importForm, idloaica: "", ghichu: "" });
             setAddedDetails([]);
         } catch (error) {
             console.error(error);
@@ -327,7 +311,6 @@ export default function QuanLyKho() {
                 <div className="text-slate-500 text-sm">
                     Theo dõi tồn kho, nhập hàng và cập nhật giá tự động.
                 </div>
-                {/* Đổi màu nút Tạo Phiếu Nhập sang Cyan */}
                 <button 
                     onClick={() => setIsImportModalOpen(true)}
                     className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md shadow-cyan-100 transition-all active:scale-95 text-sm cursor-pointer w-full sm:w-auto"
@@ -360,7 +343,6 @@ export default function QuanLyKho() {
                             ) : sortedInventory.length > 0 ? (
                                 sortedInventory.map((item) => (
                                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                        {/* Đổi màu highlight text tên cá sang Cyan */}
                                         <td className="p-4 font-bold text-cyan-950">{item.tenLoaiCa}</td>
                                         <td className="p-4 text-slate-600">
                                             <span className="bg-slate-100 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200">{item.tenSize}</span>
@@ -379,7 +361,6 @@ export default function QuanLyKho() {
                                             </span>
                                         </td>
                                         <td className="p-4 text-center">
-                                            {/* Đổi màu icon nút nhập trực tiếp trên dòng sang Cyan */}
                                             <button 
                                                 onClick={() => handleImportFromRow(item)} 
                                                 className="inline-flex items-center justify-center p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 border border-transparent hover:border-cyan-100 rounded-lg transition-all cursor-pointer"
@@ -407,7 +388,6 @@ export default function QuanLyKho() {
                         
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                                {/* Đổi màu icon tiêu đề Modal sang Cyan */}
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-5 text-cyan-600">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.008 1.24l.885 1.77a2.25 2.25 0 0 0 2.007 1.24h1.98a2.25 2.25 0 0 0 2.007-1.24l.885-1.77a2.25 2.25 0 0 1 2.007-1.24h3.86m-18 0h18M2.25 13.5a2.25 2.25 0 0 0-2.25 2.25v3.75A2.25 2.25 0 0 0 2.25 21h19.5a2.25 2.25 0 0 0 2.25-2.25v-3.75a2.25 2.25 0 0 0-2.25-2.25M2.25 13.5V9A2.25 2.25 0 0 1 4.5 6.75h15A2.25 2.25 0 0 1 21 9v4.5m-9-9.75V3" />
                                 </svg>
@@ -425,7 +405,6 @@ export default function QuanLyKho() {
                             {/* CỘT TRÁI */}
                             <div className="lg:col-span-4 space-y-5 border-r border-slate-100 pr-6">
                                 <h4 className="font-bold text-slate-700 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
-                                    {/* Đổi badge số thứ tự sang Cyan */}
                                     <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">1</span>
                                     Thông tin chung
                                 </h4>
@@ -454,21 +433,7 @@ export default function QuanLyKho() {
                                     </select>
                                 </div>
 
-                                <div className="p-4 bg-yellow-50/60 rounded-xl border border-yellow-200">
-                                    <label className="block text-xs font-bold text-yellow-800 uppercase mb-1.5">
-                                        Tổng Số Lượng Nhập (kg)
-                                    </label>
-                                    <input 
-                                        type="number" 
-                                        className="w-full p-2.5 border border-yellow-300 rounded-xl text-lg font-bold text-yellow-900 bg-white focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all"
-                                        placeholder="VD: 100"
-                                        value={importForm.tongsoluongnhap}
-                                        onChange={e => setImportForm({...importForm, tongsoluongnhap: e.target.value})} 
-                                    />
-                                    <p className="text-[10px] text-yellow-600 mt-1.5 font-medium">
-                                        * Phải nhập tổng trước khi chia lô chi tiết.
-                                    </p>
-                                </div>
+                                {/* Đã gỡ bỏ ô input nhập Tổng số lượng ở đây */}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -498,17 +463,13 @@ export default function QuanLyKho() {
                             <div className="lg:col-span-8 flex flex-col h-full">
                                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-4">
                                     <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
-                                        {/* Đổi badge số thứ tự sang Cyan */}
                                         <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">2</span>
                                         Phân Bổ Chi Tiết (Lô)
                                     </h4>
                                     
-                                    <div className="text-sm font-bold">
-                                        Đã phân bổ: <span className={`${calculateTotalWeight() === Number(importForm.tongsoluongnhap) ? 'text-green-600' : 'text-red-500'}`}>
-                                            {calculateTotalWeight()}
-                                        </span> 
-                                        <span className="text-slate-300 mx-1">/</span> 
-                                        <span className="text-slate-600">{importForm.tongsoluongnhap || 0} kg</span>
+                                    {/* Thay đổi phần hiển thị tổng cân nặng tự động */}
+                                    <div className="text-sm font-bold text-cyan-700 bg-cyan-50 px-3 py-1.5 rounded-lg border border-cyan-100">
+                                        Tổng số lượng nhập: <span className="text-lg ml-1">{calculateTotalWeight()}</span> kg
                                     </div>
                                 </div>
                                 
@@ -540,16 +501,13 @@ export default function QuanLyKho() {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="text-xs font-bold text-cyan-600 block mb-1.5">Giá Bán Lẻ</label>
-                                        {/* Đổi màu nền input dự kiến sang Cyan nhạt */}
                                         <input type="number" className="w-full p-2 border rounded-lg text-sm border-cyan-200 bg-cyan-50/50 text-cyan-700 outline-none focus:border-cyan-500" placeholder="Dự kiến" value={currentDetail.giabanledukien} onChange={e => setCurrentDetail({...currentDetail, giabanledukien: e.target.value})} />
                                     </div>
                                     <div className="col-span-2">
                                         <label className="text-xs font-bold text-cyan-600 block mb-1.5">Giá Bán Sỉ</label>
-                                        {/* Đổi màu nền input dự kiến sang Cyan nhạt */}
                                         <input type="number" className="w-full p-2 border rounded-lg text-sm border-cyan-200 bg-cyan-50/50 text-cyan-700 outline-none focus:border-cyan-500" placeholder="Dự kiến" value={currentDetail.giabansidukien} onChange={e => setCurrentDetail({...currentDetail, giabansidukien: e.target.value})} />
                                     </div>
                                     <div className="col-span-1">
-                                        {/* Đổi nút thêm dòng lô chi tiết sang Cyan */}
                                         <button onClick={handleAddDetail} className="w-full p-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 flex justify-center cursor-pointer transition-colors shadow-xs">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-4.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -578,7 +536,6 @@ export default function QuanLyKho() {
                                                     <td className="p-3 text-right font-medium">{item.soluongnhap}</td>
                                                     <td className="p-3 text-right font-mono text-slate-500">{Number(item.gianhap).toLocaleString()}</td>
                                                     <td className="p-3 text-right font-bold text-slate-800">{(item.soluongnhap * item.gianhap).toLocaleString()}</td>
-                                                    {/* Đổi màu hiển thị text giá bán sang Cyan */}
                                                     <td className="p-3 text-right font-mono text-cyan-600 font-bold">{Number(item.giabanledukien).toLocaleString()}</td>
                                                     <td className="p-3 text-right font-mono text-cyan-600 font-bold">{Number(item.giabansidukien).toLocaleString()}</td>
                                                     <td className="p-3 text-center">
@@ -599,12 +556,12 @@ export default function QuanLyKho() {
                                     <div className="text-slate-500 font-medium text-sm">
                                         Tổng tiền nhập phiếu: <span className="text-xl font-bold text-slate-800 ml-1">{calculateTotalImportMoney().toLocaleString()} VNĐ</span>
                                     </div>
-                                    {/* Đổi màu nút Hoàn tất nhập kho sang Cyan */}
+                                    {/* Nút chỉ active khi có ít nhất 1 dòng dữ liệu chi tiết */}
                                     <button 
                                         onClick={handleSubmitImport} 
-                                        disabled={calculateTotalWeight() !== Number(importForm.tongsoluongnhap)}
+                                        disabled={addedDetails.length === 0}
                                         className={`px-6 py-3 font-bold rounded-xl shadow-md transition-all text-sm w-full sm:w-auto ${
-                                            calculateTotalWeight() === Number(importForm.tongsoluongnhap)
+                                            addedDetails.length > 0
                                             ? "bg-cyan-600 text-white hover:bg-cyan-700 shadow-cyan-100 cursor-pointer"
                                             : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
                                         }`}

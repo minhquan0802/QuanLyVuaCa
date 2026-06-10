@@ -2,10 +2,12 @@
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext"
 
 export default function Login() {
     const navigate = useNavigate();
     const { setUser } = useAuth();
+    const { showToast } = useToast();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -16,8 +18,11 @@ export default function Login() {
     const handleLogin = async (e) => {
         if (e) e.preventDefault();
         setError("");
+
         if (!email || !password) {
-            setError("Vui lòng nhập đầy đủ email và mật khẩu.");
+            const msg = "Vui lòng nhập đầy đủ email và mật khẩu.";
+            setError(msg);
+            showToast(msg, "error"); // Toast cảnh báo bỏ trống
             return;
         }
 
@@ -30,24 +35,33 @@ export default function Login() {
 
             const { data: infoData } = await api.get("/tai-khoan/my-info");
             const userInfo = infoData.result;
-            
+
             setUser(userInfo);
+
+            // Hiện Toast chúc mừng đăng nhập thành công trước khi chuyển trang
+            showToast("Đăng nhập thành công", "success");
+
             navigate(userInfo?.vaitro === "ADMIN" ? '/admin' : '/home');
 
         } catch (err) {
             const status = err.response?.status;
             const code = err.response?.data?.code;
+            let msg = "";
+
             if (status === 403 || code === 1028) {
-                setError("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+                msg = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
             } else if (status === 401) {
-                setError("Email hoặc mật khẩu không chính xác.");
+                msg = "Email hoặc mật khẩu không chính xác.";
             } else {
-                setError("Có lỗi xảy ra, vui lòng thử lại.");
+                msg = "Có lỗi xảy ra, vui lòng thử lại sau.";
             }
+
+            setError(msg);
+            showToast(msg, "error"); // Toast báo lỗi đăng nhập cụ thể
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     const handleRegister = () => { navigate('/register'); }
 
@@ -115,7 +129,7 @@ export default function Login() {
                             </div>
                         </div>
 
-                        <div className="text-[11px] text-slate-400 text-center cursor-pointer hover:text-cyan-600 mt-1" onClick={() => {setEmail('admin@gmail.com'); setPassword('123456789')}}>
+                        <div className="text-[11px] text-slate-400 text-center cursor-pointer hover:text-cyan-600 mt-1" onClick={() => { setEmail('admin@gmail.com'); setPassword('123456789') }}>
                             (Click điền nhanh: admin@gmail.com / 123456789)
                         </div>
 
