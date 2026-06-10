@@ -27,13 +27,8 @@ public class TaiKhoanController {
                 .result(taiKhoanService.taoTaiKhoan(request))
                 .build();
     }
-
     @GetMapping
     private ApiResponse<List<TaikhoanResponse>> danhSachTaiKhoan() {
-//        var authentication = SecurityContextHolder.getContext().getAuthentication();
-//        log.info("Username : {}", authentication.getName());
-//        authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.toString()));
-
         return ApiResponse.<List<TaikhoanResponse>>builder()
                 .code(200)
                 .message("OK")
@@ -73,4 +68,40 @@ public class TaiKhoanController {
                 .result(taiKhoanService.getMyInfo())
                 .build();
     }
+
+
+
+    @PostMapping("/resend-verification")
+    public ApiResponse<String> guiLaiEmail(@RequestParam String email) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(taiKhoanService.guiLaiEmailXacThuc(email))
+                .build();
+    }
+
+    @GetMapping("/verify-email")
+    public ApiResponse<String> verifyEmail(@RequestParam String token) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(taiKhoanService.xacThucEmail(token))
+                .build();
+    }
+
+    @GetMapping("/cho-duyet")
+    public ApiResponse<List<TaikhoanResponse>> layDanhSachChoDuyet() {
+        return ApiResponse.<List<TaikhoanResponse>>builder()
+                .code(200)
+                .result(taiKhoanService.layDanhSachChoDuyet())
+                .build();
+    }
+
+    @PutMapping("/duyet/{id}")
+    public ApiResponse<TaikhoanResponse> duyetTaiKhoan(@PathVariable String id) {
+        return ApiResponse.<TaikhoanResponse>builder()
+                .code(200)
+                .message("Phê duyệt tài khoản thành công")
+                .result(taiKhoanService.duyetTaiKhoan(id))
+                .build();
+    }
+
 }
