@@ -1,5 +1,5 @@
-﻿import Header from "../../components/header"
-import Footer from "../../components/footer"
+﻿
+
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom";
 
@@ -72,7 +72,7 @@ export default function Cart() {
 
     return (
         <div className="bg-slate-50 font-body text-slate-600 min-h-screen flex flex-col">
-            <Header />
+            
 
             <main className="flex-grow">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -231,7 +231,7 @@ export default function Cart() {
                     </div>
                 </div>
             </main>
-            <Footer />
+            
         </div>
     )
 }

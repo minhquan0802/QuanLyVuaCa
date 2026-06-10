@@ -5,7 +5,7 @@ const ProtectedRoute = () => {
     const { user, loading } = useAuth();
 
     if (loading) return null;
-    if (!user) return <Navigate to="/" replace />;
+    if (!user || user.vaitro !== "ADMIN") return <Navigate to="/" replace />;
 
     return <Outlet />;
 };

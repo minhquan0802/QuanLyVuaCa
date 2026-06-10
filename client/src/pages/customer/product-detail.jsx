@@ -1,5 +1,5 @@
-﻿import Header from "../../components/header"
-import Footer from "../../components/footer"
+﻿
+
 import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom";
 import api from "../../config/axios";
@@ -203,9 +203,9 @@ export default function ProductDetail() {
     if (loading) {
         return (
             <div className="bg-slate-50 min-h-screen flex flex-col">
-                <Header />
+                
                 <div className="flex-grow flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div></div>
-                <Footer />
+                
             </div>
         );
     }
@@ -216,7 +216,7 @@ export default function ProductDetail() {
 
     return (
         <div className="bg-slate-50 font-body text-slate-600 min-h-screen flex flex-col">
-            <Header />
+            
 
             <main className="flex-grow">
                 <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
@@ -431,7 +431,7 @@ export default function ProductDetail() {
 
                 </div>
             </main>
-            <Footer />
+            
         </div>
     )
 }
