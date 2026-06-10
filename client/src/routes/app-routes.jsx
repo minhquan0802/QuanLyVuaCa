@@ -1,6 +1,7 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import Login from '../pages/auth/login';
 import Register from '../pages/auth/register';
+import XacThucEmail from '../pages/auth/XacThucEmail';
 
 // Customer pages
 import Home from '../pages/customer/home';
@@ -47,6 +48,7 @@ export default function AppRoutes() {
         <Routes>
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
+            <Route path='/xac-thuc-email' element={<XacThucEmail />} />
 
             <Route element={<CustomerLayout />}>
                 <Route path='/' element={<Home />} />

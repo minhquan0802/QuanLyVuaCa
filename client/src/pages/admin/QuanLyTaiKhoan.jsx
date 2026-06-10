@@ -60,6 +60,17 @@ export default function QuanLyTaiKhoan() {
         }
     };
 
+    const handleApprove = async (item) => {
+        if (!window.confirm(`Phê duyệt tài khoản "${item.ho} ${item.ten}"?`)) return;
+        try {
+            await api.put(`/tai-khoan/duyet/${item.idtaikhoan}`);
+            showToast("Phê duyệt tài khoản thành công!", "success");
+            fetchData();
+        } catch (error) {
+            showToast(error.response?.data?.message || "Phê duyệt thất bại!", "error");
+        }
+    };
+
     const getRoleName = (vaitro) => {
         if (!vaitro) return "Chưa phân quyền";
         const found = ROLES.find(r => r.value === vaitro);
@@ -136,26 +147,51 @@ export default function QuanLyTaiKhoan() {
                                             </span>
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit ${item.trangthaitk === 'HOAT_DONG' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                                                <span className={`size-1.5 rounded-full ${item.trangthaitk === 'HOAT_DONG' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                {item.trangthaitk === 'HOAT_DONG' ? 'Hoạt động' : 'Đã khóa'}
-                                            </span>
+                                            {item.trangthaitk === 'HOAT_DONG' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-green-50 text-green-700 border-green-200">
+                                                    <span className="size-1.5 rounded-full bg-green-500"></span>Hoạt động
+                                                </span>
+                                            )}
+                                            {item.trangthaitk === 'KHOA' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-red-50 text-red-700 border-red-200">
+                                                    <span className="size-1.5 rounded-full bg-red-500"></span>Đã khóa
+                                                </span>
+                                            )}
+                                            {item.trangthaitk === 'CHO_DUYET' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-yellow-50 text-yellow-700 border-yellow-200">
+                                                    <span className="size-1.5 rounded-full bg-yellow-500"></span>Chờ duyệt
+                                                </span>
+                                            )}
+                                            {item.trangthaitk === 'CHO_XAC_THUC_EMAIL' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-slate-50 text-slate-500 border-slate-200">
+                                                    <span className="size-1.5 rounded-full bg-slate-400"></span>Chờ xác thực email
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center justify-center gap-2">
                                                 <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">
                                                     Sửa
                                                 </button>
-                                                <button
-                                                    onClick={() => handleToggleLock(item)}
-                                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs cursor-pointer ${
-                                                        item.trangthaitk === "HOAT_DONG"
-                                                            ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                                            : "bg-green-50 text-green-600 hover:bg-green-100"
-                                                    }`}
-                                                >
-                                                    {item.trangthaitk === "HOAT_DONG" ? "Khóa" : "Mở khóa"}
-                                                </button>
+                                                {item.trangthaitk === 'CHO_DUYET' ? (
+                                                    <button
+                                                        onClick={() => handleApprove(item)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs cursor-pointer bg-green-50 text-green-600 hover:bg-green-100"
+                                                    >
+                                                        Phê duyệt
+                                                    </button>
+                                                ) : item.trangthaitk === 'CHO_XAC_THUC_EMAIL' ? null : (
+                                                    <button
+                                                        onClick={() => handleToggleLock(item)}
+                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs cursor-pointer ${
+                                                            item.trangthaitk === "HOAT_DONG"
+                                                                ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                                                : "bg-green-50 text-green-600 hover:bg-green-100"
+                                                        }`}
+                                                    >
+                                                        {item.trangthaitk === "HOAT_DONG" ? "Khóa" : "Mở khóa"}
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

@@ -48,7 +48,11 @@ export default function Login() {
             const code = err.response?.data?.code;
             let msg = "";
 
-            if (status === 403 || code === 1028) {
+            if (code === 1030) {
+                msg = "Email chưa được xác thực. Vui lòng kiểm tra hộp thư và click link xác thực.";
+            } else if (code === 1031) {
+                msg = "Tài khoản đang chờ quản trị viên phê duyệt. Vui lòng chờ thông báo.";
+            } else if (status === 403 || code === 1028) {
                 msg = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
             } else if (status === 401) {
                 msg = "Email hoặc mật khẩu không chính xác.";

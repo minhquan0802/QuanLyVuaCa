@@ -17,12 +17,14 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -34,17 +36,89 @@ public class TaiKhoanService {
     PasswordEncoder passwordEncoder;
     GioHangRepository gioHangRepository;
     ChitietGioHangRepository chitietGioHangRepository;
+    EmailService emailService;
 
     public TaikhoanResponse taoTaiKhoan(TaiKhoanCreationRequest request) {
         if (taiKhoanRepository.existsByEmail(request.getEmail()))
             throw new AppExceptions(ErrorCode.USER_EXISTED);
 
         Taikhoan taikhoan = taikhoanMapper.toTaikhoan(request);
+        taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth != null
+                && !(auth instanceof AnonymousAuthenticationToken)
+                && auth.getAuthorities().stream()
+                       .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
+            taiKhoanRepository.save(taikhoan);
+        } else {
+            taikhoan.setTrangthaitk(TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL);
+            taiKhoanRepository.save(taikhoan);
+
+            String token = UUID.randomUUID().toString();
+            emailService.saveVerifyToken(taikhoan.getEmail(), token);
+            try {
+                emailService.sendVerificationEmail(taikhoan.getEmail(), token);
+            } catch (Exception e) {
+                log.error("Không thể gửi email xác thực tới {}: {}", taikhoan.getEmail(), e.getMessage());
+            }
+        }
+
+        return taikhoanMapper.toTaikhoanResponse(taikhoan);
+    }
+
+    public String guiLaiEmailXacThuc(String email) {
+        Taikhoan taikhoan = taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        if (!TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL.equals(taikhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.EMAIL_TOKEN_INVALID);
+
+        String token = UUID.randomUUID().toString();
+        emailService.saveVerifyToken(email, token);
+        emailService.sendVerificationEmail(email, token);
+
+        return "Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư.";
+    }
+
+    public String xacThucEmail(String token) {
+        String email = emailService.getEmailByToken(token);
+        if (email == null)
+            throw new AppExceptions(ErrorCode.EMAIL_TOKEN_INVALID);
+
+        Taikhoan taikhoan = taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        if (!TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL.equals(taikhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.EMAIL_TOKEN_INVALID);
+
+        taikhoan.setTrangthaitk(TrangThaiTaiKhoan.CHO_DUYET);
+        taiKhoanRepository.save(taikhoan);
+        emailService.deleteVerifyToken(token);
+
+        return "Xác thực email thành công! Tài khoản đang chờ admin phê duyệt.";
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<TaikhoanResponse> layDanhSachChoDuyet() {
+        return taiKhoanRepository.findByTrangthaitk(TrangThaiTaiKhoan.CHO_DUYET)
+                .stream().map(taikhoanMapper::toTaikhoanResponse).toList();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public TaikhoanResponse duyetTaiKhoan(String id) {
+        Taikhoan taikhoan = taiKhoanRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        if (!TrangThaiTaiKhoan.CHO_DUYET.equals(taikhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.UNCATEGORIZED);
+
         taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
 
-        taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
-        taiKhoanRepository.save(taikhoan);
-        return taikhoanMapper.toTaikhoanResponse(taikhoan);
+        return taikhoanMapper.toTaikhoanResponse(taiKhoanRepository.save(taikhoan));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")

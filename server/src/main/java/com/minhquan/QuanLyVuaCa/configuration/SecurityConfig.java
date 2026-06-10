@@ -38,6 +38,7 @@ public class SecurityConfig {
             "/Banggias",
             "/Quydois",
             "/Donvitinhs",
+            "/tai-khoan/verify-email",
     };
 
     @Autowired
