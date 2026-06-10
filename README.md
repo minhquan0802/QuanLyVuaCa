@@ -1,27 +1,129 @@
-# 🐟 QuanLyVuaCa (Hệ Thống Quản Lý Vựa Cá)
+# Quản Lý Vựa Cá Điêu Hồng
 
-## 📖 Giới Thiệu
-**QuanLyVuaCa** là một ứng dụng phần mềm được xây dựng để hỗ trợ quản lý và vận hành các hoạt động kinh doanh tại vựa cá. 
+Hệ thống quản lý vựa cá theo mô hình B2B — phục vụ việc nhập hàng, quản lý kho, thiết lập bảng giá và xử lý đơn hàng bán sỉ. Tài khoản khách hàng đăng ký phải qua xác thực email và được admin phê duyệt trước khi sử dụng.
 
-Dự án được thiết kế theo mô hình Client-Server, sử dụng **Spring Boot** cho hệ thống Backend vững chắc và **JavaScript** cho giao diện Frontend linh hoạt, giúp số hóa quy trình quản lý thông tin xuất/nhập, kiểm soát số lượng tồn và theo dõi doanh thu một cách hiệu quả.
+## Công nghệ
 
-## 🚀 Công Nghệ Sử Dụng
+**Backend**
+- Java 21 / Spring Boot 3.5.7
+- MySQL — lưu trữ chính
+- Redis — blacklist JWT, token xác thực email
+- Spring Security + JWT (cookie-based)
+- Spring Mail — gửi email xác thực qua Gmail SMTP
+- Cloudinary — lưu ảnh loại cá
+- VNPay — thanh toán trực tuyến
 
-Dự án được chia thành hai phần chính: Client và Server.
+**Frontend**
+- React 18 + Vite
+- Tailwind CSS
+- React Router v6
 
-### Server (Backend)
-- **Ngôn ngữ:** Java
-- **Framework:** Spring Boot
-- **Database:** MySQL
-- Cung cấp các RESTful API phục vụ cho ứng dụng Client.
+## Cấu trúc thư mục
 
-### Client (Frontend)
-- **Ngôn ngữ:** JavaScript
-- **Framework/Thư viện:** ReactJS
-- Xử lý giao diện người dùng, gọi API từ Backend và hiển thị dữ liệu trực quan.
-
-## 📂 Cấu Trúc Thư Mục
-```bash
+```
 QuanLyVuaCa/
-├── client/     # Chứa source code Frontend (Giao diện người dùng)
-└── server/     # Chứa source code Backend (Spring Boot REST API)
+├── client/          # React + Vite
+├── server/          # Spring Boot
+└── docs/            # Tài liệu mô tả luồng nghiệp vụ
+```
+
+## Chạy dự án
+
+### Yêu cầu
+- Java 21+
+- Node.js 18+
+- MySQL 8
+- Redis
+
+### Backend
+
+Tạo file `server/src/main/resources/application-local.yaml` (xem mẫu bên dưới), sau đó:
+
+```bash
+cd server
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Server chạy tại `http://localhost:8080/quan-ly-vua-ca`
+
+### Frontend
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Client chạy tại `http://localhost:5173`
+
+## Cấu hình local
+
+Tạo file `server/src/main/resources/application-local.yaml`:
+
+```yaml
+spring:
+  datasource:
+    url: "jdbc:mysql://localhost:3306/quanlyvuaca"
+    username: root
+    password: root
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: "your-app-password"   # App Password 16 ký tự, không phải mật khẩu Gmail
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  signerKey: "your-secret-key"
+
+frontend:
+  url: http://localhost:5173
+
+cloudinary:
+  cloud-name:
+  api-key:
+  api-secret:
+
+vnpay:
+  tmn-code:
+  hash-secret:
+  base-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:8080/quan-ly-vua-ca/payment/vnpay-callback
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+```
+
+> App Password Gmail: bật 2FA tại myaccount.google.com, sau đó tạo App Password tại myaccount.google.com/apppasswords
+
+## Tính năng chính
+
+| Module | Mô tả |
+|---|---|
+| Đăng ký / Đăng nhập | Xác thực email + admin phê duyệt trước khi dùng được |
+| Quản lý loại cá | Thêm/sửa loại cá, quản lý kích cỡ |
+| Kho hàng | Theo dõi tồn kho, tạo phiếu nhập |
+| Bảng giá | Thiết lập giá bán lẻ / bán sỉ theo từng loại và kích cỡ |
+| Đơn hàng | Tạo đơn, cân đóng hàng, theo dõi trạng thái vận chuyển |
+| Tài khoản | Phân quyền ADMIN / STAFF / CUSTOMER, khóa/mở tài khoản |
+
+## Tài khoản mặc định
+
+```
+Email:    admin@gmail.com
+Mật khẩu: 123456789
+Vai trò:  ADMIN
+```
