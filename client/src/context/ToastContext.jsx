@@ -10,7 +10,7 @@ export function ToastProvider({ children }) {
         
         setTimeout(() => {
             setToast((prev) => ({ ...prev, show: false }));
-        }, 5000);
+        }, 3000);
     }, []);
 
     return (

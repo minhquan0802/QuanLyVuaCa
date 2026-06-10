@@ -16,13 +16,6 @@ export default function ThemSuaLoaiCa() {
     const [imagePreview, setImagePreview] = useState(null);
     const fileInputRef = useRef(null);
 
-    const getImageUrl = (imageName) => {
-        if (!imageName) return null;
-        if (imageName.startsWith("http")) return imageName;
-        if (imageName.startsWith("/")) return `${import.meta.env.VITE_BE_URL}${imageName}`;
-        return `${import.meta.env.VITE_BE_URL}/images/loaica/${imageName}`;
-    };
-
     useEffect(() => {
         if (!isEditing) return;
         if (location.state?.category) {
@@ -95,7 +88,7 @@ export default function ThemSuaLoaiCa() {
                         >
                             {(imagePreview || (isEditing && currentCategory.hinhanhurl)) ? (
                                 <>
-                                    <img src={imagePreview || getImageUrl(currentCategory.hinhanhurl)} alt="preview" className="w-full h-full object-cover" />
+                                    <img src={imagePreview || currentCategory.hinhanhurl} alt="preview" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <span className="text-white text-xs font-bold">Thay đổi ảnh</span>
                                     </div>

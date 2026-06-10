@@ -20,13 +20,8 @@ export default function QuanLyTaiKhoan() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const res = await api.get("/tai-khoan");
-            const data = res.data;
-            let realAccounts = [];
-            if (data.result && Array.isArray(data.result)) realAccounts = data.result;
-            else if (Array.isArray(data)) realAccounts = data;
-            else if (data.data) realAccounts = data.data;
-            setAccounts(realAccounts);
+            const { data: { result } } = await api.get("/tai-khoan");
+            setAccounts(result || []);
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
             showToast("Không thể tải danh sách tài khoản!", "error");
@@ -43,36 +38,10 @@ export default function QuanLyTaiKhoan() {
 
     const handleEdit = (user) => navigate(`/admin/QuanLyTaiKhoan/sua/${user.idtaikhoan}`, { state: { user } });
 
-    const handleToggleLock = async (item) => {
-        const isLocking = item.trangthaitk === "HOAT_DONG";
-        const action = isLocking ? "khóa" : "mở khóa";
-        if (!window.confirm(`Bạn chắc muốn ${action} tài khoản "${item.ho} ${item.ten}"?`)) return;
-        try {
-            await api.put(`/tai-khoan/${item.idtaikhoan}`, {
-                ...item,
-                matkhau: null,
-                trangthaitk: isLocking ? "KHOA" : "HOAT_DONG",
-            });
-            showToast(`Đã ${action} tài khoản thành công!`, "success");
-            fetchData();
-        } catch (error) {
-            showToast(error.response?.data?.message || `Thao tác thất bại!`, "error");
-        }
-    };
-
     const getRoleName = (vaitro) => {
         if (!vaitro) return "Chưa phân quyền";
         const found = ROLES.find(r => r.value === vaitro);
         return found ? found.label : vaitro;
-    };
-
-    const getRoleBadge = (vaitro) => {
-        const styles = {
-            ADMIN:    "bg-purple-50 text-purple-700 border-purple-200",
-            STAFF:    "bg-blue-50 text-blue-700 border-blue-200",
-            CUSTOMER: "bg-green-50 text-green-700 border-green-200",
-        };
-        return styles[vaitro] || "bg-slate-50 text-slate-600 border-slate-200";
     };
 
     // Logic bộ lọc tìm kiếm tài khoản theo tên, họ, hoặc email
@@ -94,12 +63,12 @@ export default function QuanLyTaiKhoan() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.604 10.604Z" />
                         </svg>
                     </div>
-                    <input 
-                        type="text" 
-                        placeholder="Tìm theo tên, email..." 
+                    <input
+                        type="text"
+                        placeholder="Tìm theo tên, email..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white" 
+                        className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white"
                     />
                 </div>
                 <button onClick={handleAddNew} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md shadow-cyan-100 transition-all active:scale-95 w-full sm:w-auto text-sm cursor-pointer">
@@ -130,10 +99,9 @@ export default function QuanLyTaiKhoan() {
                                         <td className="p-4 font-bold text-cyan-950">{item.ho} {item.ten}</td>
                                         <td className="p-4 text-slate-600">{item.email}</td>
                                         <td className="p-4 font-mono text-slate-500">{item.sodienthoai || "-"}</td>
-                                        <td className="p-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${getRoleBadge(item.vaitro)}`}>
-                                                {getRoleName(item.vaitro)}
-                                            </span>
+                                        {/* Gỡ bọc badge -> Hiển thị text trơn thông thường */}
+                                        <td className="p-4 text-slate-700 font-medium">
+                                            {getRoleName(item.vaitro)}
                                         </td>
                                         <td className="p-4">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit ${item.trangthaitk === 'HOAT_DONG' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
@@ -141,22 +109,14 @@ export default function QuanLyTaiKhoan() {
                                                 {item.trangthaitk === 'HOAT_DONG' ? 'Hoạt động' : 'Đã khóa'}
                                             </span>
                                         </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">
-                                                    Sửa
-                                                </button>
-                                                <button
-                                                    onClick={() => handleToggleLock(item)}
-                                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs cursor-pointer ${
-                                                        item.trangthaitk === "HOAT_DONG"
-                                                            ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                                            : "bg-green-50 text-green-600 hover:bg-green-100"
-                                                    }`}
-                                                >
-                                                    {item.trangthaitk === "HOAT_DONG" ? "Khóa" : "Mở khóa"}
-                                                </button>
-                                            </div>
+                                        {/* Đơn giản hóa nút Sửa thành văn bản trơn có hover gạch chân */}
+                                        <td className="p-4 text-center">
+                                            <button
+                                                onClick={() => handleEdit(item)}
+                                                className="text-cyan-600 font-semibold text-xs hover:underline cursor-pointer"
+                                            >
+                                                Sửa
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

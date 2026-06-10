@@ -1,28 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, role, logout } = useAuth();
+    const { totalItems } = useCart();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const [cartCount, setCartCount] = useState(0);
 
     const isActive = (path) => location.pathname === path;
-
-    // --- HÀM CẬP NHẬT GIỎ HÀNG ---
-    const updateCartCount = () => {
-        const storedCart = localStorage.getItem("cart");
-        if (storedCart) {
-            const cartItems = JSON.parse(storedCart);
-            setCartCount(cartItems.length);
-        } else {
-            setCartCount(0);
-        }
-    };
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -31,11 +21,8 @@ export default function Header() {
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
-        updateCartCount();
-        window.addEventListener("storage", updateCartCount);
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
-            window.removeEventListener("storage", updateCartCount);
         };
     }, []);
 
@@ -47,7 +34,6 @@ export default function Header() {
 
     const handleLogout = () => {
         setIsDropdownOpen(false);
-        setCartCount(0);
         logout();
     };
 
@@ -58,7 +44,7 @@ export default function Header() {
                 <div className="w-full">
                     {/* Bỏ rounded-xl để full màn hình, shadow phủ đều bên dưới */}
                     <div className="relative flex items-center justify-between bg-cyan-600 shadow-md shadow-cyan-200/40 ring-1 ring-white/10 transition-all duration-300 px-6 py-3">
-                        
+
                         {/* 1. LOGO SECTION */}
                         <div
                             onClick={() => handleNavigation('/home')}
@@ -88,7 +74,7 @@ export default function Header() {
                                         {isDropdownOpen && (
                                             <div className="absolute right-0 top-full mt-3 w-56 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
                                                 <div className="py-1">
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleNavigation('/profile')}
                                                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
                                                     >
@@ -96,29 +82,17 @@ export default function Header() {
                                                         Hồ sơ cá nhân
                                                     </button>
 
-                                                    {role !== 'ADMIN' && (
-                                                        <button 
-                                                            onClick={() => handleNavigation('/my-orders')}
-                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
-                                                        >
-                                                            <span className="material-symbols-outlined text-lg">receipt_long</span>
-                                                            Theo dõi đơn hàng
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={() => handleNavigation('/my-orders')}
+                                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg">receipt_long</span>
+                                                        Theo dõi đơn hàng
+                                                    </button>
 
-                                                    {role === 'admin' && (
-                                                        <button 
-                                                            onClick={() => handleNavigation('/admin')}
-                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
-                                                        >
-                                                            <span className="material-symbols-outlined text-lg">dashboard</span>
-                                                            Trang quản trị
-                                                        </button>
-                                                    )}
-                                                    
                                                     <div className="border-t border-gray-100 my-1"></div>
 
-                                                    <button 
+                                                    <button
                                                         onClick={handleLogout}
                                                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                                                     >
@@ -146,10 +120,10 @@ export default function Header() {
                                 className="relative flex items-center justify-center size-10 rounded-full bg-white text-cyan-600 shadow-md hover:bg-cyan-50 hover:text-cyan-700 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                             >
                                 <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
-                                
-                                {cartCount > 0 && (
+
+                                {totalItems > 0 && (
                                     <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-cyan-600 animate-in zoom-in duration-300">
-                                        {cartCount > 99 ? '99+' : cartCount}
+                                        {totalItems > 99 ? '99+' : totalItems}
                                     </span>
                                 )}
                             </button>
@@ -176,7 +150,7 @@ export default function Header() {
                                             <div className="px-4 py-2 text-xs text-gray-500">
                                                 Xin chào, <span className="font-bold text-cyan-900">{user.email}</span>
                                             </div>
-                                            
+
                                             <button
                                                 onClick={() => handleNavigation('/profile')}
                                                 className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
@@ -185,7 +159,7 @@ export default function Header() {
                                                 Hồ sơ cá nhân
                                             </button>
 
-                                            {role !== 'admin' && (
+                                            {role !== 'ADMIN' && (
                                                 <button
                                                     onClick={() => handleNavigation('/my-orders')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
@@ -195,7 +169,7 @@ export default function Header() {
                                                 </button>
                                             )}
 
-                                            {role === 'admin' && (
+                                            {role === 'ADMIN' && (
                                                 <button
                                                     onClick={() => handleNavigation('/admin')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"

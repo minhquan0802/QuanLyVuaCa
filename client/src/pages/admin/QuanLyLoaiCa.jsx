@@ -10,18 +10,11 @@ export default function QuanLyLoaiCa() {
     const [loading, setLoading] = useState(true);
     const { showToast } = useToast();
 
-    // 1. Fetch Data Loại Cá
     const fetchData = async () => {
         try {
             setLoading(true);
-            const { data } = await api.get("/Loaicas");
-            
-            let realData = [];
-            if (Array.isArray(data)) realData = data;
-            else if (data.result && Array.isArray(data.result)) realData = data.result;
-            else if (data.data && Array.isArray(data.data)) realData = data.data;
-
-            setCategories(realData);
+            const { data: { result } } = await api.get("/Loaicas");
+            setCategories(result || []);
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
             showToast("Không thể tải danh sách loại cá!", "error");
@@ -33,13 +26,6 @@ export default function QuanLyLoaiCa() {
     useEffect(() => {
         fetchData();
     }, []);
-
-    const getImageUrl = (imageName) => {
-        if (!imageName) return 'https://placehold.co/100x100?text=No+Image';
-        if (imageName.startsWith('http')) return imageName;
-        if (imageName.startsWith('/')) return `${import.meta.env.VITE_BE_URL}${imageName}`;
-        return `${import.meta.env.VITE_BE_URL}/images/loaica/${imageName}`;
-    };
 
     const handleEdit = (category) => {
         navigate(`/admin/QuanLyLoaiCa/sua/${category.id}`, { state: { category } });
@@ -61,7 +47,6 @@ export default function QuanLyLoaiCa() {
                     </div>
                     <input type="text" placeholder="Tìm kiếm loại cá..." className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white" />
                 </div>
-                {/* Thay đổi màu nền nút sang Cyan */}
                 <button onClick={() => navigate("/admin/QuanLyLoaiCa/them")} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md shadow-cyan-100 transition-all active:scale-95 w-full sm:w-auto text-sm cursor-pointer">
                     Thêm Loại Cá
                 </button>
@@ -89,18 +74,21 @@ export default function QuanLyLoaiCa() {
                                         <td className="p-4 text-center font-mono text-slate-400">#{item.id}</td>
                                         <td className="p-4">
                                             <div className="size-12 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 shadow-2xs">
-                                                <img src={getImageUrl(item.hinhanhurl)} className="w-full h-full object-cover" alt={item.tenloaica} onError={(e) => { e.target.src = 'https://placehold.co/100x100?text=Error' }} />
+                                                <img
+                                                    src={item.hinhanhurl}
+                                                    className="w-full h-full object-cover"
+                                                    alt={item.tenloaica}
+                                                    onError={(e) => { e.target.src = 'https://placehold.co/100x100?text=Error' }}
+                                                />
                                             </div>
                                         </td>
-                                        {/* Đổi màu chữ highlight sang Cyan */}
                                         <td className="p-4 font-bold text-cyan-950">{item.tenloaica}</td>
                                         <td className="p-4 text-slate-500 max-w-xs truncate">{item.mieuta || "---"}</td>
                                         <td className="p-4 flex items-center justify-center gap-3">
-                                            {/* Đổi màu nút Kích cỡ sang Cyan */}
                                             <button onClick={() => handleOpenSize(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer" title="Cấu hình kích thước">
                                                 Kích cỡ
                                             </button>
-                                            <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 transition-colors text-xs cursor-pointer" title="Chỉnh sửa loại cá">
+                                            <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer" title="Chỉnh sửa loại cá">
                                                 Sửa
                                             </button>
                                         </td>
@@ -113,7 +101,6 @@ export default function QuanLyLoaiCa() {
                     </table>
                 </div>
             </div>
-
         </AdminLayout>
     );
 }
