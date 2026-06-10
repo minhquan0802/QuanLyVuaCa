@@ -1,17 +1,20 @@
 ﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
+import { useToast } from "../../context/ToastContext";
 
 export default function Register() {
     const navigate = useNavigate();
-    
+
+    const { showToast } = useToast();
+
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [address, setAddress] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -23,12 +26,16 @@ export default function Register() {
         setError("");
 
         if (!fullName || !email || !password || !confirmPassword) {
-            setError("Vui lòng điền các thông tin bắt buộc (*).");
+            const msg = "Vui lòng điền đầy đủ các thông tin bắt buộc (*).";
+            setError(msg);
+            showToast(msg, "error");
             return;
         }
 
         if (password !== confirmPassword) {
-            setError("Mật khẩu xác nhận không khớp.");
+            const msg = "Mật khẩu xác nhận không trùng khớp.";
+            setError(msg);
+            showToast(msg, "error");
             return;
         }
 
@@ -51,27 +58,33 @@ export default function Register() {
 
             await api.post("/tai-khoan", newUser);
 
-            alert("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
+            // Sử dụng showToast thành công thay cho alert()
+            showToast("Đăng ký tài khoản thành công! Vui lòng đăng nhập.", "success");
             navigate('/');
 
         } catch (err) {
+            console.error(err);
             const status = err.response?.status;
             const message = err.response?.data?.message;
+            let msg = "";
 
             if (status === 400 && message) {
-                setError(message);
-            } else if (err.message.includes("Failed to fetch")) {
-                setError("Lỗi kết nối Server (CORS/Network). Vui lòng kiểm tra Backend.");
+                msg = message;
+            } else if (err.message?.includes("Failed to fetch")) {
+                msg = "Lỗi kết nối hệ thống (Network/CORS). Vui lòng thử lại sau.";
             } else {
-                setError(message || "Có lỗi xảy ra, vui lòng thử lại.");
+                msg = message || "Có lỗi xảy ra trong quá trình đăng ký, vui lòng thử lại.";
             }
+
+            setError(msg);
+            showToast(msg, "error");
         } finally {
             setLoading(false);
         }
     }
 
     const handleLogin = () => {
-        navigate('/'); 
+        navigate('/');
     }
 
     return (
