@@ -1,5 +1,5 @@
-﻿import Header from "../../components/header";
-import Footer from "../../components/footer";
+﻿;
+;
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
@@ -232,7 +232,7 @@ export default function ThongTinDonHang() {
 
     return (
         <div className="bg-slate-100 font-body text-slate-600 min-h-screen flex flex-col">
-            <Header />
+            
 
             <main className="flex-grow pb-12">
                 <div className="mx-auto max-w-5xl px-0 md:px-4 pt-4 md:pt-8">
@@ -642,7 +642,7 @@ export default function ThongTinDonHang() {
                 </div>
             )}
 
-            <Footer />
+            
         </div>
     );
 }

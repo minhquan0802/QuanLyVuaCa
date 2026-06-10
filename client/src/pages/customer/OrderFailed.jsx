@@ -1,6 +1,6 @@
 ﻿import { useSearchParams, useNavigate } from "react-router-dom";
-import Header from "../../components/header";
-import Footer from "../../components/footer";
+;
+;
 
 export default function OrderFailed() {
     const [searchParams] = useSearchParams();
@@ -11,7 +11,7 @@ export default function OrderFailed() {
 
     return (
         <div className="bg-slate-50 font-body text-slate-600 min-h-screen flex flex-col">
-            <Header />
+            
 
             <main className="flex-grow flex items-center justify-center p-4">
                 <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl shadow-red-50 ring-1 ring-slate-200 p-8 md:p-12 text-center">
@@ -52,7 +52,7 @@ export default function OrderFailed() {
                 </div>
             </main>
 
-            <Footer />
+            
         </div>
     );
 }

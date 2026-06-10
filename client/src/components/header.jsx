@@ -13,12 +13,6 @@ export default function Header() {
 
     const isActive = (path) => location.pathname === path;
 
-    const navItems = [
-        { label: "Trang chủ", path: "/home" },
-        { label: "Sản phẩm", path: "/home" }, 
-    ];
-
-
     // --- HÀM CẬP NHẬT GIỎ HÀNG ---
     const updateCartCount = () => {
         const storedCart = localStorage.getItem("cart");
@@ -59,41 +53,23 @@ export default function Header() {
 
     return (
         <>
-            <header className="sticky top-4 z-50 w-full px-4">
-
-                <div className="mx-auto max-w-7xl">
-                    <div className="relative flex items-center justify-between rounded-xl bg-blue-600 shadow-lg shadow-blue-200 ring-1 ring-white/10 transition-all duration-300 px-4 py-2">                        {/* 1. LOGO SECTION */}
+            {/* Đưa sát lên đỉnh bằng top-0, loại bỏ padding px-4 dư thừa */}
+            <header className="sticky top-0 z-50 w-full">
+                <div className="w-full">
+                    {/* Bỏ rounded-xl để full màn hình, shadow phủ đều bên dưới */}
+                    <div className="relative flex items-center justify-between bg-cyan-600 shadow-md shadow-cyan-200/40 ring-1 ring-white/10 transition-all duration-300 px-6 py-3">
                         
                         {/* 1. LOGO SECTION */}
                         <div
                             onClick={() => handleNavigation('/home')}
                             className="flex items-center gap-2 cursor-pointer group"
                         >
-                            <div className="relative flex items-center justify-center size-8 rounded-full bg-white/20 group-hover:bg-white/30 transition-colors">
-                                <span className="material-symbols-outlined text-xl text-white">phishing</span>
-                            </div>
                             <h2 className="font-display text-lg md:text-xl font-bold text-white tracking-tight">
-                                Minh Quân Fresh
+                                Vựa cá Điêu Hồng
                             </h2>
                         </div>
 
-                        {/* 2. DESKTOP NAVIGATION */}
-                        <nav className="hidden md:flex items-center gap-8">
-                            {navItems.map((item) => (
-                                <button
-                                    key={item.path}
-                                    onClick={() => handleNavigation(item.path)}
-                                    className={`relative text-sm font-medium transition-colors duration-300 ${isActive(item.path)
-                                        ? "text-white font-bold"
-                                        : "text-blue-100 hover:text-white"
-                                        }`}
-                                >
-                                    {item.label}
-                                </button>
-                            ))}
-                        </nav>
-
-                        {/* 3. ACTIONS */}
+                        {/* 2. ACTIONS */}
                         <div className="flex items-center gap-3">
 
                             {/* --- USER BUTTON --- */}
@@ -102,7 +78,7 @@ export default function Header() {
                                     <>
                                         <button
                                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                            className="hidden md:flex items-center justify-center size-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-300 ring-2 ring-transparent hover:ring-white/50"
+                                            className="hidden md:flex items-center justify-center size-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-300 ring-2 ring-transparent hover:ring-white/50 cursor-pointer"
                                             title={`Xin chào, ${user.email}`}
                                         >
                                             <span className="material-symbols-outlined">person</span>
@@ -111,25 +87,19 @@ export default function Header() {
                                         {/* Dropdown Menu (Desktop) */}
                                         {isDropdownOpen && (
                                             <div className="absolute right-0 top-full mt-3 w-56 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
-                                                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                                                    <p className="text-xs text-gray-500 font-medium">Đang đăng nhập:</p>
-                                                    <p className="text-sm font-bold text-blue-900 truncate">{user.email}</p>
-                                                </div>
-                                                
                                                 <div className="py-1">
                                                     <button 
                                                         onClick={() => handleNavigation('/profile')}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
                                                     >
                                                         <span className="material-symbols-outlined text-lg">account_circle</span>
                                                         Hồ sơ cá nhân
                                                     </button>
 
-                                                    {/* --- [MỚI] THEO DÕI ĐƠN HÀNG (Ẩn với Admin) --- */}
-                                                    {role !== 'admin' && (
+                                                    {role !== 'ADMIN' && (
                                                         <button 
                                                             onClick={() => handleNavigation('/my-orders')}
-                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
                                                         >
                                                             <span className="material-symbols-outlined text-lg">receipt_long</span>
                                                             Theo dõi đơn hàng
@@ -139,7 +109,7 @@ export default function Header() {
                                                     {role === 'admin' && (
                                                         <button 
                                                             onClick={() => handleNavigation('/admin')}
-                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
                                                         >
                                                             <span className="material-symbols-outlined text-lg">dashboard</span>
                                                             Trang quản trị
@@ -150,7 +120,7 @@ export default function Header() {
 
                                                     <button 
                                                         onClick={handleLogout}
-                                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                                                     >
                                                         <span className="material-symbols-outlined text-lg">logout</span>
                                                         Đăng xuất
@@ -162,7 +132,7 @@ export default function Header() {
                                 ) : (
                                     <button
                                         onClick={() => handleNavigation('/')}
-                                        className="hidden md:flex items-center justify-center size-10 rounded-full text-white hover:bg-white/20 transition-all duration-300"
+                                        className="hidden md:flex items-center justify-center size-10 rounded-full text-white hover:bg-white/20 transition-all duration-300 cursor-pointer"
                                         title="Đăng nhập"
                                     >
                                         <span className="material-symbols-outlined">login</span>
@@ -173,12 +143,12 @@ export default function Header() {
                             {/* --- CART BUTTON --- */}
                             <button
                                 onClick={() => handleNavigation('/cart')}
-                                className="relative flex items-center justify-center size-10 rounded-full bg-white text-blue-600 shadow-md hover:bg-blue-50 hover:text-blue-700 hover:-translate-y-0.5 transition-all duration-300"
+                                className="relative flex items-center justify-center size-10 rounded-full bg-white text-cyan-600 shadow-md hover:bg-cyan-50 hover:text-cyan-700 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                             >
                                 <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
                                 
                                 {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-blue-600 animate-in zoom-in duration-300">
+                                    <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-cyan-600 animate-in zoom-in duration-300">
                                         {cartCount > 99 ? '99+' : cartCount}
                                     </span>
                                 )}
@@ -187,7 +157,7 @@ export default function Header() {
                             {/* Mobile Hamburger Button */}
                             <button
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="md:hidden flex items-center justify-center size-10 rounded-full text-white hover:bg-white/10 transition-colors"
+                                className="md:hidden flex items-center justify-center size-10 rounded-full text-white hover:bg-white/10 transition-colors cursor-pointer"
                             >
                                 <span className="material-symbols-outlined">
                                     {isMobileMenuOpen ? 'close' : 'menu'}
@@ -198,42 +168,27 @@ export default function Header() {
 
                     {/* --- MOBILE MENU --- */}
                     {isMobileMenuOpen && (
-                        <div className="md:hidden mx-4 mt-2 bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                        <div className="md:hidden w-full bg-white shadow-xl border-t border-slate-100 overflow-hidden animate-in slide-in-from-top-2 duration-200">
                             <div className="p-4 space-y-2">
-                                {navItems.map((item) => (
-                                    <button
-                                        key={item.path}
-                                        onClick={() => handleNavigation(item.path)}
-                                        className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors flex items-center gap-3 ${
-                                            isActive(item.path) 
-                                            ? "bg-blue-50 text-blue-600 font-bold" 
-                                            : "text-gray-600 hover:bg-gray-50"
-                                        }`}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-
-                                <div className="border-t border-gray-100 my-2 pt-2">
+                                <div className="pt-1">
                                     {user ? (
                                         <>
                                             <div className="px-4 py-2 text-xs text-gray-500">
-                                                Xin chào, <span className="font-bold text-blue-900">{user.email}</span>
+                                                Xin chào, <span className="font-bold text-cyan-900">{user.email}</span>
                                             </div>
                                             
                                             <button
                                                 onClick={() => handleNavigation('/profile')}
-                                                className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3"
+                                                className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                                             >
                                                 <span className="material-symbols-outlined text-lg">account_circle</span>
                                                 Hồ sơ cá nhân
                                             </button>
 
-                                            {/* --- [MỚI] THEO DÕI ĐƠN HÀNG MOBILE (Ẩn với Admin) --- */}
                                             {role !== 'admin' && (
                                                 <button
                                                     onClick={() => handleNavigation('/my-orders')}
-                                                    className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3"
+                                                    className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                                                 >
                                                     <span className="material-symbols-outlined text-lg">receipt_long</span>
                                                     Theo dõi đơn hàng
@@ -243,7 +198,7 @@ export default function Header() {
                                             {role === 'admin' && (
                                                 <button
                                                     onClick={() => handleNavigation('/admin')}
-                                                    className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3"
+                                                    className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                                                 >
                                                     <span className="material-symbols-outlined text-lg">dashboard</span>
                                                     Trang quản trị
@@ -251,7 +206,7 @@ export default function Header() {
                                             )}
                                             <button
                                                 onClick={handleLogout}
-                                                className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                                className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer"
                                             >
                                                 <span className="material-symbols-outlined text-lg">logout</span>
                                                 Đăng xuất
@@ -260,7 +215,7 @@ export default function Header() {
                                     ) : (
                                         <button
                                             onClick={() => handleNavigation('/')}
-                                            className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 flex items-center gap-3 font-bold"
+                                            className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-cyan-600 bg-cyan-50 hover:bg-cyan-100 flex items-center gap-3 font-bold cursor-pointer"
                                         >
                                             <span className="material-symbols-outlined text-lg">login</span>
                                             Đăng nhập ngay

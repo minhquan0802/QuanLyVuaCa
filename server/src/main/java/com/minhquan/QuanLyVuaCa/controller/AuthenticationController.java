@@ -46,6 +46,7 @@ public class AuthenticationController {
         response.addCookie(cookieResult.getRefreshToken());
 
         return ApiResponse.<AuthenticationResponse>builder()
+                .message("Đăng nhập thành công")
                 .result(result)
                 .build();
     }
