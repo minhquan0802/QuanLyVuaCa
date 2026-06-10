@@ -80,7 +80,7 @@ public class DonhangService {
         if (request.getIdthongtinkhachhang() != null) {
             var khachOpt = taikhoanRepository.findById(request.getIdthongtinkhachhang());
             if (khachOpt.isPresent()) {
-                isWholesale = "WHOLESALE_CUSTOMER".equals(khachOpt.get().getVaitro());
+                isWholesale = "CUSTOMER".equals(khachOpt.get().getVaitro()) || "WHOLESALE_CUSTOMER".equals(khachOpt.get().getVaitro());
             }
         }
 
