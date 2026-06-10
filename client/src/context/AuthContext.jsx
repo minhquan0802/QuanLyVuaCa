@@ -1,14 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import Cookies from "js-cookie";
-import api from "../config/axios";
-
-// vaitro (String từ VaiTro enum) → tên role dùng trong app
-const ROLE_MAP = {
-    "ADMIN": "admin",
-    "WHOLESALE_CUSTOMER": "khachsi",
-    "INDIVIDUAL_CUSTOMER": "khachle",
-    "STAFF": "staff",
-};
+import api, { dangXuat } from "../config/axios";
 
 const AuthContext = createContext(null);
 
@@ -16,59 +7,22 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Khi app khởi động: nếu có token thì fetch lại user info
     useEffect(() => {
-        // const token = Cookies.get("token");
-        // if (!token) { setLoading(false); return; }
-
         api.get("/tai-khoan/my-info")
             .then(({ data }) => setUser(data.result))
-            .catch((err) => {
-                // Chỉ xóa token khi server xác nhận token không hợp lệ (401/403)
-                // Không xóa khi mất mạng hoặc lỗi server tạm thời
-                // if (err.response?.status === 401 || err.response?.status === 403) {
-                //     Cookies.remove("token", { path: "/" });
-                // }
+            .catch(() => {
                 setUser(null);
             })
             .finally(() => setLoading(false));
     }, []);
 
-    const role = ROLE_MAP[user?.vaitro] ?? null;
-
-    // const logout = async () => {
-    //     const token = Cookies.get("token");
-    //     try {
-    //         if (token) await api.post("/auth/logout", { token });
-    //     } catch { /* bỏ qua */ }
-    //     Cookies.remove("token", { path: "/" });
-    //     setUser(null);
-    //     window.location.href = "/";
-    // };
-
     const logout = async () => {
-    try {
-        // console.log("1. Bắt đầu gọi API đăng xuất...");
-        
-        // Gọi API không cần biến token, trình duyệt tự gửi HttpOnly cookie đi
-        const res = await api.post("/auth/logout"); 
-        
-        // console.log("2. Server xóa Cookie thành công!", res);
-    } catch (error) {
-        console.error("2. Lỗi khi gọi API:", error);
-    }
-
-    // Xóa các state rác ở Frontend
-    Cookies.remove("authenticated", { path: "/" });
-    Cookies.remove("role", { path: "/" });
-    setUser(null);
-    
-    window.location.href = "/"; 
-};
-    
+        await dangXuat();
+        setUser(null);
+    };
 
     return (
-        <AuthContext.Provider value={{ user, setUser, role, loading, logout }}>
+        <AuthContext.Provider value={{ user, setUser, loading, logout }}>
             {children}
         </AuthContext.Provider>
     );

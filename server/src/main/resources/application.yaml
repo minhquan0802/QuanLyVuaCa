@@ -15,7 +15,7 @@ spring:
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
       naming:
         # Dòng này quan trọng: Bắt Hibernate dùng đúng tên trong @Column, không tự sửa thành snake_case
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl

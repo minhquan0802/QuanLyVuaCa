@@ -1,5 +1,5 @@
-﻿import Header from "../../components/header"
-import Footer from "../../components/footer"
+﻿
+
 import ProductList from "../../components/product-list"
 import { useState } from "react" // [1] Import useState
 
@@ -9,7 +9,7 @@ export default function Home() {
 
     return (
         <div className="bg-slate-50 min-h-screen flex flex-col font-body">
-            <Header />
+            
 
             <main className="flex-grow">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -53,7 +53,7 @@ export default function Home() {
                 </div>
             </main>
 
-            <Footer />
+            
         </div>
     )
 }
