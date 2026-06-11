@@ -54,6 +54,17 @@ public class TaiKhoanService {
         if (isAdmin) {
             taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
             taiKhoanRepository.save(taikhoan);
+
+            if ("CUSTOMER".equals(request.getVaitro())) {
+                String token = UUID.randomUUID().toString();
+                String hoTen = request.getHo() + " " + request.getTen();
+                emailService.saveWelcomeToken(taikhoan.getEmail(), token);
+                try {
+                    emailService.sendWelcomeEmail(taikhoan.getEmail(), hoTen, token);
+                } catch (Exception e) {
+                    log.error("Không thể gửi email chào mừng tới {}: {}", taikhoan.getEmail(), e.getMessage());
+                }
+            }
         } else {
             taikhoan.setTrangthaitk(TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL);
             taiKhoanRepository.save(taikhoan);
@@ -82,6 +93,38 @@ public class TaiKhoanService {
         emailService.sendVerificationEmail(email, token);
 
         return "Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư.";
+    }
+
+    public String quenMatKhau(String email) {
+        Taikhoan taikhoan = taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        if (TrangThaiTaiKhoan.KHOA.equals(taikhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.ACCOUNT_LOCKED);
+
+        if (TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL.equals(taikhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.ACCOUNT_PENDING_EMAIL);
+
+        String token = UUID.randomUUID().toString();
+        emailService.saveResetToken(email, token);
+        emailService.sendResetPasswordEmail(email, token);
+
+        return "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.";
+    }
+
+    public String datLaiMatKhau(String token, String matkhauMoi) {
+        String email = emailService.getEmailByResetToken(token);
+        if (email == null)
+            throw new AppExceptions(ErrorCode.RESET_TOKEN_INVALID);
+
+        Taikhoan taikhoan = taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        taikhoan.setMatkhau(passwordEncoder.encode(matkhauMoi));
+        taiKhoanRepository.save(taikhoan);
+        emailService.deleteResetToken(token);
+
+        return "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay bây giờ.";
     }
 
     public String xacThucEmail(String token) {
