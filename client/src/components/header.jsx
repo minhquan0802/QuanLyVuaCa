@@ -32,7 +32,6 @@ export default function Header() {
 
     const handleLogout = () => {
         setIsDropdownOpen(false);
-        setCartCount(0);
         logout();
     };
 

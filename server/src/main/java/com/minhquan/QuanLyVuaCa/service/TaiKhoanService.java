@@ -160,8 +160,15 @@ public class TaiKhoanService {
             throw new AppExceptions(ErrorCode.UNCATEGORIZED);
 
         taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
+        TaikhoanResponse response = taikhoanMapper.toTaikhoanResponse(taiKhoanRepository.save(taikhoan));
 
-        return taikhoanMapper.toTaikhoanResponse(taiKhoanRepository.save(taikhoan));
+        try {
+            emailService.sendApprovalEmail(taikhoan.getEmail(), taikhoan.getHo() + " " + taikhoan.getTen());
+        } catch (Exception e) {
+            log.error("Không thể gửi email phê duyệt tới {}: {}", taikhoan.getEmail(), e.getMessage());
+        }
+
+        return response;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")

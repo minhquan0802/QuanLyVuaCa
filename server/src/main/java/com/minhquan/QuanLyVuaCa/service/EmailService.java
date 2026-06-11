@@ -91,6 +91,21 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    public void sendApprovalEmail(String toEmail, String hoTen) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("[Vựa cá điêu hồng] Tài khoản đã được phê duyệt");
+        message.setText(
+            "Xin chào " + hoTen + "!\n\n" +
+            "Tài khoản của bạn tại Vựa cá điêu hồng đã được quản trị viên phê duyệt và kích hoạt.\n\n" +
+            "Bạn có thể đăng nhập ngay tại:\n\n" +
+            frontendUrl + "/login\n\n" +
+            "Trân trọng,\nĐội ngũ Vựa cá điêu hồng"
+        );
+        mailSender.send(message);
+    }
+
     // --- Reset password token ---
 
     public void saveResetToken(String email, String token) {
