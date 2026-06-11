@@ -38,6 +38,35 @@ export default function QuanLyTaiKhoan() {
 
     const handleEdit = (user) => navigate(`/admin/QuanLyTaiKhoan/sua/${user.idtaikhoan}`, { state: { user } });
 
+
+    const handleToggleLock = async (item) => {
+        const isLocking = item.trangthaitk === "HOAT_DONG";
+        const action = isLocking ? "khóa" : "mở khóa";
+        if (!window.confirm(`Bạn chắc muốn ${action} tài khoản "${item.ho} ${item.ten}"?`)) return;
+        try {
+            await api.put(`/tai-khoan/${item.idtaikhoan}`, {
+                ...item,
+                matkhau: null,
+                trangthaitk: isLocking ? "KHOA" : "HOAT_DONG",
+            });
+            showToast(`Đã ${action} tài khoản thành công!`, "success");
+            fetchData();
+        } catch (error) {
+            showToast(error.response?.data?.message || `Thao tác thất bại!`, "error");
+        }
+    };
+
+    const handleApprove = async (item) => {
+        if (!window.confirm(`Phê duyệt tài khoản "${item.ho} ${item.ten}"?`)) return;
+        try {
+            await api.put(`/tai-khoan/duyet/${item.idtaikhoan}`);
+            showToast("Phê duyệt tài khoản thành công!", "success");
+            fetchData();
+        } catch (error) {
+            showToast(error.response?.data?.message || "Phê duyệt thất bại!", "error");
+        }
+    };
+
     const getRoleName = (vaitro) => {
         if (!vaitro) return "Chưa phân quyền";
         const found = ROLES.find(r => r.value === vaitro);
@@ -104,10 +133,26 @@ export default function QuanLyTaiKhoan() {
                                             {getRoleName(item.vaitro)}
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit ${item.trangthaitk === 'HOAT_DONG' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                                                <span className={`size-1.5 rounded-full ${item.trangthaitk === 'HOAT_DONG' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                {item.trangthaitk === 'HOAT_DONG' ? 'Hoạt động' : 'Đã khóa'}
-                                            </span>
+                                            {item.trangthaitk === 'HOAT_DONG' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-green-50 text-green-700 border-green-200">
+                                                    <span className="size-1.5 rounded-full bg-green-500"></span>Hoạt động
+                                                </span>
+                                            )}
+                                            {item.trangthaitk === 'KHOA' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-red-50 text-red-700 border-red-200">
+                                                    <span className="size-1.5 rounded-full bg-red-500"></span>Đã khóa
+                                                </span>
+                                            )}
+                                            {item.trangthaitk === 'CHO_DUYET' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-yellow-50 text-yellow-700 border-yellow-200">
+                                                    <span className="size-1.5 rounded-full bg-yellow-500"></span>Chờ duyệt
+                                                </span>
+                                            )}
+                                            {item.trangthaitk === 'CHO_XAC_THUC_EMAIL' && (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-slate-50 text-slate-500 border-slate-200">
+                                                    <span className="size-1.5 rounded-full bg-slate-400"></span>Chờ xác thực email
+                                                </span>
+                                            )}
                                         </td>
                                         {/* Đơn giản hóa nút Sửa thành văn bản trơn có hover gạch chân */}
                                         <td className="p-4 text-center">
@@ -117,6 +162,7 @@ export default function QuanLyTaiKhoan() {
                                             >
                                                 Sửa
                                             </button>
+
                                         </td>
                                     </tr>
                                 ))

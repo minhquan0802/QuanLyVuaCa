@@ -62,6 +62,12 @@ public class AuthenticationService {
         if (!passwordEncoder.matches(request.getPassword(), taiKhoan.getMatkhau()))
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
 
+        if (TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL.equals(taiKhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.ACCOUNT_PENDING_EMAIL);
+
+        if (TrangThaiTaiKhoan.CHO_DUYET.equals(taiKhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.ACCOUNT_PENDING_APPROVAL);
+
         if (TrangThaiTaiKhoan.KHOA.equals(taiKhoan.getTrangthaitk()))
             throw new AppExceptions(ErrorCode.ACCOUNT_LOCKED);
 

@@ -1,6 +1,9 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import Login from '../pages/auth/login';
 import Register from '../pages/auth/register';
+import XacThucEmail from '../pages/auth/XacThucEmail';
+import QuenMatKhau from '../pages/auth/QuenMatKhau';
+import DatLaiMatKhau from '../pages/auth/DatLaiMatKhau';
 
 // Customer pages
 import Home from '../pages/customer/home';
@@ -30,6 +33,7 @@ import NhapHang from '../pages/admin/NhapHang';
 // Components
 import ProtectedRoute from './ProtectedRoute';
 import Header from '../components/header';
+import Footer from '../components/footer';
 
 function CustomerLayout() {
     return (
@@ -38,6 +42,7 @@ function CustomerLayout() {
             <main className="flex-1">
                 <Outlet />
             </main>
+            <Footer />
         </div>
     );
 }
@@ -47,15 +52,15 @@ export default function AppRoutes() {
         <Routes>
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
+            <Route path='/xac-thuc-email' element={<XacThucEmail />} />
+            <Route path='/quen-mat-khau' element={<QuenMatKhau />} />
+            <Route path='/dat-lai-mat-khau' element={<DatLaiMatKhau />} />
 
             <Route element={<CustomerLayout />}>
                 <Route path='/' element={<Home />} />
                 <Route path='/home' element={<Home />} />
                 <Route path='/product-detail' element={<ProductDetail />} />
                 <Route path='/product-detail/:product_id' element={<ProductDetail />} />
-            </Route>
-
-            <Route element={<CustomerLayout />}>
                 <Route path='/cart' element={<Cart />} />
                 <Route path='/checkout' element={<Checkout />} />
                 <Route path='/profile' element={<Profile />} />

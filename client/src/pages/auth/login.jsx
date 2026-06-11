@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext"
@@ -48,7 +48,11 @@ export default function Login() {
             const code = err.response?.data?.code;
             let msg = "";
 
-            if (status === 403 || code === 1028) {
+            if (code === 1030) {
+                msg = "Email chưa được xác thực. Vui lòng kiểm tra hộp thư và click link xác thực.";
+            } else if (code === 1031) {
+                msg = "Tài khoản đang chờ quản trị viên phê duyệt. Vui lòng chờ thông báo.";
+            } else if (status === 403 || code === 1028) {
                 msg = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
             } else if (status === 401) {
                 msg = "Email hoặc mật khẩu không chính xác.";
@@ -134,9 +138,9 @@ export default function Login() {
                         </div>
 
                         <div className="flex justify-end -mt-2">
-                            <a href="#" className="text-sm font-medium text-cyan-600 hover:text-cyan-800 transition-colors">
+                            <Link to="/quen-mat-khau" className="text-sm font-medium text-cyan-600 hover:text-cyan-800 transition-colors">
                                 Quên mật khẩu?
-                            </a>
+                            </Link>
                         </div>
 
                         <button

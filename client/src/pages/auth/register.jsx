@@ -20,6 +20,8 @@ export default function Register() {
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [registered, setRegistered] = useState(false);
+    const [resending, setResending] = useState(false);
 
     const handleRegister = async (e) => {
         if (e) e.preventDefault();
@@ -57,10 +59,7 @@ export default function Register() {
             };
 
             await api.post("/tai-khoan", newUser);
-
-            // Sử dụng showToast thành công thay cho alert()
-            showToast("Đăng ký tài khoản thành công! Vui lòng đăng nhập.", "success");
-            navigate('/');
+            setRegistered(true);
 
         } catch (err) {
             console.error(err);
@@ -108,6 +107,44 @@ export default function Register() {
                         </h2>
                     </div>
 
+                    {registered ? (
+                        <div className="w-full text-center py-4">
+                            <div className="size-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-7 text-green-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                </svg>
+                            </div>
+                            <h2 className="text-lg font-bold text-slate-800 mb-2">Đăng ký thành công!</h2>
+                            <p className="text-sm text-slate-500 mb-4">
+                                Chúng tôi đã gửi email xác thực đến <span className="font-bold text-slate-700">{email}</span>.<br />
+                                Vui lòng kiểm tra hộp thư và click vào link xác thực.
+                            </p>
+                            <div className="bg-cyan-50 border border-cyan-100 rounded-xl p-3 text-xs text-cyan-700 mb-6">
+                                Sau khi xác thực email, tài khoản sẽ chờ quản trị viên phê duyệt trước khi sử dụng được.
+                            </div>
+                            <button onClick={() => navigate('/login')} className="w-full h-11 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 transition-colors text-sm mb-3">
+                                Về trang đăng nhập
+                            </button>
+                            <button
+                                disabled={resending}
+                                onClick={async () => {
+                                    setResending(true);
+                                    try {
+                                        await api.post(`/tai-khoan/resend-verification?email=${encodeURIComponent(email)}`);
+                                        showToast("Đã gửi lại email xác thực!", "success");
+                                    } catch {
+                                        showToast("Gửi lại thất bại, vui lòng thử lại sau.", "error");
+                                    } finally {
+                                        setResending(false);
+                                    }
+                                }}
+                                className="w-full text-sm text-slate-400 hover:text-cyan-600 transition-colors disabled:opacity-50"
+                            >
+                                {resending ? "Đang gửi..." : "Không nhận được email? Gửi lại"}
+                            </button>
+                        </div>
+                    ) : (
+                    <>
                     <div className="text-center mb-6">
                         <h1 className="text-xl font-bold text-slate-800">Tạo tài khoản mới</h1>
                     </div>
@@ -232,6 +269,8 @@ export default function Register() {
                     <div className="mt-6 text-center text-sm text-slate-500">
                         Đã có tài khoản? <a href="#" onClick={handleLogin} className="font-bold text-cyan-600 hover:text-cyan-800 transition-colors">Đăng nhập ngay</a>
                     </div>
+                    </>
+                    )}
 
                 </div>
             </div>

@@ -82,6 +82,15 @@ export default function ThemSuaTaiKhoan() {
                         <input type="email" required className="input-field" value={currentUser.email} onChange={e => setCurrentUser({ ...currentUser, email: e.target.value })} />
                     </div>
 
+                    {!isEditing && currentUser.vaitro === "CUSTOMER" && (
+                        <div className="md:col-span-2 flex items-start gap-2.5 p-3.5 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-800 text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="size-4.5 mt-0.5 shrink-0 text-cyan-600">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                            </svg>
+                            <span>Hệ thống sẽ tự gửi email thông báo đến khách hàng kèm link để tự đặt mật khẩu. Mật khẩu bên dưới chỉ là tạm thời.</span>
+                        </div>
+                    )}
+
                     <div className="md:col-span-2">
                         <label className="label-text">Mật khẩu</label>
                         <div className="relative flex items-center">
@@ -91,7 +100,7 @@ export default function ThemSuaTaiKhoan() {
                                 className="input-field pr-10"
                                 value={currentUser.matkhau}
                                 onChange={e => setCurrentUser({ ...currentUser, matkhau: e.target.value })}
-                                placeholder={isEditing ? "Để trống nếu không muốn đổi mật khẩu" : "Nhập mật khẩu..."}
+                                placeholder={isEditing ? "Để trống nếu không muốn đổi mật khẩu" : (!isEditing && currentUser.vaitro === "CUSTOMER" ? "Mật khẩu tạm thời (tối thiểu 8 ký tự)" : "Nhập mật khẩu...")}
                             />
                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 text-slate-400 hover:text-cyan-600 flex items-center cursor-pointer">
                                 {showPassword ? (

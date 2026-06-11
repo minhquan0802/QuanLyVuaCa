@@ -8,11 +8,8 @@ export default function Home() {
     const [searchTerm, setSearchTerm] = useState("");
 
     return (
-        <div className="bg-slate-50 min-h-screen flex flex-col font-body">
-            
-
-            <main className="flex-grow">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="bg-slate-50 font-body">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">
 
                     {/* 1. SECTION HEADER & TOOLBAR */}
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
@@ -51,9 +48,6 @@ export default function Home() {
                         <ProductList searchTerm={searchTerm} />
                     </div>
                 </div>
-            </main>
-
-            
-        </div>
-    )
+            </div>
+    );
 }

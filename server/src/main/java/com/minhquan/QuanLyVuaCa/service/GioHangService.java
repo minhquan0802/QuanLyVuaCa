@@ -98,9 +98,10 @@ public class GioHangService {
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse layGioHang() {
         Taikhoan user = layUserHienTai();
-        GioHang gioHang = layHoacTaoGioHang(user);
-        boolean isWholesale = "CUSTOMER".equals(user.getVaitro()) || "WHOLESALE_CUSTOMER".equals(user.getVaitro());
-        return mapToResponse(gioHang, isWholesale);
+        return gioHangRepository
+                .findByIdtaikhoan_IdtaikhoanAndTrangthai(user.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
+                .map(gh -> mapToResponse(gh, "CUSTOMER".equals(user.getVaitro())))
+                .orElse(GioHangResponse.builder().items(List.of()).tongTien(BigDecimal.ZERO).build());
     }
 
     // ── 2. Thêm sản phẩm vào giỏ ─────────────────────────────────────────────

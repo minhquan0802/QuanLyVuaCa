@@ -7,7 +7,11 @@ export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, role, logout } = useAuth();
+<<<<<<< HEAD
     const { totalItems } = useCart();
+=======
+    const { totalItems: cartCount } = useCart();
+>>>>>>> dc366b01cd9f5a0d71035208207503cf9979aab7
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -21,9 +25,13 @@ export default function Header() {
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
+<<<<<<< HEAD
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
+=======
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+>>>>>>> dc366b01cd9f5a0d71035208207503cf9979aab7
     }, []);
 
     const handleNavigation = (path) => {
@@ -90,6 +98,19 @@ export default function Header() {
                                                         Theo dõi đơn hàng
                                                     </button>
 
+<<<<<<< HEAD
+=======
+                                                    {role === 'ADMIN' && (
+                                                        <button 
+                                                            onClick={() => handleNavigation('/admin')}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
+                                                        >
+                                                            <span className="material-symbols-outlined text-lg">dashboard</span>
+                                                            Trang quản trị
+                                                        </button>
+                                                    )}
+                                                    
+>>>>>>> dc366b01cd9f5a0d71035208207503cf9979aab7
                                                     <div className="border-t border-gray-100 my-1"></div>
 
                                                     <button
