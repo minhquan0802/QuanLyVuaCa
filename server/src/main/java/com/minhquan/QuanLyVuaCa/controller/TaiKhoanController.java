@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.request.DatLaiMatKhauRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.DoiMatKhauRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
@@ -60,6 +61,14 @@ public class TaiKhoanController {
         taiKhoanService.xoaTaiKhoan(idtaikhoan);
         return ApiResponse.<String>builder()
                 .message("Xóa tài khoản thành công")
+                .build();
+    }
+
+    @PutMapping("/doi-mat-khau")
+    public ApiResponse<String> doiMatKhau(@Valid @RequestBody DoiMatKhauRequest request) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(taiKhoanService.doiMatKhau(request.getMatkhauCu(), request.getMatkhauMoi()))
                 .build();
     }
 

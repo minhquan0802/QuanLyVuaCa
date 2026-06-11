@@ -198,6 +198,19 @@ public class TaiKhoanService {
         taiKhoanRepository.deleteById(id);
     }
 
+    public String doiMatKhau(String matkhauCu, String matkhauMoi) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Taikhoan taikhoan = taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        if (!passwordEncoder.matches(matkhauCu, taikhoan.getMatkhau()))
+            throw new AppExceptions(ErrorCode.WRONG_PASSWORD);
+
+        taikhoan.setMatkhau(passwordEncoder.encode(matkhauMoi));
+        taiKhoanRepository.save(taikhoan);
+        return "Đổi mật khẩu thành công.";
+    }
+
     public TaikhoanResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String email = context.getAuthentication().getName();
