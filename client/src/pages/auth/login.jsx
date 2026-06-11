@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext"
@@ -138,9 +138,9 @@ export default function Login() {
                         </div>
 
                         <div className="flex justify-end -mt-2">
-                            <a href="#" className="text-sm font-medium text-cyan-600 hover:text-cyan-800 transition-colors">
+                            <Link to="/quen-mat-khau" className="text-sm font-medium text-cyan-600 hover:text-cyan-800 transition-colors">
                                 Quên mật khẩu?
-                            </a>
+                            </Link>
                         </div>
 
                         <button

@@ -46,7 +46,9 @@ public enum ErrorCode {
     INVENTORY_NOT_ENOUGH(1027, "So luong ton kho khong du de thuc hien giao dich", HttpStatus.CONFLICT),
     EMAIL_TOKEN_INVALID(1029, "Token xac thuc email khong hop le hoac da het han", HttpStatus.BAD_REQUEST),
     ACCOUNT_PENDING_EMAIL(1030, "Tai khoan chua xac thuc email", HttpStatus.FORBIDDEN),
-    ACCOUNT_PENDING_APPROVAL(1031, "Tai khoan dang cho admin phe duyet", HttpStatus.FORBIDDEN);
+    ACCOUNT_PENDING_APPROVAL(1031, "Tai khoan dang cho admin phe duyet", HttpStatus.FORBIDDEN),
+    RESET_TOKEN_INVALID(1032, "Link dat lai mat khau khong hop le hoac da het han", HttpStatus.BAD_REQUEST),
+    WRONG_PASSWORD(1033, "Mat khau hien tai khong dung", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

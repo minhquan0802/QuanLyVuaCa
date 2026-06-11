@@ -1,28 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, role, logout } = useAuth();
+    const { totalItems: cartCount } = useCart();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const [cartCount, setCartCount] = useState(0);
 
     const isActive = (path) => location.pathname === path;
-
-    // --- HÀM CẬP NHẬT GIỎ HÀNG ---
-    const updateCartCount = () => {
-        const storedCart = localStorage.getItem("cart");
-        if (storedCart) {
-            const cartItems = JSON.parse(storedCart);
-            setCartCount(cartItems.length);
-        } else {
-            setCartCount(0);
-        }
-    };
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -31,12 +21,7 @@ export default function Header() {
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
-        updateCartCount();
-        window.addEventListener("storage", updateCartCount);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            window.removeEventListener("storage", updateCartCount);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleNavigation = (path) => {
@@ -47,7 +32,6 @@ export default function Header() {
 
     const handleLogout = () => {
         setIsDropdownOpen(false);
-        setCartCount(0);
         logout();
     };
 
@@ -106,7 +90,7 @@ export default function Header() {
                                                         </button>
                                                     )}
 
-                                                    {role === 'admin' && (
+                                                    {role === 'ADMIN' && (
                                                         <button 
                                                             onClick={() => handleNavigation('/admin')}
                                                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
@@ -195,7 +179,7 @@ export default function Header() {
                                                 </button>
                                             )}
 
-                                            {role === 'admin' && (
+                                            {role === 'ADMIN' && (
                                                 <button
                                                     onClick={() => handleNavigation('/admin')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"

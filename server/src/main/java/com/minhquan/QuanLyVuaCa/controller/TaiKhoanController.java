@@ -1,5 +1,7 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
+import com.minhquan.QuanLyVuaCa.dto.request.DatLaiMatKhauRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.DoiMatKhauRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
@@ -62,6 +64,14 @@ public class TaiKhoanController {
                 .build();
     }
 
+    @PutMapping("/doi-mat-khau")
+    public ApiResponse<String> doiMatKhau(@Valid @RequestBody DoiMatKhauRequest request) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(taiKhoanService.doiMatKhau(request.getMatkhauCu(), request.getMatkhauMoi()))
+                .build();
+    }
+
     @GetMapping("/my-info")
     private ApiResponse<TaikhoanResponse> thongTinTaiKhoan() {
         return ApiResponse.<TaikhoanResponse>builder()
@@ -70,6 +80,22 @@ public class TaiKhoanController {
     }
 
 
+
+    @PostMapping("/quen-mat-khau")
+    public ApiResponse<String> quenMatKhau(@RequestParam String email) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(taiKhoanService.quenMatKhau(email))
+                .build();
+    }
+
+    @PostMapping("/dat-lai-mat-khau")
+    public ApiResponse<String> datLaiMatKhau(@Valid @RequestBody DatLaiMatKhauRequest request) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(taiKhoanService.datLaiMatKhau(request.getToken(), request.getMatkhauMoi()))
+                .build();
+    }
 
     @PostMapping("/resend-verification")
     public ApiResponse<String> guiLaiEmail(@RequestParam String email) {
