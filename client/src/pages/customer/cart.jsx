@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 export default function Cart() {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { cart, updateQuantity, removeFromCart, clearCart, totalPrice } = useCart();
+    const { cart, updateQuantity, removeFromCart, totalPrice } = useCart();
     const { showToast } = useToast();
 
     const getImageUrl = (url) => {
@@ -24,11 +24,8 @@ export default function Cart() {
 
     const handleUpdateQty = (item, delta) => {
         const newQty = item.soluong + delta;
-        if (newQty <= 0) {
-            handleRemove(item);
-        } else {
-            updateQuantity(item.idchitietgiohang, newQty);
-        }
+        if (newQty <= 0) handleRemove(item);
+        else updateQuantity(item.idchitietgiohang, newQty);
     };
 
     if (!user) {
@@ -36,7 +33,7 @@ export default function Cart() {
             <div className="bg-slate-50 min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-slate-500 mb-4">Vui lòng đăng nhập để xem giỏ hàng.</p>
-                    <a href="/" className="px-6 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">Đăng nhập</a>
+                    <a href="/" className="px-6 py-2 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 transition-colors">Đăng nhập</a>
                 </div>
             </div>
         );
@@ -47,9 +44,9 @@ export default function Cart() {
             <main className="flex-grow">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">
                     <div className="mb-10">
-                        <h1 className="font-display text-3xl md:text-4xl font-bold text-blue-900 leading-tight">Giỏ hàng của bạn</h1>
+                        <h1 className="font-display text-3xl md:text-4xl font-bold text-slate-800 leading-tight">Giỏ hàng của bạn</h1>
                         <p className="mt-2 text-slate-500">
-                            Bạn có <span className="font-bold text-blue-600">{cart.length} sản phẩm</span> trong giỏ hàng.
+                            Bạn có <span className="font-bold text-cyan-600">{cart.length} sản phẩm</span> trong giỏ hàng.
                         </p>
                     </div>
 
@@ -69,25 +66,24 @@ export default function Cart() {
                                 {cart.length === 0 ? (
                                     <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
                                         <p className="text-slate-500">Giỏ hàng của bạn đang trống</p>
-                                        <button onClick={() => navigate("/home")} className="mt-4 px-6 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">
+                                        <button onClick={() => navigate("/home")} className="mt-4 px-6 py-2 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 transition-colors">
                                             Mua sắm ngay
                                         </button>
                                     </div>
                                 ) : (
                                     cart.map((item) => (
-                                        <div key={item.idchitietgiohang} className="group relative flex flex-col md:grid md:grid-cols-12 gap-4 md:items-center bg-white rounded-2xl p-4 shadow-sm ring-1 ring-slate-200 hover:shadow-md transition-all duration-300">
-                                            {/* Thông tin sản phẩm */}
+                                        <div key={item.idchitietgiohang} className="group relative flex flex-col md:grid md:grid-cols-12 gap-4 md:items-center bg-white rounded-2xl p-4 border border-slate-200 hover:shadow-sm transition-all duration-300">
                                             <div className="col-span-5 flex items-center gap-4">
-                                                <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200">
+                                                <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
                                                     <img src={getImageUrl(item.hinhAnhUrl)} alt={item.tenLoaiCa} className="w-full h-full object-cover" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-display font-bold text-blue-900 text-lg leading-tight">{item.tenLoaiCa}</h3>
+                                                    <h3 className="font-display font-bold text-slate-800 text-lg leading-tight">{item.tenLoaiCa}</h3>
                                                     <div className="text-sm text-slate-400 mt-1 space-y-0.5">
                                                         <p>Size: {item.tenSize}</p>
                                                         <p>Đơn vị: {item.tenDonViTinh}</p>
                                                         {item.khoiluongDuKien > 0 && (
-                                                            <p className="text-blue-600 text-xs font-bold bg-blue-50 w-fit px-1.5 py-0.5 rounded">
+                                                            <p className="text-cyan-600 text-xs font-bold bg-cyan-50 w-fit px-1.5 py-0.5 rounded">
                                                                 ~{item.khoiluongDuKien.toFixed(2)} kg
                                                             </p>
                                                         )}
@@ -95,29 +91,26 @@ export default function Cart() {
                                                 </div>
                                             </div>
 
-                                            {/* Số lượng */}
                                             <div className="col-span-2 flex items-center justify-center">
                                                 <div className="flex items-center rounded-lg border border-slate-200 bg-white p-1">
-                                                    <button onClick={() => handleUpdateQty(item, -1)} className="size-8 flex items-center justify-center rounded-md hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors">
+                                                    <button onClick={() => handleUpdateQty(item, -1)} className="size-8 flex items-center justify-center rounded-md hover:bg-cyan-50 text-slate-600 hover:text-cyan-600 transition-colors">
                                                         <span className="material-symbols-outlined text-sm">remove</span>
                                                     </button>
-                                                    <span className="w-8 text-center text-sm font-bold text-blue-900">{item.soluong}</span>
-                                                    <button onClick={() => handleUpdateQty(item, 1)} className="size-8 flex items-center justify-center rounded-md hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors">
+                                                    <span className="w-8 text-center text-sm font-bold text-slate-800">{item.soluong}</span>
+                                                    <button onClick={() => handleUpdateQty(item, 1)} className="size-8 flex items-center justify-center rounded-md hover:bg-cyan-50 text-slate-600 hover:text-cyan-600 transition-colors">
                                                         <span className="material-symbols-outlined text-sm">add</span>
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {/* Đơn giá */}
                                             <div className="hidden md:block col-span-2 text-right text-sm text-slate-500">
                                                 <div className="font-medium text-slate-700">{Number(item.giaBan).toLocaleString("vi-VN")}đ</div>
                                                 <div className="text-xs text-slate-400">/kg</div>
                                             </div>
 
-                                            {/* Thành tiền + Xóa */}
                                             <div className="col-span-3 flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-slate-100 pt-4 md:pt-0 mt-2 md:mt-0">
                                                 <div className="text-right">
-                                                    <span className="font-bold text-blue-600 text-lg block">{Number(item.thanhTien).toLocaleString("vi-VN")}đ</span>
+                                                    <span className="font-bold text-cyan-600 text-lg block">{Number(item.thanhTien).toLocaleString("vi-VN")}đ</span>
                                                     {item.khoiluongDuKien > 0 && (
                                                         <span className="text-[10px] text-slate-400">(~{item.khoiluongDuKien.toFixed(1)} kg)</span>
                                                     )}
@@ -134,8 +127,8 @@ export default function Cart() {
 
                         {/* Tóm tắt đơn hàng */}
                         <div className="lg:col-span-1">
-                            <div className="sticky top-24 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                                <h2 className="font-display text-xl font-bold text-blue-900 mb-6">Tóm tắt đơn hàng</h2>
+                            <div className="sticky top-24 rounded-2xl bg-white p-6 border border-slate-200">
+                                <h2 className="font-display text-xl font-bold text-slate-800 mb-6">Tóm tắt đơn hàng</h2>
                                 <div className="space-y-4">
                                     <div className="flex justify-between text-sm text-slate-500">
                                         <span>Tạm tính</span>
@@ -147,8 +140,8 @@ export default function Cart() {
                                     </div>
                                     <div className="pt-4 border-t border-slate-100">
                                         <div className="flex justify-between items-end">
-                                            <span className="font-bold text-blue-900">Tổng cộng</span>
-                                            <span className="font-display text-2xl font-bold text-blue-600">{Number(totalPrice).toLocaleString("vi-VN")}đ</span>
+                                            <span className="font-bold text-slate-800">Tổng cộng</span>
+                                            <span className="font-display text-2xl font-bold text-cyan-600">{Number(totalPrice).toLocaleString("vi-VN")}đ</span>
                                         </div>
                                         <p className="text-xs text-slate-400 mt-2 text-right">(Chưa bao gồm phí vận chuyển)</p>
                                     </div>
@@ -156,15 +149,15 @@ export default function Cart() {
                                 <div className="mt-8 space-y-3">
                                     <button
                                         onClick={handleCheckout}
-                                        className={`w-full py-3.5 rounded-xl text-white font-bold shadow-lg transition-all duration-300 ${
+                                        className={`w-full py-3.5 rounded-xl text-white font-bold transition-all duration-300 ${
                                             cart.length === 0
-                                                ? "bg-slate-300 cursor-not-allowed shadow-none"
-                                                : "bg-blue-600 shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5"
+                                                ? "bg-slate-300 cursor-not-allowed"
+                                                : "bg-cyan-600 hover:bg-cyan-700 hover:-translate-y-0.5"
                                         }`}
                                     >
                                         Tiến hành thanh toán
                                     </button>
-                                    <button onClick={() => navigate("/home")} className="w-full py-3.5 rounded-xl border border-blue-200 text-blue-600 font-bold hover:bg-blue-50 transition-colors">
+                                    <button onClick={() => navigate("/home")} className="w-full py-3.5 rounded-xl border border-cyan-200 text-cyan-600 font-bold hover:bg-cyan-50 transition-colors">
                                         Tiếp tục mua sắm
                                     </button>
                                 </div>

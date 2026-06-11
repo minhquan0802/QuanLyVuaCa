@@ -159,7 +159,7 @@ export default function NhapHang() {
         <AdminLayout title="Tạo Phiếu Nhập Hàng">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Cột trái: Thông tin chung */}
-                <div className="lg:col-span-4 space-y-5 bg-white rounded-2xl ring-1 ring-slate-200 p-5">
+                <div className="lg:col-span-4 space-y-5 bg-white rounded-2xl border border-slate-200 p-5">
                     <h4 className="font-bold text-slate-700 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
                         <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">1</span>
                         Thông tin chung
@@ -202,7 +202,7 @@ export default function NhapHang() {
                 </div>
 
                 {/* Cột phải: Phân bổ lô chi tiết */}
-                <div className="lg:col-span-8 flex flex-col bg-white rounded-2xl ring-1 ring-slate-200 overflow-hidden">
+                <div className="lg:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
                     <div className="p-4 border-b border-slate-200 flex justify-between items-center">
                         <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">2</span>

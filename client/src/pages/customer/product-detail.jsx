@@ -63,10 +63,7 @@ export default function ProductDetail() {
             }
         };
 
-        if (product_id) {
-            fetchData();
-            setQuantity(1);
-        }
+        if (product_id) { fetchData(); setQuantity(1); }
     }, [product_id]);
 
     const getImageUrl = (urlFromDb) => {
@@ -112,19 +109,11 @@ export default function ProductDetail() {
             showToast(`Kho không đủ hàng! Bạn cần ${totalWeight.toFixed(1)}kg nhưng kho còn ${currentStock}kg.`, "error");
             return;
         }
-
         const idchitietcaban = selectedOption.idChitietcaban || selectedOption.chitietcaban?.id;
         if (!idchitietcaban) { showToast("Lỗi dữ liệu sản phẩm!", "error"); return; }
-
         const iddonvitinh = isWholesale && selectedUnit ? (selectedUnit.id || selectedUnit.iddvt) : 1;
-
         setAdding(true);
-        await addToCart({
-            idchitietcaban: Number(idchitietcaban),
-            iddonvitinh: Number(iddonvitinh),
-            soluong: quantity,
-            tenSanPham: product.tenloaica,
-        });
+        await addToCart({ idchitietcaban: Number(idchitietcaban), iddonvitinh: Number(iddonvitinh), soluong: quantity, tenSanPham: product.tenloaica });
         setAdding(false);
         setQuantity(1);
     };
@@ -132,7 +121,7 @@ export default function ProductDetail() {
     if (loading) {
         return (
             <div className="bg-slate-50 min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-600"></div>
             </div>
         );
     }
@@ -146,18 +135,17 @@ export default function ProductDetail() {
             <main className="flex-grow">
                 <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
                     <nav className="flex items-center gap-2 text-sm text-slate-400 mb-6">
-                        <a href="/home" className="hover:text-blue-600 transition-colors">Trang chủ</a>
+                        <a href="/home" className="hover:text-cyan-600 transition-colors">Trang chủ</a>
                         <span>/</span>
-                        <span className="font-medium text-blue-900 truncate max-w-[200px]">{product.tenloaica}</span>
+                        <span className="font-medium text-slate-800 truncate max-w-[200px]">{product.tenloaica}</span>
                     </nav>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-                        {/* Ảnh sản phẩm */}
                         <div className="flex flex-col gap-4">
-                            <div className="group relative w-full aspect-square overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                            <div className="group relative w-full aspect-square overflow-hidden rounded-xl bg-white border border-slate-200">
                                 <div className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url("${imageUrl}")` }}></div>
                                 {product.id && (
-                                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2 py-0.5 rounded text-xs font-bold text-blue-900 shadow">
+                                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2 py-0.5 rounded text-xs font-bold text-slate-700 shadow">
                                         #{product.id}
                                     </div>
                                 )}
@@ -169,10 +157,9 @@ export default function ProductDetail() {
                             </div>
                         </div>
 
-                        {/* Thông tin sản phẩm */}
                         <div className="flex flex-col h-full">
                             <div className="mb-4">
-                                <h1 className="font-display text-2xl md:text-3xl font-bold text-blue-900 leading-tight mb-2">
+                                <h1 className="font-display text-2xl md:text-3xl font-bold text-slate-800 leading-tight mb-2">
                                     {product.tenloaica}
                                 </h1>
                                 <div className="flex items-center gap-2">
@@ -197,29 +184,27 @@ export default function ProductDetail() {
                                 </div>
                             </div>
 
-                            {/* Giá */}
-                            <div className="mb-5 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                            <div className="mb-5 p-3 bg-cyan-50/50 rounded-xl border border-cyan-100">
                                 {currentPricePerKg > 0 ? (
                                     <>
-                                        <p className="text-xs font-bold text-blue-800 uppercase mb-1">
+                                        <p className="text-xs font-bold text-slate-700 uppercase mb-1">
                                             Giá {isWholesale ? "bán sỉ" : "bán lẻ"}:
                                         </p>
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-3xl font-bold text-blue-600">
+                                            <span className="text-3xl font-bold text-cyan-600">
                                                 {Number(currentPricePerKg).toLocaleString("vi-VN")}đ
                                             </span>
                                             <span className="text-base text-slate-400">/ kg</span>
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="flex items-center gap-2 text-blue-600">
+                                    <div className="flex items-center gap-2 text-cyan-600">
                                         <span className="material-symbols-outlined text-lg">call</span>
                                         <span className="text-lg font-bold">Liên hệ giá tốt</span>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Chọn size */}
                             <div className="mb-6">
                                 <h3 className="text-xs font-bold text-slate-800 uppercase mb-2">Chọn kích thước:</h3>
                                 {priceList.length > 0 ? (
@@ -234,8 +219,8 @@ export default function ProductDetail() {
                                                     onClick={() => { setSelectedOption(option); setQuantity(1); }}
                                                     className={`px-3 py-1.5 rounded-lg border text-sm font-bold transition-all ${
                                                         selectedOption?.id === option.id
-                                                            ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
-                                                            : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"
+                                                            ? "border-cyan-600 bg-cyan-50 text-cyan-700 shadow-sm"
+                                                            : "border-slate-200 bg-white text-slate-500 hover:border-cyan-300"
                                                     } ${isOutOfStock ? "opacity-60 bg-slate-50" : ""}`}
                                                 >
                                                     {option.tenSize}
@@ -253,13 +238,11 @@ export default function ProductDetail() {
                                 {product.mieuta || "Sản phẩm tươi ngon, chất lượng cao từ Minh Quân Fresh."}
                             </p>
 
-                            {/* Khu vực mua hàng */}
                             <div className="flex flex-col gap-3 mb-6">
                                 <div className="flex items-center gap-4">
-                                    {/* ĐVT cho khách sỉ */}
                                     {isWholesale && (
                                         <select
-                                            className="h-9 px-2 rounded-lg border border-slate-200 text-sm bg-white font-bold text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                            className="h-9 px-2 rounded-lg border border-slate-200 text-sm bg-white font-bold text-slate-700 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
                                             value={selectedUnit ? (selectedUnit.id || selectedUnit.iddvt) : ""}
                                             onChange={(e) => {
                                                 const unit = unitList.find(u => (u.id || u.iddvt) == e.target.value);
@@ -274,12 +257,11 @@ export default function ProductDetail() {
                                         </select>
                                     )}
 
-                                    {/* Số lượng */}
                                     <div className={`flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm w-fit ${currentStock <= 0 ? "opacity-50 pointer-events-none" : ""}`}>
                                         <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="size-9 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors">
                                             <span className="material-symbols-outlined text-xs">remove</span>
                                         </button>
-                                        <input type="text" value={quantity} readOnly className="w-10 text-center bg-transparent border-none text-blue-900 font-bold focus:ring-0 text-sm" />
+                                        <input type="text" value={quantity} readOnly className="w-10 text-center bg-transparent border-none text-slate-800 font-bold focus:ring-0 text-sm" />
                                         <button onClick={() => setQuantity(quantity + 1)} className="size-9 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors">
                                             <span className="material-symbols-outlined text-xs">add</span>
                                         </button>
@@ -288,9 +270,9 @@ export default function ProductDetail() {
                                     {currentPricePerKg > 0 && weightPerUnit > 0 && (
                                         <div className="text-right flex-grow">
                                             <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">
-                                                Ước lượng: <span className="text-blue-600">{totalWeight.toFixed(1)}kg</span>
+                                                Ước lượng: <span className="text-cyan-600">{totalWeight.toFixed(1)}kg</span>
                                             </p>
-                                            <p className="text-xl font-bold text-blue-700">
+                                            <p className="text-xl font-bold text-cyan-700">
                                                 {Number(totalPrice).toLocaleString("vi-VN")}đ
                                             </p>
                                         </div>
@@ -301,10 +283,10 @@ export default function ProductDetail() {
                                     <button
                                         onClick={handleAddToCart}
                                         disabled={adding || !selectedOption || currentStock <= 0 || currentPricePerKg === 0}
-                                        className={`w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base shadow-lg transition-all duration-300 ${
+                                        className={`w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base transition-all duration-300 ${
                                             adding || !selectedOption || currentStock <= 0 || currentPricePerKg === 0
-                                                ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                                                : "bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5"
+                                                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                                                : "bg-cyan-600 text-white hover:bg-cyan-700 hover:-translate-y-0.5"
                                         }`}
                                     >
                                         {adding ? (
@@ -317,7 +299,7 @@ export default function ProductDetail() {
                                         {adding ? "Đang thêm..." : currentStock <= 0 ? "Hết hàng" : selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size"}
                                     </button>
                                 ) : (
-                                    <a href="/" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all">
+                                    <a href="/" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-cyan-50 text-cyan-600 border border-cyan-200 hover:bg-cyan-100 transition-all">
                                         <span className="material-symbols-outlined text-[20px]">login</span>
                                         Đăng nhập để đặt hàng
                                     </a>
@@ -328,16 +310,16 @@ export default function ProductDetail() {
 
                     <div className="mt-12">
                         <div className="border-b border-slate-200 mb-4">
-                            <button className="pb-3 text-sm font-bold text-blue-900 border-b-2 border-blue-600">Mô tả chi tiết</button>
+                            <button className="pb-3 text-sm font-bold text-slate-800 border-b-2 border-cyan-600">Mô tả chi tiết</button>
                         </div>
-                        <div className="bg-white rounded-xl p-6 shadow-sm ring-1 ring-slate-100">
+                        <div className="bg-white rounded-xl p-6 border border-slate-100">
                             <ul className="list-none space-y-3 text-sm text-slate-600">
                                 <li className="flex items-start gap-2">
-                                    <span className="material-symbols-outlined text-blue-500 text-lg mt-0.5">check_circle</span>
+                                    <span className="material-symbols-outlined text-cyan-600 text-lg mt-0.5">check_circle</span>
                                     <span><strong>Đặc điểm: </strong>{product.mieuta || "Thịt chắc, ngọt, không bở."}</span>
                                 </li>
                                 <li className="flex items-start gap-2">
-                                    <span className="material-symbols-outlined text-blue-500 text-lg mt-0.5">ac_unit</span>
+                                    <span className="material-symbols-outlined text-cyan-600 text-lg mt-0.5">ac_unit</span>
                                     <span><strong>Bảo quản: </strong>{product.cachbaoquan || "Bảo quản ngăn đông tủ lạnh (-18 độ C)."}</span>
                                 </li>
                             </ul>

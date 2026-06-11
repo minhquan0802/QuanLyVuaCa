@@ -3,141 +3,162 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
+} from "recharts";
+
+const fmt = (val) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val || 0);
+
+const TIME_RANGES = [
+    { key: "TODAY",      label: "Hôm nay" },
+    { key: "THIS_WEEK",  label: "Tuần này" },
+    { key: "THIS_MONTH", label: "Tháng này" },
+];
+
+const CHART_COLORS = { nhap: "#0891b2", xuat: "#16a34a", haohut: "#dc2626" };
+
+function KpiCard({ label, value, sub, valueColor = "text-slate-800" }) {
+    return (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">{label}</p>
+            <p className={`text-2xl font-bold ${valueColor}`}>{value}</p>
+            {sub && <div className="mt-2 space-y-0.5">{sub}</div>}
+        </div>
+    );
+}
 
 export default function AdminDashboard() {
     const [timeRange, setTimeRange] = useState("TODAY");
     const [stats, setStats] = useState({
-        doanhThu: 0,
-        loiNhuan: 0,
-        tongDonHang: 0,
-        donThanhCong: 0,
-        donHuy: 0,
-        donVanChuyen: 0,
-        tongGiaTriNhap: 0,
-        tongGiaTriHaoHut: 0,
-        tongSoLuongHaoHut: 0
+        doanhThu: 0, loiNhuan: 0, tongDonHang: 0,
+        donThanhCong: 0, donHuy: 0, donVanChuyen: 0,
+        tongGiaTriNhap: 0, tongGiaTriHaoHut: 0, tongSoLuongHaoHut: 0
     });
     const [chartData, setChartData] = useState([]);
     const [supplierReport, setSupplierReport] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const COLORS = {
-        nhap: "#3b82f6",
-        xuat: "#22c55e",
-        haohut: "#ef4444",
-        ton: "#a855f7"
-    };
-
-    const fetchDashboardData = async () => {
-        try {
-            setLoading(true);
-            const { data } = await api.get(`/Thongke?range=${timeRange}`);
-            const result = data.result;
-
-            setStats(result.tongQuan);
-            setChartData(result.bieuDo);
-            setSupplierReport(result.baoCaoNCC);
-        } catch (error) {
-            console.error("Lỗi tải thống kê:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchDashboardData();
+        setLoading(true);
+        api.get(`/Thongke?range=${timeRange}`)
+            .then(({ data }) => {
+                const r = data.result;
+                setStats(r.tongQuan);
+                setChartData(r.bieuDo);
+                setSupplierReport(r.baoCaoNCC);
+            })
+            .catch(err => console.error("Lỗi tải thống kê:", err))
+            .finally(() => setLoading(false));
     }, [timeRange]);
 
-    const formatCurrency = (value) =>
-        new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-
     return (
-        <AdminLayout title="Bảng Điều Khiển & Thống Kê">
+        <AdminLayout title="Bảng Điều Khiển">
 
-            {/* --- CÁC THẺ KPI (Xếp theo hàng dọc) --- */}
-            <div className="flex flex-col gap-4 mb-8 max-w-sm"> {/* Bạn có thể chỉnh max-w-sm hoặc w-80 để kiểm soát độ rộng của cột dọc này */}
-
-                {/* Doanh Thu */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Tổng Doanh Thu</p>
-                    <h3 className="text-2xl font-bold text-slate-800 mt-1.5">{formatCurrency(stats.doanhThu)}</h3>
+            {/* ── BỘ LỌC THỜI GIAN ── */}
+            <div className="flex items-center justify-between mb-6">
+                <p className="text-slate-500 text-sm">Tổng quan hoạt động kinh doanh.</p>
+                <div className="flex gap-1.5">
+                    {TIME_RANGES.map(({ key, label }) => (
+                        <button
+                            key={key}
+                            onClick={() => setTimeRange(key)}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors border cursor-pointer ${
+                                timeRange === key
+                                    ? "bg-cyan-600 text-white border-cyan-600"
+                                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            }`}
+                        >
+                            {label}
+                        </button>
+                    ))}
                 </div>
-
-                {/* Nhập hàng */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Giá Trị Nhập</p>
-                    <h3 className="text-2xl font-bold text-blue-800 mt-1.5">{formatCurrency(stats.tongGiaTriNhap)}</h3>
-                </div>
-
-                {/* Hao hụt */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Giá Trị Hao Hụt</p>
-                    <h3 className="text-2xl font-bold text-red-600 mt-1.5">{formatCurrency(stats.tongGiaTriHaoHut)}</h3>
-                    <p className="text-xs text-red-400 mt-1 font-medium">Số lượng: {stats.tongSoLuongHaoHut} kg</p>
-                </div>
-
-                {/* Đơn hàng */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Tổng Đơn Hàng</p>
-                    <h3 className="text-2xl font-bold text-purple-800 mt-1.5">{stats.tongDonHang}</h3>
-                    <div className="flex flex-col gap-1 mt-2 text-xs font-semibold">
-                        <span className="text-green-600">Thành công: {stats.donThanhCong}</span>
-                        <span className="text-orange-500">Vận chuyển: {stats.donVanChuyen}</span>
-                        <span className="text-red-500">Hủy: {stats.donHuy}</span>
-                    </div>
-                </div>
-
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 className="font-bold text-lg text-slate-800 mb-6">
-                        Hoạt động kinh doanh (Kg)
-                    </h3>
-                    <div className="h-[350px] w-full">
+            {/* ── KPI CARDS ── */}
+            <div className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6 transition-opacity ${loading ? "opacity-50" : ""}`}>
+                <KpiCard
+                    label="Tổng Doanh Thu"
+                    value={fmt(stats.doanhThu)}
+                    valueColor="text-cyan-600"
+                />
+                <KpiCard
+                    label="Giá Trị Nhập Hàng"
+                    value={fmt(stats.tongGiaTriNhap)}
+                    valueColor="text-cyan-600"
+                />
+                <KpiCard
+                    label="Giá Trị Hao Hụt"
+                    value={fmt(stats.tongGiaTriHaoHut)}
+                    valueColor="text-red-600"
+                    sub={<p className="text-xs text-red-400 font-medium">Số lượng: {stats.tongSoLuongHaoHut} kg</p>}
+                />
+                <KpiCard
+                    label="Tổng Đơn Hàng"
+                    value={stats.tongDonHang}
+                    sub={
+                        <>
+                            <p className="text-xs font-bold text-green-600">Thành công: {stats.donThanhCong}</p>
+                            <p className="text-xs font-bold text-orange-500">Vận chuyển: {stats.donVanChuyen}</p>
+                            <p className="text-xs font-bold text-red-500">Đã hủy: {stats.donHuy}</p>
+                        </>
+                    }
+                />
+            </div>
+
+            {/* ── BIỂU ĐỒ + BẢNG NCC ── */}
+            <div className={`grid grid-cols-1 lg:grid-cols-3 gap-5 transition-opacity ${loading ? "opacity-50" : ""}`}>
+
+                {/* Biểu đồ */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+                        <p className="font-bold text-slate-700">Hoạt động kinh doanh (Kg)</p>
+                    </div>
+                    <div className="p-5 h-[320px]">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip formatter={(value) => `${value} kg`} />
-                                <Legend />
-                                <Bar dataKey="nhap" name="Nhập hàng" fill={COLORS.nhap} radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="xuat" name="Xuất bán" fill={COLORS.xuat} radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="haohut" name="Hao hụt" fill={COLORS.haohut} radius={[4, 4, 0, 0]} />
+                            <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                                    formatter={(value) => [`${value} kg`]}
+                                />
+                                <Legend wrapperStyle={{ fontSize: "12px" }} />
+                                <Bar dataKey="nhap" name="Nhập hàng" fill={CHART_COLORS.nhap} radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="xuat" name="Xuất bán" fill={CHART_COLORS.xuat} radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="haohut" name="Hao hụt" fill={CHART_COLORS.haohut} radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 className="font-bold text-lg text-slate-800 mb-6">
-                        Nhập theo Nhà cung cấp
-                    </h3>
-                    <div className="overflow-y-auto max-h-[350px] pr-2">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                {/* Bảng nhà cung cấp */}
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+                        <p className="font-bold text-slate-700">Nhập theo Nhà cung cấp</p>
+                    </div>
+                    <div className="overflow-auto max-h-[370px]">
+                        <table className="w-full text-left text-sm border-collapse">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold sticky top-0">
                                 <tr>
-                                    <th className="py-3 px-2">NCC</th>
-                                    <th className="py-3 px-2 text-right">SL (Kg)</th>
-                                    <th className="py-3 px-2 text-right">Giá trị</th>
+                                    <th className="p-4">Nhà cung cấp</th>
+                                    <th className="p-4 text-right">SL (kg)</th>
+                                    <th className="p-4 text-right">Giá trị</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {supplierReport.length > 0 ? supplierReport.map((item, index) => (
-                                    <tr key={index}>
-                                        <td className="py-3 px-2 font-medium text-slate-700">{item.tenNCC}</td>
-                                        <td className="py-3 px-2 text-right text-blue-600 font-bold">{item.soLuong}</td>
-                                        <td className="py-3 px-2 text-right text-slate-600">{formatCurrency(item.giaTri)}</td>
+                                {supplierReport.length > 0 ? supplierReport.map((item, i) => (
+                                    <tr key={i} className="hover:bg-slate-50/50">
+                                        <td className="p-4 font-bold text-slate-900">{item.tenNCC}</td>
+                                        <td className="p-4 text-right font-bold text-cyan-600">{item.soLuong}</td>
+                                        <td className="p-4 text-right text-slate-600">{fmt(item.giaTri)}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="3" className="text-center py-4 text-slate-400">Không có dữ liệu nhập</td></tr>
+                                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic">Không có dữ liệu.</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </AdminLayout>
     );

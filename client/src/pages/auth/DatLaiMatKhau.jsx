@@ -63,7 +63,7 @@ export default function DatLaiMatKhau() {
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-300/10 blur-[120px]" />
 
             <div className="w-full max-w-[420px] relative z-10">
-                <div className="bg-white rounded-2xl shadow-xl shadow-cyan-100/30 ring-1 ring-slate-200 p-8">
+                <div className="bg-white rounded-2xl shadow-xl shadow-cyan-100/30 border border-slate-200 p-8">
 
                     {status === "success" ? (
                         <div className="text-center">

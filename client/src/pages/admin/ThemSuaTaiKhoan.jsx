@@ -67,7 +67,7 @@ export default function ThemSuaTaiKhoan() {
     return (
         <AdminLayout title={isEditing ? "Cập nhật Tài khoản" : "Thêm Tài khoản mới"}>
             <div className="max-w-2xl mx-auto">
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="label-text">Họ</label>
                         <input type="text" required className="input-field" value={currentUser.ho} onChange={e => setCurrentUser({ ...currentUser, ho: e.target.value })} />

@@ -210,7 +210,7 @@ export default function ThongTinDonHang() {
         switch (status) {
             case "CHO_XAC_NHAN": return "bg-orange-100 text-orange-600";
             case "DA_XAC_NHAN":
-            case "DANG_CHUAN_BI_HANG": return "bg-blue-100 text-blue-600";
+            case "DANG_CHUAN_BI_HANG": return "bg-cyan-100 text-cyan-600";
             case "DANG_GIAO_HANG": 
             case "DANG_VAN_CHUYEN": return "bg-cyan-100 text-cyan-600";
             case "GIAO_HANG_THANH_CONG": return "bg-teal-100 text-teal-700"; 
@@ -245,9 +245,9 @@ export default function ThongTinDonHang() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex-1 min-w-[110px] py-4 text-sm font-medium text-center transition-colors whitespace-nowrap border-b-2 
-                                        ${activeTab === tab.id 
-                                            ? "border-blue-600 text-blue-600" 
-                                            : "border-transparent text-slate-600 hover:text-blue-500"
+                                        ${activeTab === tab.id
+                                            ? "border-cyan-600 text-cyan-600"
+                                            : "border-transparent text-slate-600 hover:text-cyan-500"
                                         }`}
                                 >
                                     {tab.label} ({orders.filter(o => {
@@ -269,7 +269,7 @@ export default function ThongTinDonHang() {
                     {/* DANH SÁCH ĐƠN HÀNG */}
                     {loading ? (
                         <div className="text-center py-12">
-                            <div className="animate-spin size-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <div className="animate-spin size-8 border-4 border-cyan-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                             Đang tải đơn hàng...
                         </div>
                     ) : filteredOrders.length === 0 ? (
@@ -296,7 +296,7 @@ export default function ThongTinDonHang() {
                                         <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold text-slate-800">Minh Quân Fresh</span>
-                                                <button className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded font-bold">Mall</button>
+                                                <button className="px-2 py-0.5 bg-cyan-600 text-white text-[10px] rounded font-bold">Mall</button>
                                             </div>
                                             <div className="flex items-center gap-2 text-sm">
                                                 <span className={`font-medium uppercase truncate px-2 py-0.5 rounded text-xs ${getStatusStyle(order.trangthaidonhang)}`}>
@@ -340,7 +340,7 @@ export default function ThongTinDonHang() {
                                                         
                                                         {/* Badge "Xem thêm" nếu có nhiều món */}
                                                         {otherItemsCount > 0 && (
-                                                            <div className="mt-1 text-xs text-blue-600 font-medium">
+                                                            <div className="mt-1 text-xs text-cyan-600 font-medium">
                                                                 Xem thêm {otherItemsCount} sản phẩm khác...
                                                             </div>
                                                         )}
@@ -372,7 +372,7 @@ export default function ThongTinDonHang() {
                                         <div className="border-t border-slate-100 pt-4 mt-4">
                                             <div className="flex justify-end items-center gap-2 mb-4">
                                                 <span className="text-sm text-slate-600">Thành tiền:</span>
-                                                <span className="text-lg font-bold text-blue-600">
+                                                <span className="text-lg font-bold text-cyan-600">
                                                     {order.tongtien ? order.tongtien.toLocaleString() : 0}₫
                                                 </span>
                                             </div>
@@ -406,7 +406,7 @@ export default function ThongTinDonHang() {
                                                         Thanh toán
                                                     </button>
                                                 )}
-                                                <button className="px-5 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+                                                <button className="px-5 py-2 rounded bg-cyan-600 text-white text-sm font-medium hover:bg-cyan-700 transition-colors">
                                                     Mua lại
                                                 </button>
                                                 <button
@@ -481,7 +481,7 @@ export default function ThongTinDonHang() {
 
                                     <div className="flex justify-between items-center pt-4 border-t border-dashed border-slate-200">
                                         <span className="font-bold text-slate-600">Tổng thanh toán:</span>
-                                        <span className="font-display text-2xl font-bold text-blue-600">
+                                        <span className="font-display text-2xl font-bold text-cyan-600">
                                             {selectedOrder.tongtien ? selectedOrder.tongtien.toLocaleString() : 0}đ
                                         </span>
                                     </div>
@@ -573,15 +573,15 @@ export default function ThongTinDonHang() {
                             <div>
                                 <p className="text-sm font-bold text-slate-600 mb-2">Phương thức thanh toán</p>
                                 <div className="flex gap-3">
-                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'vnpay' ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}>
-                                        <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="text-blue-500" />
+                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'vnpay' ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200'}`}>
+                                        <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="text-cyan-500" />
                                         <div className="flex items-center gap-2">
                                             <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png" alt="VNPAY" className="h-6 object-contain" />
                                             <span className="text-sm font-bold text-slate-700">VNPAY</span>
                                         </div>
                                     </label>
-                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'bank' ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}>
-                                        <input type="radio" name="payMethod" checked={payMethod === 'bank'} onChange={() => setPayMethod('bank')} className="text-blue-500" />
+                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'bank' ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200'}`}>
+                                        <input type="radio" name="payMethod" checked={payMethod === 'bank'} onChange={() => setPayMethod('bank')} className="text-cyan-500" />
                                         <div>
                                             <p className="text-sm font-bold text-slate-700">Chuyển khoản</p>
                                             <p className="text-xs text-slate-400">Quét QR ngân hàng</p>

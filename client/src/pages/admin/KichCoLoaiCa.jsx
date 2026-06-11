@@ -79,7 +79,7 @@ export default function KichCoLoaiCa() {
 
     return (
         <AdminLayout title={`Quản lý kích thước${selectedFish ? ` — ${selectedFish.tenloaica}` : ""}`}>
-            <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 overflow-hidden">
+            <div className="max-w-lg mx-auto bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 <div className="p-6 space-y-5">
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/70">
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Thêm size áp dụng</label>

@@ -23,13 +23,13 @@ export default function OrderSuccess() {
                     <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <span className="material-symbols-outlined text-5xl text-green-600">check_circle</span>
                     </div>
-                    <h1 className="text-3xl font-bold text-blue-900 mb-2">Thanh toán thành công!</h1>
-                    <p className="text-slate-500 mb-6">Đơn hàng <span className="font-bold text-blue-600">#{orderId}</span> đã được thanh toán.</p>
+                    <h1 className="text-3xl font-bold text-slate-800 mb-2">Thanh toán thành công!</h1>
+                    <p className="text-slate-500 mb-6">Đơn hàng <span className="font-bold text-cyan-600">#{orderId}</span> đã được thanh toán.</p>
                     
                     <div className="bg-slate-50 p-4 rounded-xl mb-6">
                         <p className="flex justify-between text-sm mb-2">
                             <span className="text-slate-500">Tổng tiền:</span>
-                            <span className="font-bold text-blue-900">{amount.toLocaleString()}đ</span>
+                            <span className="font-bold text-slate-800">{amount.toLocaleString()}đ</span>
                         </p>
                         <p className="flex justify-between text-sm">
                             <span className="text-slate-500">Trạng thái:</span>
@@ -37,7 +37,7 @@ export default function OrderSuccess() {
                         </p>
                     </div>
 
-                    <button onClick={() => navigate('/home')} className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700">
+                    <button onClick={() => navigate('/home')} className="w-full py-3 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700">
                         Tiếp tục mua sắm
                     </button>
                 </div>

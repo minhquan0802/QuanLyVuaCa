@@ -99,7 +99,7 @@ export default function Register() {
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-300/20 blur-[120px]"></div>
 
             <div className="w-full max-w-md p-4 relative z-10 my-10">
-                <div className="flex flex-col items-center p-8 sm:p-10 bg-white shadow-2xl shadow-cyan-100/40 rounded-3xl ring-1 ring-slate-200">
+                <div className="flex flex-col items-center p-8 sm:p-10 bg-white shadow-2xl shadow-cyan-100/40 rounded-3xl border border-slate-200">
 
                     <div className="mb-6 flex flex-col items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
                         <h2 className="font-display text-2xl font-bold text-cyan-900 tracking-tight">

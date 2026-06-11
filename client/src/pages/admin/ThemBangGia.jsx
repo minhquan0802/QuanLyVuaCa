@@ -36,7 +36,7 @@ export default function ThemBangGia() {
     return (
         <AdminLayout title="Thiết lập giá bán mới">
             <div className="max-w-lg mx-auto">
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1.5">Chọn sản phẩm (Cá + Size)</label>
                         <select

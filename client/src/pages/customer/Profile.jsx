@@ -139,7 +139,7 @@ export default function Profile() {
             <div className="max-w-2xl mx-auto space-y-5">
 
                 {/* --- THÔNG TIN CÁ NHÂN --- */}
-                <div className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 sm:p-8">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                         <div>
                             <h3 className="font-bold text-base text-slate-800">Thông tin cá nhân</h3>
@@ -208,7 +208,7 @@ export default function Profile() {
                 </div>
 
                 {/* --- ĐỔI MẬT KHẨU --- */}
-                <div className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 sm:p-8">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                         <h3 className="font-bold text-base text-slate-800">Bảo mật</h3>
                         {!isChangingPw && (

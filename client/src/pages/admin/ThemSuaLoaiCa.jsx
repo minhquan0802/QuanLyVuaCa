@@ -66,7 +66,7 @@ export default function ThemSuaLoaiCa() {
     return (
         <AdminLayout title={isEditing ? "Cập nhật Loại Cá" : "Thêm Loại Cá Mới"}>
             <div className="max-w-lg mx-auto">
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1.5">Tên loại cá <span className="text-red-500">*</span></label>
                         <input

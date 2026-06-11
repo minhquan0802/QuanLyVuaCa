@@ -75,7 +75,7 @@ export default function QuanLyBangGia() {
             </div>
 
             {/* BẢNG DANH SÁCH GIÁ */}
-            <div className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-[800px]">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-xs">

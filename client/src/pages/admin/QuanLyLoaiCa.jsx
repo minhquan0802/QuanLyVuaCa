@@ -53,7 +53,7 @@ export default function QuanLyLoaiCa() {
             </div>
 
             {/* BẢNG DANH SÁCH LOẠI CÁ */}
-            <div className="bg-white rounded-2xl shadow-2xs ring-1 ring-slate-200 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left min-w-[750px]">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">

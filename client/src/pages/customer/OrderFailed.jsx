@@ -14,7 +14,7 @@ export default function OrderFailed() {
             
 
             <main className="flex-grow flex items-center justify-center p-4">
-                <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl shadow-red-50 ring-1 ring-slate-200 p-8 md:p-12 text-center">
+                <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl shadow-red-50 border border-slate-200 p-8 md:p-12 text-center">
                     
                     {/* Icon Failed */}
                     <div className="mx-auto size-20 rounded-full bg-red-50 flex items-center justify-center mb-6">
@@ -37,7 +37,7 @@ export default function OrderFailed() {
                     <div className="flex flex-col gap-3">
                         <button 
                             onClick={() => navigate('/checkout')} 
-                            className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
+                            className="w-full py-3.5 rounded-xl bg-cyan-600 text-white font-bold shadow-lg hover:bg-cyan-700 hover:-translate-y-0.5 transition-all"
                         >
                             Thử thanh toán lại
                         </button>
