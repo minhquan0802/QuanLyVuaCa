@@ -287,7 +287,7 @@ public class DonhangService {
 
     // --- 4. XÁC NHẬN ĐÃ NHẬN HÀNG (khách sỉ tự xác nhận khi DANG_VAN_CHUYEN) ---
     @Transactional
-    @PreAuthorize("hasAnyRole('WHOLESALE_CUSTOMER')")
+    @PreAuthorize("hasAnyRole('CUSTOMER')")
     public DonhangResponse xacNhanNhanHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
