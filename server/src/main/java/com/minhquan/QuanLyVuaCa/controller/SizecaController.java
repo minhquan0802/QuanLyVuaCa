@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/Sizecas")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000") // Cho phép FE gọi
+@CrossOrigin(origins = "http://localhost:5173") // Cho phép FE gọi
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SizecaController {
     SizecaService sizecaService;

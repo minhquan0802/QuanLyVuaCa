@@ -15,8 +15,8 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import jakarta.servlet.http.Cookie;
 import lombok.AccessLevel;
+import org.springframework.http.ResponseCookie;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -205,18 +205,21 @@ public class AuthenticationService {
     }
 
     public CookieResponse addCookie(String token, int tokenTime, String refreshToken, int refreshTokenTime) {
-        Cookie tokenCookie = new Cookie("token", token);
-        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        ResponseCookie tokenCookie = ResponseCookie.from("token", token == null ? "" : token)
+                .httpOnly(true)
+                .secure(false)
+                .maxAge(tokenTime)
+                .path("/")
+                .sameSite("Lax")
+                .build();
 
-        tokenCookie.setHttpOnly(true);
-        tokenCookie.setSecure(false);
-        tokenCookie.setMaxAge(tokenTime);
-        tokenCookie.setPath("/");
-
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(false);
-        refreshTokenCookie.setMaxAge(refreshTokenTime);
-        refreshTokenCookie.setPath("/");
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken == null ? "" : refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .maxAge(refreshTokenTime)
+                .path("/")
+                .sameSite("Lax")
+                .build();
 
         return CookieResponse.builder()
                 .token(tokenCookie)

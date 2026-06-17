@@ -14,7 +14,7 @@ import java.util.List;
 @RequestMapping("/Nhacungcaps")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:5173")
 public class NhacungcapController {
 
     NhacungcapService nhacungcapService;

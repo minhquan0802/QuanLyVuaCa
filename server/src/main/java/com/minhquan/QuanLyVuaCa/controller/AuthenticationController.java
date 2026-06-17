@@ -9,6 +9,7 @@ import com.minhquan.QuanLyVuaCa.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
+import org.springframework.http.HttpHeaders;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -42,8 +43,8 @@ public class AuthenticationController {
 
         var cookieResult = service.addCookie(result.getToken(), TOKEN_TIME, result.getRefreshToken(), REFRESH_TIME);
 
-        response.addCookie(cookieResult.getToken());
-        response.addCookie(cookieResult.getRefreshToken());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieResult.getToken().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieResult.getRefreshToken().toString());
 
         return ApiResponse.<AuthenticationResponse>builder()
                 .message("Đăng nhập thành công")
@@ -80,8 +81,8 @@ public class AuthenticationController {
         service.logout(token, refreshToken);
 
         var cookieResult = service.addCookie(null, 0, null, 0);
-        response.addCookie(cookieResult.getToken());
-        response.addCookie(cookieResult.getRefreshToken());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieResult.getToken().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieResult.getRefreshToken().toString());
 
         return ApiResponse.<Void>builder()
                 .message("Đăng xuất thành công")
@@ -132,8 +133,8 @@ public class AuthenticationController {
 
         var cookieResult = service.addCookie(result.getToken(), TOKEN_TIME, result.getRefreshToken(), REFRESH_TIME);
 
-        response.addCookie(cookieResult.getToken());
-        response.addCookie(cookieResult.getRefreshToken());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieResult.getToken().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieResult.getRefreshToken().toString());
 
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
