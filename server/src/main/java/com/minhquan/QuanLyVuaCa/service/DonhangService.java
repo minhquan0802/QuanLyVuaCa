@@ -258,8 +258,7 @@ public class DonhangService {
     }
 
     // --- 3. LẤY CHI TIẾT ĐƠN HÀNG ---
-    // Cho phép xem chi tiết (có thể cần logic check chủ sở hữu đơn hàng nếu là khách)
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'INDIVIDUAL_CUSTOMER', 'WHOLESALE_CUSTOMER')")
+    @PreAuthorize("isAuthenticated()")
     public List<ChitietDonhangResponse> getChiTietDonHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));

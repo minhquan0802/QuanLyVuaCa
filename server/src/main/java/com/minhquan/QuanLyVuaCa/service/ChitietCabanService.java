@@ -30,14 +30,14 @@ public class ChitietCabanService {
     SizecaRepository sizecaRepository;
     ChitietCabanMapper chitietCabanMapper;
 
-    // Danh sách kho hàng
+    // Chỉ trả về các size chưa bị xóa mềm
     public List<ChitietCabanResponse> getAll() {
-        return chitietcabanRepository.findAll().stream()
-                .map(chitietCabanMapper::toResponse) //element -> chitietCabanMapper.toResponse(element)
+        return chitietcabanRepository.findAllByDeletedFalse().stream()
+                .map(chitietCabanMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    // 2. Tạo mới cấu hình sản phẩm (Ghép Loại + Size)
+    // 2. Tạo mới hoặc khôi phục cấu hình sản phẩm (Ghép Loại + Size)
     public ChitietCabanResponse create(ChitietCabanCreationRequest request) {
         Loaica loaiCa = loaicaRepository.findById(request.getIdloaica())
                 .orElseThrow(() -> new RuntimeException("Loại cá không tồn tại"));
@@ -45,15 +45,22 @@ public class ChitietCabanService {
         Sizeca sizeCa = sizecaRepository.findById(request.getIdsizeca())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.SIZECA_NOT_EXISTED));
 
-        // Kiểm tra trùng lặp (Logic mới khớp với DB mới)
-        if (chitietcabanRepository.existsByIdloaicaAndIdsizeca(loaiCa, sizeCa)) {
-            throw new RuntimeException("Sản phẩm này đã tồn tại!");
+        // Nếu từng tồn tại (kể cả đã xóa mềm) thì khôi phục thay vì tạo mới
+        // (DB có unique constraint nên không thể tạo trùng)
+        var existing = chitietcabanRepository.findByIdloaicaAndIdsizeca(loaiCa, sizeCa);
+        if (existing.isPresent()) {
+            Chitietcaban record = existing.get();
+            if (!record.getDeleted()) {
+                throw new RuntimeException("Sản phẩm này đã tồn tại!");
+            }
+            record.setDeleted(false);
+            return chitietCabanMapper.toResponse(chitietcabanRepository.save(record));
         }
 
         Chitietcaban entity = chitietCabanMapper.toEntity(request);
-        entity.setIdloaica(loaiCa); // Set Loại cá
-        entity.setIdsizeca(sizeCa); // Set Size
-
+        entity.setIdloaica(loaiCa);
+        entity.setIdsizeca(sizeCa);
+        entity.setDeleted(false);
         if (entity.getSoluongton() == null) entity.setSoluongton(BigDecimal.ZERO);
 
         return chitietCabanMapper.toResponse(chitietcabanRepository.save(entity));
@@ -61,14 +68,9 @@ public class ChitietCabanService {
 
 
     public void delete(Integer id) {
-        if (!chitietcabanRepository.existsById(id)) {
-            throw new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED);
-        }
-        try {
-            chitietcabanRepository.deleteById(id);
-        } catch (Exception e) {
-            // Lỗi nếu sản phẩm đã nằm trong đơn hàng cũ
-            throw new AppExceptions(ErrorCode.CANNOT_DELETE_DATA_IN_USE);
-        }
+        Chitietcaban chitietcaban = chitietcabanRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
+        chitietcaban.setDeleted(true);
+        chitietcabanRepository.save(chitietcaban);
     }
 }
