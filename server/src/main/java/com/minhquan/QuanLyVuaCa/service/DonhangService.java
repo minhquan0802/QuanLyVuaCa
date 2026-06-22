@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.service;
 
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietDonhangRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.DonhangRequestCreation;
@@ -37,6 +38,7 @@ public class DonhangService {
     DonhangRepository donhangRepository;
     ChitietdonhangRepository chitietdonhangRepository;
     ChitietcabanRepository chitietcabanRepository;
+    ChitietphieunhapRepository chitietphieunhapRepository;
     DonvitinhRepository donvitinhRepository;
     TaiKhoanRepository taikhoanRepository;
     DonhangMapper donhangMapper;
@@ -500,9 +502,40 @@ public class DonhangService {
                         " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() + ") không đủ hàng!");
             }
 
-            // Trừ và Lưu
+            // Phân bổ trừ theo từng lô (FIFO) để biết lô nào còn lại bao nhiêu
+            truLoFifo(sanphamTrongKho, soLuongMua);
+
+            // Trừ và Lưu tồn kho tổng
             sanphamTrongKho.setSoluongton(sanphamTrongKho.getSoluongton().subtract(soLuongMua));
             chitietcabanRepository.save(sanphamTrongKho);
+        }
+    }
+
+    // Trừ dần soluongconlai của các lô (Chitietphieunhap) thuộc sản phẩm kho này,
+    // lô nhập trước (ngaynhap cũ hơn) bị trừ trước.
+    private void truLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
+        List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
+                .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
+                        sanphamTrongKho, BigDecimal.ZERO);
+
+        BigDecimal conLai = soLuongCanTru;
+        for (Chitietphieunhap lo : danhSachLo) {
+            if (conLai.compareTo(BigDecimal.ZERO) <= 0) break;
+
+            BigDecimal laySoLuong = lo.getSoluongconlai().min(conLai);
+            lo.setSoluongconlai(lo.getSoluongconlai().subtract(laySoLuong));
+            if (lo.getSoluongconlai().compareTo(BigDecimal.ZERO) == 0) {
+                lo.setTrangthaica(TrangThaiCa.HET_HANG);
+            }
+            chitietphieunhapRepository.save(lo);
+
+            conLai = conLai.subtract(laySoLuong);
+        }
+
+        if (conLai.compareTo(BigDecimal.ZERO) > 0) {
+            throw new RuntimeException("Dữ liệu lô hàng của sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica() +
+                    " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() +
+                    ") không khớp với tồn kho tổng - thiếu " + conLai);
         }
     }
 
