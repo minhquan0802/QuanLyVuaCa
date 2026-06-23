@@ -48,7 +48,11 @@ public enum ErrorCode {
     ACCOUNT_PENDING_EMAIL(1030, "Tai khoan chua xac thuc email", HttpStatus.FORBIDDEN),
     ACCOUNT_PENDING_APPROVAL(1031, "Tai khoan dang cho admin phe duyet", HttpStatus.FORBIDDEN),
     RESET_TOKEN_INVALID(1032, "Link dat lai mat khau khong hop le hoac da het han", HttpStatus.BAD_REQUEST),
-    WRONG_PASSWORD(1033, "Mat khau hien tai khong dung", HttpStatus.BAD_REQUEST);
+    WRONG_PASSWORD(1033, "Mat khau hien tai khong dung", HttpStatus.BAD_REQUEST),
+
+    // --- PHIEU THANH LY ---
+    CHITIETPHIEUNHAP_NOT_EXISTED(1040, "Lo hang (chi tiet phieu nhap) khong ton tai", HttpStatus.NOT_FOUND),
+    SOLUONG_THANHLY_VUOT_QUA_TON_LO(1041, "So luong thanh ly vuot qua so luong con lai cua lo", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

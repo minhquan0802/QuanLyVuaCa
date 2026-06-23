@@ -95,6 +95,9 @@ public class PhieunhapService {
 
                 detail.setTrangthaica(TrangThaiCa.CON_HANG);
 
+                // Lô mới luôn full số lượng nhập, dùng để trừ FIFO khi bán/thanh lý
+                detail.setSoluongconlai(itemRequest.getSoluongnhap());
+
                 // Ngày thanh lý = Ngày nhập + 2 ngày
                 detail.setNgaythanhly(savedPhieu.getNgaynhap().plusDays(2));
 

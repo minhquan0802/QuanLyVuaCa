@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.entity;
 
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhLy;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -32,5 +33,9 @@ public class Phieuthanhly {
     @Size(max = 50)
     @Column(name = "ghichu", length = 50)
     private String ghichu;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trangthai", columnDefinition = "LONGTEXT")
+    private TrangThaiThanhLy trangthai;
 
 }

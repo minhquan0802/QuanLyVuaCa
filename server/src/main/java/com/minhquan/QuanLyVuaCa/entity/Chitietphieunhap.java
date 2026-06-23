@@ -31,7 +31,8 @@ public class Chitietphieunhap {
     @Column(name = "soluongnhap", precision = 12, scale = 2)
     private BigDecimal soluongnhap;
 
-    // Đã xóa soluongton
+    @Column(name = "soluongconlai", precision = 12, scale = 2)
+    private BigDecimal soluongconlai;
 
     @Column(name = "gianhap", precision = 10, scale = 2)
     private BigDecimal gianhap;
