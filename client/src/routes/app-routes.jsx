@@ -31,6 +31,7 @@ import ChiTietDonHang from '../pages/admin/ChiTietDonHang';
 import NhapHang from '../pages/admin/NhapHang';
 import QuanLyThanhLy from '../pages/admin/QuanLyThanhLy';
 import TaoPhieuThanhLy from '../pages/admin/TaoPhieuThanhLy';
+import QuanLyCongNo from '../pages/admin/QuanLyCongNo';
 
 // Components
 import ProtectedRoute from './ProtectedRoute';
@@ -89,6 +90,7 @@ export default function AppRoutes() {
                 <Route path='/admin/QuanLyKho/nhap-hang' element={<NhapHang />} />
                 <Route path='/admin/QuanLyThanhLy' element={<QuanLyThanhLy />} />
                 <Route path='/admin/QuanLyThanhLy/tao-phieu' element={<TaoPhieuThanhLy />} />
+                <Route path='/admin/QuanLyCongNo' element={<QuanLyCongNo />} />
             </Route>
         </Routes>
     );

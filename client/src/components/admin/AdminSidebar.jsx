@@ -14,6 +14,7 @@ export default function AdminSidebar() {
         { label: "Quản lý Bảng Giá", path: "/admin/QuanLyBangGia" },
         { label: "Quản lý Kho Hàng", path: "/admin/QuanLyKho" },
         { label: "Quản lý Thanh Lý", path: "/admin/QuanLyThanhLy" },
+        { label: "Quản lý Công Nợ", path: "/admin/QuanLyCongNo" },
     ];
 
     const isActive = (path) => {

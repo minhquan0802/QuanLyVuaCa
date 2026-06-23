@@ -49,3 +49,25 @@ CREATE TABLE thongbao (
     thoigiantao DATETIME(6) NOT NULL,
     CONSTRAINT fk_thongbao_taikhoan FOREIGN KEY (idnguoinhan) REFERENCES taikhoan(idtaikhoan)
 );
+
+-- Công nợ Phase 1: hạn mức tín dụng + cache công nợ hiện tại trên taikhoan + sổ cái biến động
+ALTER TABLE taikhoan ADD hanmuctindung DECIMAL(12,2) NULL;
+ALTER TABLE taikhoan ADD congnohientai DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE taikhoan ADD ngayvuothanmuc DATETIME(6) NULL;
+
+CREATE TABLE lichsucongno (
+    idlichsucongno VARCHAR(36) NOT NULL PRIMARY KEY,
+    idtaikhoan VARCHAR(36) NOT NULL,
+    loaithaydoi VARCHAR(20) NOT NULL,
+    sotien DECIMAL(12,2) NOT NULL,
+    sodusaukhithaydoi DECIMAL(12,2) NOT NULL,
+    nguongocid VARCHAR(36) NULL,
+    nguongocloai VARCHAR(20) NULL,
+    nguoithuchien VARCHAR(36) NULL,
+    ghichu VARCHAR(255) NULL,
+    ngaytao DATETIME(6) NOT NULL,
+    CONSTRAINT fk_lichsucongno_taikhoan FOREIGN KEY (idtaikhoan) REFERENCES taikhoan(idtaikhoan),
+    CONSTRAINT fk_lichsucongno_admin FOREIGN KEY (nguoithuchien) REFERENCES taikhoan(idtaikhoan)
+);
+CREATE INDEX idx_lichsucongno_idtaikhoan ON lichsucongno(idtaikhoan);
+CREATE INDEX idx_lichsucongno_ngaytao ON lichsucongno(ngaytao DESC);

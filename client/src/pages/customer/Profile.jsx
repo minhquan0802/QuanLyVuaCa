@@ -207,6 +207,58 @@ export default function Profile() {
                     </div>
                 </div>
 
+                {/* --- CÔNG NỢ (chỉ hiện với khách sỉ đã được admin mở hạn mức tín dụng) --- */}
+                {user.hanmuctindung != null && (() => {
+                    const hanmuc = Number(user.hanmuctindung);
+                    const congno = Number(user.congnohientai || 0);
+                    const phanTram = hanmuc > 0 ? (congno / hanmuc) * 100 : 0;
+                    const soTienCanTraToiThieu = Math.max(0, congno - hanmuc);
+
+                    return (
+                        <div className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 sm:p-8">
+                            <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
+                                <h3 className="font-bold text-base text-slate-800">Công nợ</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div className="bg-slate-50 rounded-xl p-4">
+                                    <p className="text-xs text-slate-400 mb-1">Hạn mức tín dụng</p>
+                                    <p className="font-bold text-slate-800 text-lg">{hanmuc.toLocaleString()}đ</p>
+                                </div>
+                                {congno < 0 ? (
+                                    <div className="bg-green-50 rounded-xl p-4">
+                                        <p className="text-xs text-green-500 mb-1">Số dư trả trước</p>
+                                        <p className="font-bold text-green-700 text-lg">{Math.abs(congno).toLocaleString()}đ</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-red-50 rounded-xl p-4">
+                                        <p className="text-xs text-red-400 mb-1">Công nợ hiện tại</p>
+                                        <p className="font-bold text-red-600 text-lg">{congno.toLocaleString()}đ</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {user.dangBiKhoa ? (
+                                <div className="bg-slate-800 text-white rounded-xl p-4 text-sm">
+                                    <p className="font-bold mb-1">🔒 Tài khoản đang bị khóa đặt hàng</p>
+                                    <p className="text-slate-300">
+                                        Do quá hạn công nợ kéo dài. Cần thanh toán tối thiểu{" "}
+                                        <span className="font-bold text-white">{soTienCanTraToiThieu.toLocaleString()}đ</span> để mở lại.
+                                    </p>
+                                </div>
+                            ) : phanTram >= 100 ? (
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm">
+                                    <p className="font-bold text-red-700">⚠️ Nguy hiểm: Công nợ đã vượt hạn mức tín dụng.</p>
+                                </div>
+                            ) : phanTram >= 80 ? (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm">
+                                    <p className="font-bold text-yellow-700">⚠️ Cảnh báo: Công nợ đang gần đạt hạn mức tín dụng.</p>
+                                </div>
+                            ) : null}
+                        </div>
+                    );
+                })()}
+
                 {/* --- ĐỔI MẬT KHẨU --- */}
                 <div className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 sm:p-8">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
