@@ -31,3 +31,9 @@ ALTER TABLE taikhoan
 
 ALTER TABLE taikhoan
     ALTER trangthaitk SET DEFAULT 'HOAT_DONG';
+
+-- Phiếu thanh lý: tracking số lượng còn lại theo lô (chitietphieunhap) + trạng thái xử lý
+ALTER TABLE chitietphieunhap ADD soluongconlai DECIMAL(12,2) NULL;
+UPDATE chitietphieunhap SET soluongconlai = soluongnhap WHERE soluongconlai IS NULL;
+
+ALTER TABLE phieuthanhly ADD trangthai LONGTEXT NULL;
