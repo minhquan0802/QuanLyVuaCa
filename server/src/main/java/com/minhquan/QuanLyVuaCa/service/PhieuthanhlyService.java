@@ -79,12 +79,12 @@ public class PhieuthanhlyService {
             }
             chitietphieunhapRepository.save(lo);
 
-            // Trừ kho tổng (sản phẩm kho mà lô này thuộc về)
+            // Trừ kho tổng (sản phẩm kho mà lô này thuộc về). Check chuẩn đã nằm ở lô (soluongconlai) phía trên;
+            // kho.soluongton là số tổng hợp nên có thể lệch thấp hơn (do đường phụ điều chỉnh cân thực tế COD
+            // không đồng bộ lại từng lô) — không chặn bằng exception nữa, chỉ chặn ở 0 để không bị âm.
             Chitietcaban kho = lo.getIdchitietcaban();
-            if (kho.getSoluongton().compareTo(soLuongThanhLy) < 0) {
-                throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH);
-            }
-            kho.setSoluongton(kho.getSoluongton().subtract(soLuongThanhLy));
+            BigDecimal soluongTonMoi = kho.getSoluongton().subtract(soLuongThanhLy);
+            kho.setSoluongton(soluongTonMoi.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : soluongTonMoi);
             chitietcabanRepository.save(kho);
 
             // Tạo dòng chi tiết phiếu thanh lý
@@ -105,14 +105,31 @@ public class PhieuthanhlyService {
         return chitietphieunhapRepository
                 .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(kho, BigDecimal.ZERO)
                 .stream()
-                .map(lo -> LoHangResponse.builder()
-                        .idchitietphieunhap(lo.getIdchitietphieunhap())
-                        .ngaynhap(lo.getIdphieunhap().getNgaynhap())
-                        .soluongnhap(lo.getSoluongnhap())
-                        .soluongconlai(lo.getSoluongconlai())
-                        .trangthaica(lo.getTrangthaica() != null ? lo.getTrangthaica().name() : null)
-                        .build())
+                .map(this::toLoHangResponse)
                 .toList();
+    }
+
+    // Tất cả lô còn hàng (mọi loại cá/size) — cho màn hình thanh lý nhanh theo lô
+    public List<LoHangResponse> layTatCaLoConHang() {
+        return chitietphieunhapRepository
+                .findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal.ZERO)
+                .stream()
+                .map(this::toLoHangResponse)
+                .toList();
+    }
+
+    private LoHangResponse toLoHangResponse(Chitietphieunhap lo) {
+        Chitietcaban kho = lo.getIdchitietcaban();
+        return LoHangResponse.builder()
+                .idchitietphieunhap(lo.getIdchitietphieunhap())
+                .idchitietcaban(kho != null ? kho.getId() : null)
+                .tenLoaiCa(kho != null ? kho.getIdloaica().getTenloaica() : null)
+                .tenSize(kho != null ? kho.getIdsizeca().getSizeca() : null)
+                .ngaynhap(lo.getIdphieunhap().getNgaynhap())
+                .soluongnhap(lo.getSoluongnhap())
+                .soluongconlai(lo.getSoluongconlai())
+                .trangthaica(lo.getTrangthaica() != null ? lo.getTrangthaica().name() : null)
+                .build();
     }
 
     public List<PhieuthanhlyResponse> layDanhSachPhieuThanhLy() {

@@ -13,4 +13,5 @@ public interface TaiKhoanRepository extends JpaRepository<Taikhoan, String> {
     boolean existsByEmail(String email);
     Optional<Taikhoan> findByEmail(String email);
     List<Taikhoan> findByTrangthaitk(TrangThaiTaiKhoan trangthaitk);
+    List<Taikhoan> findByVaitro(String vaitro);
 }

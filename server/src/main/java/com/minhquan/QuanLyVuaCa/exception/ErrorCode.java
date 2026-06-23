@@ -52,7 +52,10 @@ public enum ErrorCode {
 
     // --- PHIEU THANH LY ---
     CHITIETPHIEUNHAP_NOT_EXISTED(1040, "Lo hang (chi tiet phieu nhap) khong ton tai", HttpStatus.NOT_FOUND),
-    SOLUONG_THANHLY_VUOT_QUA_TON_LO(1041, "So luong thanh ly vuot qua so luong con lai cua lo", HttpStatus.CONFLICT);
+    SOLUONG_THANHLY_VUOT_QUA_TON_LO(1041, "So luong thanh ly vuot qua so luong con lai cua lo", HttpStatus.CONFLICT),
+
+    // --- THONG BAO ---
+    THONGBAO_NOT_EXISTED(1042, "Thong bao khong ton tai", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;
