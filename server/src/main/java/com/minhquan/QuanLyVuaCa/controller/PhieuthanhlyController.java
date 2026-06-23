@@ -8,6 +8,7 @@ import com.minhquan.QuanLyVuaCa.service.PhieuthanhlyService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class PhieuthanhlyController {
 
     PhieuthanhlyService phieuthanhlyService;
@@ -45,6 +47,15 @@ public class PhieuthanhlyController {
                 .code(200)
                 .message("Lấy danh sách lô còn hàng thành công")
                 .result(phieuthanhlyService.layDanhSachLoConHang(idchitietcaban))
+                .build();
+    }
+
+    @GetMapping("/tat-ca-lo-con-hang")
+    public ApiResponse<List<LoHangResponse>> layTatCaLoConHang() {
+        return ApiResponse.<List<LoHangResponse>>builder()
+                .code(200)
+                .message("Lấy danh sách tất cả lô còn hàng thành công")
+                .result(phieuthanhlyService.layTatCaLoConHang())
                 .build();
     }
 }
