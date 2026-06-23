@@ -41,4 +41,7 @@ public class Chitietcaban {
 
     @Column(name = "soluongton", precision = 10, scale = 2)
     private BigDecimal soluongton;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
 }

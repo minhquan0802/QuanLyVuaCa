@@ -94,6 +94,13 @@ public class GioHangService {
                 .build();
     }
 
+    // Dùng cho Phase 4 công nợ: tính nợ dự kiến trước khi cho checkout
+    public BigDecimal tinhTongTienGioHangHienTai(String idtaikhoan, boolean isWholesale) {
+        return gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai(idtaikhoan, TrangThaiGioHang.DANG_HOAT_DONG)
+                .map(gh -> mapToResponse(gh, isWholesale).getTongTien())
+                .orElse(BigDecimal.ZERO);
+    }
+
     // ── 1. Lấy giỏ hàng ──────────────────────────────────────────────────────
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse layGioHang() {

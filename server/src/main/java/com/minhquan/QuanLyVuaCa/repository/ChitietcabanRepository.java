@@ -6,11 +6,12 @@ import com.minhquan.QuanLyVuaCa.entity.Sizeca;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ChitietcabanRepository extends JpaRepository<Chitietcaban, Integer> {
-    // Kiểm tra Size này đã có trong kho chưa
-    boolean existsByIdloaicaAndIdsizeca(Loaica idloaica,Sizeca idsizeca);
+    boolean existsByIdloaicaAndIdsizeca(Loaica idloaica, Sizeca idsizeca);
     Optional<Chitietcaban> findByIdloaicaAndIdsizeca(Loaica idloaica, Sizeca idsizeca);
+    List<Chitietcaban> findAllByDeletedFalse();
 }

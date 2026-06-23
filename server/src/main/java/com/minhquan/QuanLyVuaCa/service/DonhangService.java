@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.service;
 
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietDonhangRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.DonhangRequestCreation;
@@ -37,9 +38,11 @@ public class DonhangService {
     DonhangRepository donhangRepository;
     ChitietdonhangRepository chitietdonhangRepository;
     ChitietcabanRepository chitietcabanRepository;
+    ChitietphieunhapRepository chitietphieunhapRepository;
     DonvitinhRepository donvitinhRepository;
     TaiKhoanRepository taikhoanRepository;
     DonhangMapper donhangMapper;
+    CongNoService congNoService;
 
     QuydoiRepository quydoiRepository;
     BanggiaRepository banggiaRepository;
@@ -82,6 +85,11 @@ public class DonhangService {
             if (khachOpt.isPresent()) {
                 isWholesale = "CUSTOMER".equals(khachOpt.get().getVaitro()) || "WHOLESALE_CUSTOMER".equals(khachOpt.get().getVaitro());
             }
+        }
+
+        // Công nợ Phase 4: chặn nếu vượt hạn mức hoặc đang bị khóa đặt hàng (không tác động khách lẻ/khách chưa mở công nợ)
+        if (request.getIdthongtinkhachhang() != null) {
+            congNoService.kiemTraDuocDatHang(request.getIdthongtinkhachhang(), isWholesale);
         }
 
         // 2. Xử lý chi tiết đơn hàng
@@ -258,8 +266,7 @@ public class DonhangService {
     }
 
     // --- 3. LẤY CHI TIẾT ĐƠN HÀNG ---
-    // Cho phép xem chi tiết (có thể cần logic check chủ sở hữu đơn hàng nếu là khách)
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'INDIVIDUAL_CUSTOMER', 'WHOLESALE_CUSTOMER')")
+    @PreAuthorize("isAuthenticated()")
     public List<ChitietDonhangResponse> getChiTietDonHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
@@ -287,7 +294,7 @@ public class DonhangService {
 
     // --- 4. XÁC NHẬN ĐÃ NHẬN HÀNG (khách sỉ tự xác nhận khi DANG_VAN_CHUYEN) ---
     @Transactional
-    @PreAuthorize("hasAnyRole('WHOLESALE_CUSTOMER')")
+    @PreAuthorize("hasAnyRole('CUSTOMER')")
     public DonhangResponse xacNhanNhanHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
@@ -306,6 +313,9 @@ public class DonhangService {
 
         donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
         Donhang saved = donhangRepository.save(donhang);
+
+        congNoService.xuLyDonGiaoThanhCong(saved, tinhTongTienDonHang(saved.getIddonhang()));
+
         return donhangMapper.toDonhangResponse(saved, currentUser.getHo() + " " + currentUser.getTen(), currentUser.getSodienthoai());
     }
 
@@ -339,8 +349,14 @@ public class DonhangService {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + id));
 
+        TrangThaiDonHang oldStatus = donhang.getTrangthaidonhang();
         donhang.setTrangthaidonhang(newStatus);
         Donhang savedDonhang = donhangRepository.save(donhang);
+
+        // Admin có thể set thẳng GIAO_HANG_THANH_CONG ở đây, không chỉ qua xacNhanNhanHang() của khách
+        if (newStatus == TrangThaiDonHang.GIAO_HANG_THANH_CONG && oldStatus != TrangThaiDonHang.GIAO_HANG_THANH_CONG) {
+            congNoService.xuLyDonGiaoThanhCong(savedDonhang, tinhTongTienDonHang(savedDonhang.getIddonhang()));
+        }
 
         return donhangMapper.toDonhangResponse(savedDonhang, null, null);
     }
@@ -501,9 +517,40 @@ public class DonhangService {
                         " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() + ") không đủ hàng!");
             }
 
-            // Trừ và Lưu
+            // Phân bổ trừ theo từng lô (FIFO) để biết lô nào còn lại bao nhiêu
+            truLoFifo(sanphamTrongKho, soLuongMua);
+
+            // Trừ và Lưu tồn kho tổng
             sanphamTrongKho.setSoluongton(sanphamTrongKho.getSoluongton().subtract(soLuongMua));
             chitietcabanRepository.save(sanphamTrongKho);
+        }
+    }
+
+    // Trừ dần soluongconlai của các lô (Chitietphieunhap) thuộc sản phẩm kho này,
+    // lô nhập trước (ngaynhap cũ hơn) bị trừ trước.
+    private void truLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
+        List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
+                .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
+                        sanphamTrongKho, BigDecimal.ZERO);
+
+        BigDecimal conLai = soLuongCanTru;
+        for (Chitietphieunhap lo : danhSachLo) {
+            if (conLai.compareTo(BigDecimal.ZERO) <= 0) break;
+
+            BigDecimal laySoLuong = lo.getSoluongconlai().min(conLai);
+            lo.setSoluongconlai(lo.getSoluongconlai().subtract(laySoLuong));
+            if (lo.getSoluongconlai().compareTo(BigDecimal.ZERO) == 0) {
+                lo.setTrangthaica(TrangThaiCa.HET_HANG);
+            }
+            chitietphieunhapRepository.save(lo);
+
+            conLai = conLai.subtract(laySoLuong);
+        }
+
+        if (conLai.compareTo(BigDecimal.ZERO) > 0) {
+            throw new RuntimeException("Dữ liệu lô hàng của sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica() +
+                    " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() +
+                    ") không khớp với tồn kho tổng - thiếu " + conLai);
         }
     }
 

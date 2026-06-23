@@ -1,9 +1,8 @@
 package com.minhquan.QuanLyVuaCa.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.servlet.http.Cookie;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.ResponseCookie;
 
 @Data
 @NoArgsConstructor
@@ -11,6 +10,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CookieResponse {
-    Cookie token;
-    Cookie refreshToken;
+    ResponseCookie token;
+    ResponseCookie refreshToken;
 }

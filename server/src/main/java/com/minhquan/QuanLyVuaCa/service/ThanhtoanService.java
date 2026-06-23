@@ -28,6 +28,7 @@ public class ThanhtoanService {
     ThanhtoanRepository thanhtoanRepository;
     DonhangRepository donhangRepository;
     DonhangService donhangService;
+    CongNoService congNoService;
 
     @PreAuthorize("isAuthenticated()")
     public TinhTrangThanhToanResponse getTinhTrang(String idDonhang) {
@@ -107,6 +108,8 @@ public class ThanhtoanService {
 
         t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
         thanhtoanRepository.save(t);
+
+        congNoService.xuLyThanhToanXacNhan(t);
 
         // Kiểm tra đã trả đủ chưa → cập nhật trạng thái đơn hàng
         String idDonhang = t.getIddonhang().getIddonhang();

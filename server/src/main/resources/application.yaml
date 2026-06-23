@@ -56,6 +56,10 @@ vnpay:
 timezone:
   id: Asia/Ho_Chi_Minh
 
+cong-no:
+  phan-tram-canh-bao: 80
+  so-ngay-khoa: 30
+
 springdoc:
   swagger-ui:
     path: ${SWAGGER_UI}

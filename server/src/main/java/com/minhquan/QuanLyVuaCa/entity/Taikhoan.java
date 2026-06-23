@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Set;
 
 @Entity
@@ -55,4 +57,13 @@ public class Taikhoan {
 
     @Column(name = "vaitro", length = 50)
     String vaitro;
+
+    @Column(name = "hanmuctindung", precision = 12, scale = 2)
+    BigDecimal hanmuctindung;
+
+    @Column(name = "congnohientai", precision = 12, scale = 2)
+    BigDecimal congnohientai;
+
+    @Column(name = "ngayvuothanmuc")
+    Instant ngayvuothanmuc;
 }

@@ -9,11 +9,41 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Dùng axios thuần để tránh interceptor redirect khi guest chưa đăng nhập
-        axios.get(`${import.meta.env.VITE_BE_URL}/tai-khoan/my-info`, { withCredentials: true })
-            .then(({ data }) => setUser(data.result))
-            .catch(() => setUser(null))
-            .finally(() => setLoading(false));
+        const checkAuth = async () => {
+            try {
+                // Dùng axios thuần để tránh interceptor redirect khi guest chưa đăng nhập
+                const { data } = await axios.get(
+                    `${import.meta.env.VITE_BE_URL}/tai-khoan/my-info`,
+                    { withCredentials: true }
+                );
+                setUser(data.result);
+            } catch (err) {
+                if (err.response?.status === 401) {
+                    // Token hết hạn — thử refresh thủ công, không dùng interceptor
+                    try {
+                        await axios.post(
+                            `${import.meta.env.VITE_BE_URL}/auth/refresh`,
+                            {},
+                            { withCredentials: true }
+                        );
+                        // Refresh thành công, gọi lại my-info
+                        const { data } = await axios.get(
+                            `${import.meta.env.VITE_BE_URL}/tai-khoan/my-info`,
+                            { withCredentials: true }
+                        );
+                        setUser(data.result);
+                    } catch {
+                        // Refresh token cũng hết hạn → guest
+                        setUser(null);
+                    }
+                } else {
+                    setUser(null);
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+        checkAuth();
     }, []);
 
     const logout = async () => {

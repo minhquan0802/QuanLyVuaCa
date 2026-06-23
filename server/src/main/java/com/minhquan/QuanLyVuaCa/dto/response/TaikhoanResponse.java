@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @Slf4j
 @Data
 @NoArgsConstructor
@@ -21,4 +24,8 @@ public class TaikhoanResponse {
     String diachi;
     TrangThaiTaiKhoan trangthaitk;
     String vaitro;
+    BigDecimal hanmuctindung;
+    BigDecimal congnohientai;
+    Instant ngayvuothanmuc;
+    Boolean dangBiKhoa;
 }
