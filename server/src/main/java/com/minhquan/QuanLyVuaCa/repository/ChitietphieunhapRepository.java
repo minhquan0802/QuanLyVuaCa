@@ -23,4 +23,7 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     // Lô còn hàng nhưng đã nhập quá lâu (ngaynhap <= ngưỡng) — dùng cho scheduler cảnh báo quá hạn
     List<Chitietphieunhap> findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(
             BigDecimal soluong, LocalDate ngaynhap);
+
+    // Lô mới nhất trước — dùng để hoàn trả tồn kho (LIFO ngược lại với FIFO lúc trừ)
+    List<Chitietphieunhap> findByIdchitietcabanOrderByIdphieunhap_NgaynhapDesc(Chitietcaban idchitietcaban);
 }
