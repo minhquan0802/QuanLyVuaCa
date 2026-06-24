@@ -149,7 +149,9 @@ export default function TaoDonHang() {
             idthongtinkhachhang: isKhachLe ? null : newOrder.idthongtinkhachhang,
             tenKhachHang: isKhachLe ? newOrder.tenKhachLe : `${selectedSi?.ho} ${selectedSi?.ten}`,
             sdtKhachHang: isKhachLe ? newOrder.sdtKhachLe : selectedSi?.sodienthoai,
-            trangthaidonhang: "DA_THANH_TOAN",
+            // Khách lẻ: trả tiền tại chỗ, giao dịch xong ngay -> DA_THANH_TOAN.
+            // Khách sỉ: thanh toán sau (chuyển khoản), hàng lên xe khách ngay -> DANG_DONG_HANG.
+            trangthaidonhang: isKhachLe ? "DA_THANH_TOAN" : "DANG_DONG_HANG",
             ghichu: "[POS]",
             chiTietDonHang: newOrder.items.map(item => ({
                 idchitietcaban: item.repoId, iddonvitinh: item.unitId, soluong: item.quantity,
@@ -168,15 +170,29 @@ export default function TaoDonHang() {
     };
 
     if (orderDone) {
+        const isSi = customerType === "SI";
         return (
             <AdminLayout title="Đơn hàng hoàn tất">
                 <div className="max-w-sm mx-auto bg-white rounded-2xl border border-slate-200 text-center p-6">
-                    <h3 className="font-bold text-lg text-emerald-700">Đơn hàng thành công!</h3>
-                    <p className="text-sm text-slate-600 font-semibold mt-2">Tổng thu: {formatCurrency(completedOrderTotal)}</p>
-                    <div className="grid grid-cols-2 gap-4 my-6">
-                        <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Tiền mặt</button>
-                        <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Quét QR</button>
-                    </div>
+                    <h3 className="font-bold text-lg text-emerald-700">
+                        {isSi ? "Đặt đơn hàng thành công!" : "Đơn hàng thành công!"}
+                    </h3>
+                    <p className="text-sm text-slate-600 font-semibold mt-2">
+                        {isSi ? "Tổng tiền đơn hàng: " : "Tổng thu: "}{formatCurrency(completedOrderTotal)}
+                    </p>
+                    {isSi ? (
+                        <>
+                            <p className="text-xs text-slate-400 mt-2">Đơn đã chuyển sang "Đang đóng hàng" — khách thanh toán sau.</p>
+                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="w-full mt-6 p-4 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700">
+                                Về Quản lý đơn hàng
+                            </button>
+                        </>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4 my-6">
+                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Tiền mặt</button>
+                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Quét QR</button>
+                        </div>
+                    )}
                 </div>
             </AdminLayout>
         );
@@ -315,7 +331,7 @@ export default function TaoDonHang() {
                         <div className="flex gap-3">
                             <button onClick={() => navigate("/admin/QuanLyDonHang")} className="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50">Hủy</button>
                             <button onClick={handleSubmitOrder} disabled={newOrder.items.length === 0} className={`flex-1 py-3.5 font-bold rounded-xl text-center ${newOrder.items.length > 0 ? "bg-cyan-600 text-white hover:bg-cyan-700 shadow-md cursor-pointer" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`}>
-                                Hoàn tất xuất hóa đơn
+                                {customerType === "SI" ? "Đặt đơn hàng" : "Hoàn tất xuất hóa đơn"}
                             </button>
                         </div>
                     </div>
