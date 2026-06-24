@@ -6,6 +6,8 @@ import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import com.minhquan.QuanLyVuaCa.entity.Thanhtoan;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.DonhangRepository;
 import com.minhquan.QuanLyVuaCa.repository.ThanhtoanRepository;
 import jakarta.transaction.Transactional;
@@ -33,7 +35,7 @@ public class ThanhtoanService {
     @PreAuthorize("isAuthenticated()")
     public TinhTrangThanhToanResponse getTinhTrang(String idDonhang) {
         Donhang dh = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         BigDecimal tongTien = donhangService.tinhTongTienDonHang(idDonhang);
 
@@ -72,7 +74,7 @@ public class ThanhtoanService {
     @PreAuthorize("isAuthenticated()")
     public Thanhtoan taoBienBanChuyenKhoan(String idDonhang, BigDecimal sotien, String ghichu) {
         Donhang dh = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         Thanhtoan t = new Thanhtoan();
         t.setIddonhang(dh);
@@ -89,7 +91,7 @@ public class ThanhtoanService {
     @PreAuthorize("isAuthenticated()")
     public Thanhtoan taoBienBanVnpay(String idDonhang, BigDecimal sotien) {
         Donhang dh = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         Thanhtoan t = new Thanhtoan();
         t.setIddonhang(dh);
@@ -104,7 +106,7 @@ public class ThanhtoanService {
     @Transactional
     public void xacNhanThanhToan(String idThanhtoan) {
         Thanhtoan t = thanhtoanRepository.findById(idThanhtoan)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy bản ghi thanh toán: " + idThanhtoan));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.THANHTOAN_NOT_EXISTED, "Không tìm thấy bản ghi thanh toán: " + idThanhtoan));
 
         t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
         thanhtoanRepository.save(t);

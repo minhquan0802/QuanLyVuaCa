@@ -4,6 +4,8 @@ import com.minhquan.QuanLyVuaCa.dto.request.QuydoiRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.QuydoiResponse;
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Quydoi;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.ChitietcabanRepository;
 import com.minhquan.QuanLyVuaCa.repository.QuydoiRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,8 @@ public class QuydoiService {
 
     public QuydoiResponse create(QuydoiRequest request) {
         Chitietcaban chitietcaban = chitietcabanRepository.findById(request.getIdchitietcaban())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm kho ID: " + request.getIdchitietcaban()));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED,
+                        "Không tìm thấy sản phẩm kho ID: " + request.getIdchitietcaban()));
 
         Quydoi quydoi = new Quydoi();
         quydoi.setIdchitietcaban(chitietcaban);

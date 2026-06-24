@@ -6,6 +6,8 @@ import com.minhquan.QuanLyVuaCa.dto.response.ChitietGioHangResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.GioHangResponse;
 import com.minhquan.QuanLyVuaCa.entity.*;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiGioHang;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -47,7 +49,7 @@ public class GioHangService {
     private Taikhoan layUserHienTai() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return taikhoanRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
     }
 
     // ── Map sang Response, tính giá real-time ────────────────────────────────
@@ -119,10 +121,12 @@ public class GioHangService {
         GioHang gioHang = layHoacTaoGioHang(user);
 
         Chitietcaban sanpham = chitietcabanRepository.findById(request.getIdchitietcaban())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm ID: " + request.getIdchitietcaban()));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED,
+                        "Không tìm thấy sản phẩm ID: " + request.getIdchitietcaban()));
 
         Donvitinh dvt = donvitinhRepository.findById(request.getIddonvitinh())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn vị tính ID: " + request.getIddonvitinh()));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONVITINH_NOT_EXISTED,
+                        "Không tìm thấy đơn vị tính ID: " + request.getIddonvitinh()));
 
         chitietGioHangRepository.findItem(gioHang.getIdgiohang(), sanpham.getId(), dvt.getId())
                 .ifPresentOrElse(
@@ -146,7 +150,7 @@ public class GioHangService {
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse capNhatSoLuong(String idChitietGioHang, CapNhatSoLuongRequest request) {
         ChitietGioHang item = chitietGioHangRepository.findById(idChitietGioHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm trong giỏ"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_GIOHANG_NOT_EXISTED));
 
         if (request.getSoluong() == 0) {
             chitietGioHangRepository.delete(item);
@@ -164,7 +168,7 @@ public class GioHangService {
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse xoaSanPham(String idChitietGioHang) {
         ChitietGioHang item = chitietGioHangRepository.findById(idChitietGioHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm trong giỏ"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_GIOHANG_NOT_EXISTED));
 
         GioHang gioHang = item.getIdgiohang();
         chitietGioHangRepository.delete(item);

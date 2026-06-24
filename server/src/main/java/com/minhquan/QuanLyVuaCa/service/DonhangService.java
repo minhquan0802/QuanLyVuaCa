@@ -105,9 +105,10 @@ public class DonhangService {
                     Integer idChiTiet = Integer.parseInt(ctdhRequest.getIdchitietcaban());
                     // Lock row này lại để tránh concurrency nếu cần (hoặc chỉ findById)
                     chitietcabanTemp = chitietcabanRepository.findById(idChiTiet)
-                            .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm kho ID: " + ctdhRequest.getIdchitietcaban()));
+                            .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED,
+                                    "Không tìm thấy sản phẩm kho ID: " + ctdhRequest.getIdchitietcaban()));
                 } else {
-                    throw new RuntimeException("Thiếu ID chi tiết cá bán (Sản phẩm kho)");
+                    throw new AppExceptions(ErrorCode.THIEU_ID_CHITIET_CABAN);
                 }
                 ct.setIdchitietcaban(chitietcabanTemp);
 
@@ -117,13 +118,15 @@ public class DonhangService {
 
                 // B1. Lấy hệ số quy đổi
                 Quydoi quydoi = quydoiRepository.findByIdchitietcaban(finalChitietcaban)
-                        .orElseThrow(() -> new RuntimeException("Sản phẩm chưa cấu hình quy đổi kg (ID Kho: " + finalChitietcaban.getId() + ")"));
+                        .orElseThrow(() -> new AppExceptions(ErrorCode.QUYDOI_NOT_EXISTED,
+                                "Sản phẩm chưa cấu hình quy đổi kg (ID Kho: " + finalChitietcaban.getId() + ")"));
 
                 BigDecimal heSoQuyDoi = quydoi.getSokgtuongung();
 
                 // B2. Lấy giá bán hiện tại
                 Banggia banggia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(finalChitietcaban)
-                        .orElseThrow(() -> new RuntimeException("Sản phẩm chưa có bảng giá áp dụng (ID Kho: " + finalChitietcaban.getId() + ")"));
+                        .orElseThrow(() -> new AppExceptions(ErrorCode.BANGGIA_CHUA_AP_DUNG,
+                                "Sản phẩm chưa có bảng giá áp dụng (ID Kho: " + finalChitietcaban.getId() + ")"));
 
                 // B3. Xác định giá áp dụng (Sỉ hay Lẻ)
                 BigDecimal donGiaApDung = isWholesale ? banggia.getGiabansi() : banggia.getGiabanle();
@@ -157,7 +160,7 @@ public class DonhangService {
                     BigDecimal luongCanTru = soLuongKgQuyDoi;
 
                     if (finalChitietcaban.getSoluongton().compareTo(luongCanTru) < 0) {
-                        throw new RuntimeException("Sản phẩm " + finalChitietcaban.getIdloaica().getTenloaica()
+                        throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + finalChitietcaban.getIdloaica().getTenloaica()
                                 + " không đủ hàng! (Tồn: " + finalChitietcaban.getSoluongton() + ", Đặt: " + luongCanTru + ")");
                     }
 
@@ -267,7 +270,7 @@ public class DonhangService {
     @PreAuthorize("isAuthenticated()")
     public List<ChitietDonhangResponse> getChiTietDonHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         //---- CACH 1 ----
         // Lấy list entity chi tiết
@@ -298,15 +301,15 @@ public class DonhangService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         if (donhang.getTrangthaidonhang() != TrangThaiDonHang.DANG_VAN_CHUYEN) {
-            throw new RuntimeException("Đơn hàng không ở trạng thái đang giao");
+            throw new AppExceptions(ErrorCode.ORDER_STATUS_INVALID, "Đơn hàng không ở trạng thái đang giao");
         }
 
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
         if (!String.valueOf(currentUser.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
-            throw new RuntimeException("Bạn không có quyền xác nhận đơn hàng này");
+            throw new AppExceptions(ErrorCode.ACCESS_DENIED, "Bạn không có quyền xác nhận đơn hàng này");
         }
 
         donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
@@ -325,15 +328,15 @@ public class DonhangService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         if (donhang.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
-            throw new RuntimeException("Chỉ có thể hủy đơn hàng đang chờ xác nhận");
+            throw new AppExceptions(ErrorCode.ORDER_STATUS_INVALID, "Chỉ có thể hủy đơn hàng đang chờ xác nhận");
         }
 
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
         if (!String.valueOf(currentUser.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
-            throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
+            throw new AppExceptions(ErrorCode.ACCESS_DENIED, "Bạn không có quyền hủy đơn hàng này");
         }
 
         // Không cần hoàn kho/lô gì cả: đơn còn CHO_XAC_NHAN nghĩa là chưa từng bị trừ kho (xem
@@ -347,7 +350,7 @@ public class DonhangService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public DonhangResponse updateStatus(String id, TrangThaiDonHang newStatus) {
         Donhang donhang = donhangRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + id));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
 
         TrangThaiDonHang oldStatus = donhang.getTrangthaidonhang();
         donhang.setTrangthaidonhang(newStatus);
@@ -365,7 +368,7 @@ public class DonhangService {
                 if (luongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
 
                 if (kho.getSoluongton().compareTo(luongCanTru) < 0) {
-                    throw new RuntimeException("Sản phẩm " + kho.getIdloaica().getTenloaica()
+                    throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + kho.getIdloaica().getTenloaica()
                             + " không đủ hàng! (Tồn: " + kho.getSoluongton() + ", Cần: " + luongCanTru + ")");
                 }
 
@@ -387,7 +390,7 @@ public class DonhangService {
     // Hàm tính tổng tiền (Có fallback tính lại nếu DB lưu thiếu)
     public BigDecimal tinhTongTienDonHang(String idDonHang) {
         Donhang donhang = donhangRepository.findById(idDonHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + idDonHang));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + idDonHang));
 
         List<Chitietdonhang> details = chitietdonhangRepository.findByIddonhang(donhang);
 
@@ -470,7 +473,7 @@ public class DonhangService {
         String currentEmail = context.getAuthentication().getName();
 
         Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
         // 2. Lấy danh sách Entity Đơn hàng
         List<Donhang> myOrders = donhangRepository.findByIdthongtinkhachhang(String.valueOf(currentUser.getIdtaikhoan()));
@@ -516,7 +519,7 @@ public class DonhangService {
     public void truSoluongTon(String idDonhang) {
         // 1. Lấy thông tin đơn hàng (để làm tham số tìm kiếm)
         Donhang donhang = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + idDonhang));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng: " + idDonhang));
 
         // 2. [THAY ĐỔI] Tìm danh sách chi tiết từ Repository của ChiTietDonHang
         List<Chitietdonhang> listChiTiet = chitietdonhangRepository.findByIddonhang(donhang);
@@ -535,7 +538,7 @@ public class DonhangService {
 
             // Kiểm tra tồn kho
             if (sanphamTrongKho.getSoluongton().compareTo(soLuongMua) < 0) {
-                throw new RuntimeException("Sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica() +
+                throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica() +
                         " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() + ") không đủ hàng!");
             }
 
@@ -570,7 +573,7 @@ public class DonhangService {
         }
 
         if (conLai.compareTo(BigDecimal.ZERO) > 0) {
-            throw new RuntimeException("Dữ liệu lô hàng của sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica() +
+            throw new AppExceptions(ErrorCode.LO_KHONG_KHOP_TON_KHO, "Dữ liệu lô hàng của sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica() +
                     " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() +
                     ") không khớp với tồn kho tổng - thiếu " + conLai);
         }

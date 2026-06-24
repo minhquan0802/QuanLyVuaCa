@@ -40,7 +40,7 @@ public class ChitietCabanService {
     // 2. Tạo mới hoặc khôi phục cấu hình sản phẩm (Ghép Loại + Size)
     public ChitietCabanResponse create(ChitietCabanCreationRequest request) {
         Loaica loaiCa = loaicaRepository.findById(request.getIdloaica())
-                .orElseThrow(() -> new RuntimeException("Loại cá không tồn tại"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
 
         Sizeca sizeCa = sizecaRepository.findById(request.getIdsizeca())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.SIZECA_NOT_EXISTED));
@@ -51,7 +51,7 @@ public class ChitietCabanService {
         if (existing.isPresent()) {
             Chitietcaban record = existing.get();
             if (!record.getDeleted()) {
-                throw new RuntimeException("Sản phẩm này đã tồn tại!");
+                throw new AppExceptions(ErrorCode.CHITIET_CABAN_EXISTED);
             }
             record.setDeleted(false);
             return chitietCabanMapper.toResponse(chitietcabanRepository.save(record));
