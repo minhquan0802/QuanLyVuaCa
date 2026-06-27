@@ -4,11 +4,13 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
+// Cấu hình hiển thị (Label và màu sắc) cho trạng thái của Phiếu Thanh Lý
 const THANHLY_STATUS = {
     "DA_TIEU_HUY": { label: "Đã tiêu hủy", badge: "bg-red-50 text-red-700 border-red-200" },
     "DA_BAN_THANH_LY": { label: "Đã bán thanh lý", badge: "bg-green-50 text-green-700 border-green-200" },
 };
 
+// Cấu hình hiển thị (Label và màu sắc) cho trạng thái hiện tại của Lô hàng (Cá)
 const LO_TRANGTHAI = {
     "CON_HANG": { label: "Còn hàng", badge: "bg-cyan-50 text-cyan-700 border-cyan-200" },
     "HET_HANG": { label: "Hết hàng", badge: "bg-gray-50 text-gray-600 border-slate-200" },
@@ -19,18 +21,24 @@ export default function QuanLyThanhLy() {
     const navigate = useNavigate();
     const { showToast } = useToast();
 
-    const [tab, setTab] = useState("lo"); // "lo" | "phieu"
+    // Quản lý Tab hiển thị: "lo" (Danh sách lô cá tồn) hoặc "phieu" (Lịch sử phiếu đã thanh lý)
+    const [tab, setTab] = useState("lo"); 
 
+    // State lưu trữ dữ liệu lịch sử Phiếu thanh lý
     const [phieus, setPhieus] = useState([]);
     const [loadingPhieus, setLoadingPhieus] = useState(true);
 
+    // State lưu trữ dữ liệu các Lô hàng đang còn tồn trong kho
     const [lots, setLots] = useState([]);
     const [loadingLots, setLoadingLots] = useState(true);
 
+    // Quản lý Modal Thanh lý: Lưu thông tin lô đang được chọn để thanh lý (null nếu modal đóng)
     const [selectedLot, setSelectedLot] = useState(null);
-    const [submitting, setSubmitting] = useState(false);
+    const [submitting, setSubmitting] = useState(false); // Trạng thái disable nút khi đang gửi API
+    
+    // State quản lý dữ liệu nhập vào của Form thanh lý nhanh
     const [form, setForm] = useState({
-        kieu: "toanbo", // "toanbo" | "motphan"
+        kieu: "toanbo", // Phân loại: Thanh lý "toanbo" (toàn bộ) hoặc "motphan" (một phần) lô
         soluongthanhly: 0,
         dongia: 0,
         lydothanhly: "",
@@ -38,6 +46,7 @@ export default function QuanLyThanhLy() {
         ghichu: "",
     });
 
+    // Hàm gọi API lấy danh sách lịch sử Phiếu Thanh Lý
     const fetchPhieus = () => {
         setLoadingPhieus(true);
         api.get("/Phieuthanhlys")
@@ -46,6 +55,7 @@ export default function QuanLyThanhLy() {
             .finally(() => setLoadingPhieus(false));
     };
 
+    // Hàm gọi API lấy danh sách các Lô hàng còn tồn kho (để có thể chọn thanh lý)
     const fetchLots = () => {
         setLoadingLots(true);
         api.get("/Phieuthanhlys/tat-ca-lo-con-hang")
@@ -54,27 +64,34 @@ export default function QuanLyThanhLy() {
             .finally(() => setLoadingLots(false));
     };
 
+    // Load dữ liệu lần đầu khi component vừa mount
     useEffect(() => {
         fetchPhieus();
         fetchLots();
     }, []);
 
+    // --- Các hàm Helper xử lý dữ liệu hiển thị cho bảng Phiếu Thanh Lý ---
+    // Tính tổng số lượng cá đã thanh lý từ danh sách chi tiết của 1 phiếu
     const tinhTongSoLuong = (listChiTiet) =>
         (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.soluongthanhly), 0);
 
+    // Tính tổng tiền thu được từ việc thanh lý (nếu bán thanh lý) của 1 phiếu
     const tinhTongTien = (listChiTiet) =>
         (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.thanhtien), 0);
 
+    // Lọc và gom nhóm tên các loại cá & size cá trong phiếu (Dùng Set để loại bỏ trùng lặp)
     const tenSanPham = (listChiTiet) => {
         const ten = [...new Set((listChiTiet || []).map(ct => `${ct.tenLoaiCa} (${ct.tenSize})`))];
         return ten.join(", ");
     };
+    // ----------------------------------------------------------------------
 
+    // Mở Modal và nạp thông tin mặc định của Lô hàng vào Form
     const openThanhLyModal = (lot) => {
         setSelectedLot(lot);
         setForm({
             kieu: "toanbo",
-            soluongthanhly: lot.soluongconlai,
+            soluongthanhly: lot.soluongconlai, // Mặc định tự điền số lượng là toàn bộ số kg còn lại
             dongia: 0,
             lydothanhly: "",
             trangthai: "DA_TIEU_HUY",
@@ -82,34 +99,40 @@ export default function QuanLyThanhLy() {
         });
     };
 
+    // Đóng Modal (chỉ cho phép đóng khi không trong quá trình gửi API)
     const closeModal = () => {
         if (submitting) return;
         setSelectedLot(null);
     };
 
+    // Xử lý khi người dùng đổi loại "Toàn bộ lô" hoặc "Một phần"
     const handleKieuChange = (kieu) => {
         setForm(prev => ({
             ...prev,
             kieu,
+            // Nếu chọn "Toàn bộ", tự động gán số lượng bằng số lượng tồn. Nếu "Một phần", giữ nguyên số đang nhập.
             soluongthanhly: kieu === "toanbo" ? selectedLot.soluongconlai : prev.soluongthanhly,
         }));
     };
 
+    // Xử lý gửi Form thanh lý (Tạo phiếu thanh lý cho 1 lô duy nhất)
     const handleSubmitThanhLy = async () => {
         if (!selectedLot) return;
+        
+        // Validation cơ bản
         if (!form.lydothanhly.trim()) { showToast("Vui lòng nhập lý do thanh lý!", "error"); return; }
-
         const soLuong = Number(form.soluongthanhly);
         if (soLuong <= 0) { showToast("Số lượng thanh lý phải > 0!", "error"); return; }
         if (soLuong > Number(selectedLot.soluongconlai)) { showToast(`Lô này chỉ còn ${selectedLot.soluongconlai}kg!`, "error"); return; }
         if (Number(form.dongia) < 0) { showToast("Đơn giá không được âm!", "error"); return; }
 
+        // Chuẩn bị payload gửi lên server
         const payload = {
             lydothanhly: form.lydothanhly,
             trangthai: form.trangthai,
             ghichu: form.ghichu,
             listChiTiet: [{
-                idchitietphieunhap: selectedLot.idchitietphieunhap,
+                idchitietphieunhap: selectedLot.idchitietphieunhap, // Khóa ngoại liên kết tới lô nhập
                 soluongthanhly: soLuong,
                 dongia: Number(form.dongia),
             }],
@@ -119,7 +142,8 @@ export default function QuanLyThanhLy() {
         try {
             await api.post("/Phieuthanhlys", payload);
             showToast("Thanh lý lô hàng thành công!", "success");
-            setSelectedLot(null);
+            setSelectedLot(null); // Đóng modal
+            // Gọi lại API để cập nhật dữ liệu bảng Tồn kho và bảng Lịch sử
             fetchLots();
             fetchPhieus();
         } catch {
@@ -131,6 +155,7 @@ export default function QuanLyThanhLy() {
 
     return (
         <AdminLayout title="Quản Lý Thanh Lý">
+            {/* Header và Nút chức năng tạo phiếu phức tạp (nhiều lô) */}
             <div className="flex justify-between items-center mb-6">
                 <p className="text-slate-500 text-sm">Theo dõi các phiếu thanh lý do hao hụt (cá chết, hao hụt lúc nhập, sự cố...).</p>
                 <button
@@ -141,6 +166,7 @@ export default function QuanLyThanhLy() {
                 </button>
             </div>
 
+            {/* Menu Tabs chuyển đổi chế độ xem */}
             <div className="inline-flex bg-slate-100 rounded-xl p-1 mb-5">
                 <button
                     onClick={() => setTab("lo")}
@@ -156,7 +182,9 @@ export default function QuanLyThanhLy() {
                 </button>
             </div>
 
+            {/* Render nội dung tùy theo Tab đang chọn */}
             {tab === "lo" ? (
+                // --- TAB 1: HIỂN THỊ DANH SÁCH LÔ HÀNG CÒN TỒN ---
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left min-w-[900px] border-collapse">
@@ -176,6 +204,7 @@ export default function QuanLyThanhLy() {
                                     <tr><td colSpan="7" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
                                 ) : lots.length > 0 ? (
                                     lots.map((lot) => {
+                                        // Áp dụng màu sắc cho Badge Trạng thái cá
                                         const statusConfig = LO_TRANGTHAI[lot.trangthaica] || { label: lot.trangthaica, badge: "bg-gray-50 text-gray-600 border-slate-200" };
                                         return (
                                             <tr key={lot.idchitietphieunhap} className="hover:bg-slate-50/50 transition-colors">
@@ -208,6 +237,7 @@ export default function QuanLyThanhLy() {
                     </div>
                 </div>
             ) : (
+                // --- TAB 2: HIỂN THỊ DANH SÁCH PHIẾU THANH LÝ ĐÃ LẬP ---
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left min-w-[900px] border-collapse">
@@ -227,6 +257,7 @@ export default function QuanLyThanhLy() {
                                     <tr><td colSpan="7" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
                                 ) : phieus.length > 0 ? (
                                     phieus.map((item) => {
+                                        // Áp dụng màu sắc cho Badge Trạng thái phiếu
                                         const statusConfig = THANHLY_STATUS[item.trangthai] || { label: item.trangthai, badge: "bg-gray-50 text-gray-600 border-slate-200" };
                                         return (
                                             <tr key={item.idphieuthanhly} className="hover:bg-slate-50/50 transition-colors">
@@ -253,9 +284,11 @@ export default function QuanLyThanhLy() {
                 </div>
             )}
 
+            {/* --- MODAL THANH LÝ NHANH CHO MỘT LÔ (Hiển thị khi selectedLot khác null) --- */}
             {selectedLot && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Header của Modal */}
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
                                 <h3 className="font-bold text-lg text-slate-800">Thanh lý lô hàng</h3>
@@ -268,12 +301,14 @@ export default function QuanLyThanhLy() {
                             </button>
                         </div>
 
+                        {/* Body của Modal chứa Form nhập liệu */}
                         <div className="p-6 overflow-y-auto flex-1 space-y-4">
                             <div className="flex justify-between items-center bg-cyan-50 border border-cyan-100 rounded-xl p-3 text-sm">
                                 <span className="text-slate-600">Số lượng còn lại trong lô</span>
                                 <span className="font-bold text-cyan-700 text-lg">{selectedLot.soluongconlai} kg</span>
                             </div>
 
+                            {/* Chọn kiểu thanh lý */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Phạm vi thanh lý</label>
                                 <div className="flex gap-2">
@@ -294,6 +329,7 @@ export default function QuanLyThanhLy() {
                                 </div>
                             </div>
 
+                            {/* Nhập số lượng: Bị disable nếu chọn kiểu "toanbo" */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Số lượng thanh lý (kg)</label>
                                 <input
@@ -305,6 +341,7 @@ export default function QuanLyThanhLy() {
                                 />
                             </div>
 
+                            {/* Nhập đơn giá */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Đơn giá (0 nếu tiêu hủy)</label>
                                 <input
@@ -315,6 +352,7 @@ export default function QuanLyThanhLy() {
                                 />
                             </div>
 
+                            {/* Chọn trạng thái (Tiêu hủy / Đã bán) */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Trạng thái xử lý</label>
                                 <select
@@ -327,6 +365,7 @@ export default function QuanLyThanhLy() {
                                 </select>
                             </div>
 
+                            {/* Nhập lý do (Bắt buộc) */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Lý do thanh lý</label>
                                 <input
@@ -338,6 +377,7 @@ export default function QuanLyThanhLy() {
                                 />
                             </div>
 
+                            {/* Nhập ghi chú */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Ghi chú</label>
                                 <textarea
@@ -348,12 +388,14 @@ export default function QuanLyThanhLy() {
                                 />
                             </div>
 
+                            {/* Preview Thành tiền = Số lượng * Đơn giá */}
                             <div className="flex justify-between items-center bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm">
                                 <span className="text-slate-500">Thành tiền</span>
                                 <span className="font-bold text-slate-800 text-lg">{(Number(form.soluongthanhly || 0) * Number(form.dongia || 0)).toLocaleString()} VNĐ</span>
                             </div>
                         </div>
 
+                        {/* Footer của Modal: Nút Hủy và Xác nhận */}
                         <div className="p-4 border-t border-slate-200 flex justify-end gap-3">
                             <button onClick={closeModal} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm">
                                 Hủy
