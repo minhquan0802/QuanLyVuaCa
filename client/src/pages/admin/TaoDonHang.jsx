@@ -1,371 +1,325 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
-const fmt = (val) => new Intl.NumberFormat("vi-VN").format(val || 0) + "đ";
-
-const FIELD = "w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30";
-const LABEL = "block text-xs font-bold text-slate-500 mb-1";
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
 
 export default function TaoDonHang() {
     const navigate = useNavigate();
     const { showToast } = useToast();
 
-    // --- 1. STATE QUẢN LÝ KHÁCH HÀNG ---
-    const [customerType, setCustomerType] = useState("LE"); // Loại khách: "LE" (Lẻ) hoặc "SI" (Sỉ)
-    const [customerConfirmed, setCustomerConfirmed] = useState(false); // Cờ xác nhận đã nhập/chọn xong thông tin khách
-    const [customers, setCustomers] = useState([]); // Danh sách khách sỉ (từ API tài khoản)
+    const [customerType, setCustomerType] = useState("LE"); // "LE" hoặc "SI"
+    const [customerConfirmed, setCustomerConfirmed] = useState(false);
 
-    // --- 2. STATE QUẢN LÝ DỮ LIỆU KHO (MASTER DATA) ---
-    const [fishes, setFishes] = useState([]); // Toàn bộ dữ liệu chi tiết cá bán
-    const [sizes, setSizes] = useState([]); // Danh sách size tương ứng với loại cá đang chọn
-    const [units, setUnits] = useState([]); // Danh sách đơn vị tính (Con, Lô, Kg...)
-    const [priceList, setPriceList] = useState([]); // Bảng giá hiện hành
-    const [conversionList, setConversionList] = useState([]); // Bảng quy đổi (để tính ra số Kg tương ứng)
+    const [customers, setCustomers] = useState([]);
+    const [fishes, setFishes] = useState([]);
+    const [sizes, setSizes] = useState([]);
+    const [units, setUnits] = useState([]);
+    const [priceList, setPriceList] = useState([]);
+    const [conversionList, setConversionList] = useState([]);
 
-    // --- 3. STATE QUẢN LÝ ĐƠN HÀNG VÀ CHI TIẾT ---
-    const [order, setOrder] = useState({ idthongtinkhachhang: "", tenKhachLe: "", sdtKhachLe: "", items: [] });
-    // item: Lưu thông tin của 1 dòng sản phẩm đang được chọn trước khi bấm "Thêm" vào đơn
-    const [item, setItem] = useState({ fishId: "", sizeId: "", repoId: "", unitId: "", unitName: "", factor: 0, quantity: 1, estimatedKg: 0, pricePerKg: 0 });
+    const [newOrder, setNewOrder] = useState({ idthongtinkhachhang: "", tenKhachLe: "", sdtKhachLe: "", items: [] });
+    const [currentItem, setCurrentItem] = useState({ fishId: "", sizeId: "", repoId: "", unitId: "", unitName: "", factor: 0, quantity: 1, estimatedKg: 0, pricePerKg: 0 });
 
-    // --- 4. STATE TRẠNG THÁI THANH TOÁN ---
-    const [done, setDone] = useState(false); // Cờ báo hiệu đơn hàng đã tạo thành công
-    const [doneTotal, setDoneTotal] = useState(0); // Lưu lại tổng tiền để hiển thị sau khi hoàn tất
+    const [orderDone, setOrderDone] = useState(false);
+    const [completedOrderTotal, setCompletedOrderTotal] = useState(0);
 
-    // --- EFFECT LẤY DỮ LIỆU ĐẦU VÀO ---
+    // Kéo toàn bộ dữ liệu cấu hình ban đầu
     useEffect(() => {
-        // Tải đồng loạt 5 API cần thiết cho màn hình POS
         Promise.all([
             api.get("/tai-khoan"),
             api.get("/Chitietcabans"),
             api.get("/Donvitinhs"),
             api.get("/Banggias"),
             api.get("/Quydois"),
-        ]).then(([resCust, resFish, resUnits, resPrices, resConv]) => {
-            setCustomers((resCust.data?.result || []).filter(u => u.vaitro === "CUSTOMER")); // Lọc ra tài khoản là khách hàng
-            setFishes(resFish.data?.result || []);
+        ]).then(([resCust, resRepo, resUnits, resPrices, resConversions]) => {
+            setCustomers((resCust.data?.result || []).filter(u => u.vaitro === "CUSTOMER"));
+            setFishes(resRepo.data?.result || []); // Dùng thẳng Chitietcabans để map loại cá & size nhằm bỏ qua API Loaicas/Sizecas
             setUnits(resUnits.data?.result || []);
             setPriceList(resPrices.data?.result || []);
-            setConversionList(resConv.data?.result || []);
+            setConversionList(resConversions.data?.result || []);
         }).catch(() => showToast("Không thể tải dữ liệu!", "error"));
     }, []);
 
-    // Lọc ra danh sách "Loại cá" duy nhất từ kho để hiển thị ở Dropdown đầu tiên
-    const fishTypes = fishes.reduce((acc, f) => {
-        if (!acc.some(x => x.id === f.idLoaiCa)) acc.push({ id: f.idLoaiCa, ten: f.tenLoaiCa });
-        return acc;
-    }, []);
+    // Lọc danh sách loại cá duy nhất từ kho
+    const fishTypes = useMemo(() => {
+        return fishes.reduce((acc, item) => {
+            if (!acc.some(f => f.id === item.idLoaiCa)) {
+                acc.push({ id: item.idLoaiCa, tenloaica: item.tenLoaiCa });
+            }
+            return acc;
+        }, []);
+    }, [fishes]);
 
-    // --- CÁC HÀM TIỆN ÍCH TÍNH TOÁN ---
-    // Lấy hệ số quy đổi ra Kg dựa vào id chi tiết cá bán
-    const getFactor = (repoId) =>
-        conversionList.find(c => Number(c.idchitietcaban?.id) === Number(repoId))?.sokgtuongung || 0;
+    // Lấy hệ số quy đổi dựa trên cấu trúc object lồng nhau của API /Quydois
+    const getConversionFactor = useCallback((repoId) => {
+        const match = conversionList.find(c => Number(c.idchitietcaban?.id) === Number(repoId));
+        return match ? match.sokgtuongung : 0;
+    }, [conversionList]);
 
-    // Tra cứu giá bán (Sỉ hoặc Lẻ) tùy thuộc vào loại khách hàng hiện tại
-    const getPrice = (repoId) => {
-        const p = priceList.find(p => Number(p.idChitietcaban) === Number(repoId) && p.trangThai === "Đang áp dụng");
-        if (!p) return 0;
-        return customerType === "SI" ? p.giaBanSi : p.giaBanLe;
+    // Dò giá bán sỉ/lẻ hiện hành
+    const getAutoPrice = useCallback((repoId, isWholesale) => {
+        const activePrice = priceList.find(p => Number(p.idChitietcaban) === Number(repoId) && p.trangThai === "Đang áp dụng");
+        if (!activePrice) return 0;
+        return isWholesale ? activePrice.giaBanSi : activePrice.giaBanLe;
+    }, [priceList]);
+
+    const handleConfirmCustomer = () => {
+        if (customerType === "LE" && !newOrder.tenKhachLe.trim()) {
+            showToast("Vui lòng nhập tên khách lẻ!", "error");
+            return;
+        }
+        if (customerType === "SI" && !newOrder.idthongtinkhachhang) {
+            showToast("Vui lòng chọn khách sỉ!", "error");
+            return;
+        }
+        setCustomerConfirmed(true);
     };
 
-    // --- CÁC HÀM XỬ LÝ KHI NGƯỜI DÙNG THAO TÁC TRÊN FORM ---
-
-    // 1. Khi chọn Loại Cá: Reset size, repoId, giá và lọc lại danh sách Size phù hợp
     const handleFishChange = (fishId) => {
-        setItem(prev => ({ ...prev, fishId, sizeId: "", repoId: "", pricePerKg: 0 }));
-        setSizes(fishes
-            .filter(f => Number(f.idLoaiCa) === Number(fishId))
-            .map(f => ({ idsizeca: f.idSizeCa, sizeca: f.tenSize, repoId: f.id }))
-        );
+        setCurrentItem(prev => ({ ...prev, fishId, sizeId: "", repoId: "", pricePerKg: 0 }));
+        const validSizes = fishes
+            .filter(item => Number(item.idLoaiCa) === Number(fishId))
+            .map(item => ({ idsizeca: item.idSizeCa, sizeca: item.tenSize, repoId: item.id }));
+        setSizes(validSizes);
     };
 
-    // 2. Khi chọn Size: Tìm ra chi tiết lô (repoId), tra cứu lại giá và tính lại số Kg ước tính
-    const handleSizeChange = (sizeId) => {
-        const sz = sizes.find(s => s.idsizeca == sizeId);
-        const repoId = sz?.repoId || "";
-        // Nếu đã chọn Đơn vị tính thì lấy hệ số của đơn vị đó, ngược lại lấy hệ số từ bảng quy đổi
-        const factor = item.unitId ? (units.find(u => u.id == item.unitId)?.hesokg || getFactor(repoId)) : 0;
-        setItem(prev => ({
-            ...prev, sizeId, repoId,
-            pricePerKg: getPrice(repoId),
+    const handleSizeChange = (selectedSizeId) => {
+        const selectedSizeObj = sizes.find(s => s.idsizeca == selectedSizeId);
+        const repoId = selectedSizeObj ? selectedSizeObj.repoId : "";
+
+        let factor = currentItem.factor;
+        if (currentItem.unitId) {
+            const selectedUnit = units.find(u => u.id == currentItem.unitId);
+            factor = selectedUnit?.hesokg || getConversionFactor(repoId) || 0;
+        }
+
+        setCurrentItem(prev => ({
+            ...prev, sizeId: selectedSizeId, repoId,
+            pricePerKg: getAutoPrice(repoId, customerType === "SI"),
             factor,
-            estimatedKg: factor > 0 ? parseFloat((prev.quantity * factor).toFixed(2)) : 0,
+            estimatedKg: factor > 0 ? parseFloat((currentItem.quantity * factor).toFixed(2)) : 0,
         }));
     };
 
-    // 3. Khi chọn Đơn vị tính: Cập nhật lại hệ số và tính lại số Kg ước tính
-    const handleUnitChange = (unitId) => {
-        const u = units.find(u => u.id == Number(unitId));
-        if (!u) return;
-        const factor = u.hesokg || getFactor(item.repoId) || 0;
-        setItem(prev => ({
-            ...prev, unitId: Number(unitId), unitName: u.tendvt, factor,
+    const handleUnitChange = (val) => {
+        const selectedUnit = units.find(u => u.id == Number(val));
+        if (!selectedUnit) return;
+        const factor = selectedUnit.hesokg || getConversionFactor(currentItem.repoId) || 0;
+        setCurrentItem(prev => ({
+            ...prev, unitId: Number(val), unitName: selectedUnit.tendvt, factor,
             estimatedKg: factor > 0 ? parseFloat((prev.quantity * factor).toFixed(2)) : prev.estimatedKg,
         }));
     };
 
-    // 4. Khi nhập Số lượng: Tự động nhân với hệ số quy đổi ra số Kg ước tính
-    const handleQtyChange = (qty) => {
+    const handleQuantityChange = (qty) => {
         const quantity = parseFloat(qty) || 0;
-        setItem(prev => ({ ...prev, quantity, estimatedKg: prev.factor > 0 ? quantity * prev.factor : prev.estimatedKg }));
+        setCurrentItem(prev => ({ ...prev, quantity, estimatedKg: prev.factor > 0 ? quantity * prev.factor : prev.estimatedKg }));
     };
 
-    // 5. Thêm sản phẩm vừa chọn vào giỏ hàng (mảng items trong order)
     const handleAddItem = () => {
-        if (!item.fishId || !item.sizeId || !item.unitId) { showToast("Điền thiếu thông tin!", "error"); return; }
-        if (!item.pricePerKg) { showToast("Chưa có giá bán!", "error"); return; }
+        if (!currentItem.fishId || !currentItem.sizeId || !currentItem.unitId) { showToast("Điền thiếu thông tin!", "error"); return; }
+        if (currentItem.pricePerKg === 0) { showToast("Chưa có giá bán!", "error"); return; }
 
-        const fish = fishTypes.find(f => f.id == item.fishId);
-        const size = sizes.find(s => s.idsizeca == item.sizeId);
+        const fish = fishTypes.find(f => f.id == currentItem.fishId);
+        const size = sizes.find(s => s.idsizeca == currentItem.sizeId);
 
-        // Đẩy item vào mảng items và tính luôn Thành tiền (total) = Kg ước tính * Giá/Kg
-        setOrder(prev => ({
-            ...prev, items: [...prev.items, {
-                id: Date.now(), repoId: item.repoId, unitId: item.unitId, unitName: item.unitName,
-                fishName: fish?.ten, sizeName: size?.sizeca, quantity: item.quantity,
-                estimatedKg: item.estimatedKg, pricePerKg: item.pricePerKg,
-                total: item.estimatedKg * item.pricePerKg,
-            }]
-        }));
-
-        // Reset form nhập liệu để chọn sản phẩm tiếp theo
-        setItem(prev => ({ ...prev, quantity: 1, estimatedKg: 0 }));
+        const newItem = {
+            id: Date.now(), repoId: currentItem.repoId, unitId: currentItem.unitId, unitName: currentItem.unitName,
+            fishName: fish?.tenloaica, sizeName: size?.sizeca, quantity: currentItem.quantity,
+            estimatedKg: currentItem.estimatedKg, pricePerKg: currentItem.pricePerKg,
+            total: currentItem.estimatedKg * currentItem.pricePerKg,
+        };
+        setNewOrder(prev => ({ ...prev, items: [...prev.items, newItem] }));
+        setCurrentItem(prev => ({ ...prev, quantity: 1, estimatedKg: 0 }));
     };
 
-    // Xác nhận thông tin khách hàng hợp lệ trước khi cho phép bấm thanh toán
-    const handleConfirmCustomer = () => {
-        if (customerType === "LE" && !order.tenKhachLe.trim()) { showToast("Vui lòng nhập tên khách!", "error"); return; }
-        if (customerType === "SI" && !order.idthongtinkhachhang) { showToast("Vui lòng chọn khách sỉ!", "error"); return; }
-        setCustomerConfirmed(true);
-    };
+    const handleRemoveItem = (id) => setNewOrder(prev => ({ ...prev, items: prev.items.filter(i => i.id !== id) }));
 
-    // Tính tổng tiền của toàn bộ đơn hàng
-    const orderTotal = order.items.reduce((sum, i) => sum + i.total, 0);
+    const newOrderTotal = useMemo(() => newOrder.items.reduce((sum, i) => sum + i.total, 0), [newOrder.items]);
 
-    // --- HÀM SUBMIT TẠO ĐƠN HÀNG LÊN SERVER ---
-    const handleSubmit = async () => {
-        if (!order.items.length) { showToast("Đơn hàng đang trống!", "error"); return; }
+    const handleSubmitOrder = async () => {
+        if (newOrder.items.length === 0) { showToast("Đơn hàng rỗng!", "error"); return; }
+        const isKhachLe = customerType === "LE";
+        const selectedSi = customers.find(c => c.idtaikhoan === newOrder.idthongtinkhachhang);
 
-        const si = customers.find(c => c.idtaikhoan === order.idthongtinkhachhang);
-
-        // Đóng gói payload tương thích với API Donhangs
         const payload = {
-            idthongtinkhachhang: customerType === "LE" ? null : order.idthongtinkhachhang,
-            tenKhachHang: customerType === "LE" ? order.tenKhachLe : `${si?.ho} ${si?.ten}`,
-            sdtKhachHang: customerType === "LE" ? order.sdtKhachLe : si?.sodienthoai,
-            trangthaidonhang: "DA_THANH_TOAN", // Mặc định POS là thanh toán ngay
-            ghichu: "[POS]", // Gắn tag để phân biệt với đơn đặt online
-            chiTietDonHang: order.items.map(i => ({
-                idchitietcaban: i.repoId, iddonvitinh: i.unitId, soluong: i.quantity,
-                soluongkgthucte: i.estimatedKg, soluongkgthuctequydoi: i.estimatedKg,
-                tongtiendukien: i.total, tongtienthucte: i.total,
+            idthongtinkhachhang: isKhachLe ? null : newOrder.idthongtinkhachhang,
+            tenKhachHang: isKhachLe ? newOrder.tenKhachLe : `${selectedSi?.ho} ${selectedSi?.ten}`,
+            sdtKhachHang: isKhachLe ? newOrder.sdtKhachLe : selectedSi?.sodienthoai,
+            trangthaidonhang: "DA_THANH_TOAN",
+            ghichu: "[POS]",
+            chiTietDonHang: newOrder.items.map(item => ({
+                idchitietcaban: item.repoId, iddonvitinh: item.unitId, soluong: item.quantity,
+                soluongkgthucte: item.estimatedKg, soluongkgthuctequydoi: item.estimatedKg,
+                tongtiendukien: item.total, tongtienthucte: item.total,
             })),
         };
-
         try {
             await api.post("/Donhangs", payload);
-            setDoneTotal(orderTotal); // Lưu lại tổng tiền để show màn hình thành công
-            setDone(true); // Bật cờ hoàn tất
+            showToast("Tạo đơn hàng thành công!", "success");
+            setCompletedOrderTotal(newOrderTotal);
+            setOrderDone(true);
         } catch {
             showToast("Lỗi tạo đơn hàng!", "error");
         }
     };
 
-    if (done) return (
-        <AdminLayout title="Tạo Đơn Hàng">
-            <div className="max-w-sm mx-auto bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                <div className="px-6 py-10 text-center">
-                    <div className="size-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-8 text-green-600">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                        </svg>
+    if (orderDone) {
+        return (
+            <AdminLayout title="Đơn hàng hoàn tất">
+                <div className="max-w-sm mx-auto bg-white rounded-2xl border border-slate-200 text-center p-6">
+                    <h3 className="font-bold text-lg text-emerald-700">Đơn hàng thành công!</h3>
+                    <p className="text-sm text-slate-600 font-semibold mt-2">Tổng thu: {formatCurrency(completedOrderTotal)}</p>
+                    <div className="grid grid-cols-2 gap-4 my-6">
+                        <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Tiền mặt</button>
+                        <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Quét QR</button>
                     </div>
-                    <h3 className="font-bold text-xl text-slate-800 mb-1">Đơn hàng thành công!</h3>
-                    <p className="text-slate-500 text-sm mb-1">Tổng tiền thu</p>
-                    <p className="text-3xl font-bold text-cyan-600">{fmt(doneTotal)}</p>
                 </div>
-                <div className="px-6 pb-6">
-                    <button onClick={() => navigate("/admin/QuanLyDonHang")} className="w-full py-2.5 rounded-xl font-bold text-sm text-white bg-cyan-600 hover:bg-cyan-700 transition-colors cursor-pointer">
-                        Về danh sách đơn hàng
-                    </button>
-                </div>
-            </div>
-        </AdminLayout>
-    );
+            </AdminLayout>
+        );
+    }
 
     return (
-        <AdminLayout title="Tạo Đơn Hàng">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-sm">
+        <AdminLayout title="Tạo đơn hàng (POS)">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-sm">
 
-                {/* ── CỘT TRÁI ── */}
-                <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
-                        <p className="font-bold text-slate-700">Thông tin đơn hàng</p>
-                    </div>
+                {/* BÊN TRÁI: CẤU HÌNH THÔNG TIN */}
+                <div className="lg:col-span-4 space-y-5 bg-white rounded-2xl border border-slate-200 p-5">
 
-                    <div className="p-5 space-y-5">
-                        {/* Bước 1: Khách hàng */}
-                        <div className="space-y-3">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bước 1 — Khách hàng</p>
-                            <div className="flex gap-4">
-                                {["LE", "SI"].map(t => (
-                                    <label key={t} className="flex items-center gap-1.5 font-bold text-slate-600 cursor-pointer">
-                                        <input type="radio" checked={customerType === t} disabled={customerConfirmed} onChange={() => {
-                                            setCustomerType(t);
-                                            setOrder({ idthongtinkhachhang: "", tenKhachLe: "", sdtKhachLe: "", items: [] });
-                                            setItem({ fishId: "", sizeId: "", repoId: "", unitId: "", unitName: "", factor: 0, quantity: 1, estimatedKg: 0, pricePerKg: 0 });
-                                            setSizes([]);
-                                        }} className="accent-cyan-600" />
-                                        {t === "LE" ? "Khách lẻ" : "Khách sỉ"}
-                                    </label>
-                                ))}
-                            </div>
-
-                            {customerType === "LE" ? (
-                                <div className="space-y-2">
-                                    <input type="text" placeholder="Tên khách hàng *" disabled={customerConfirmed} className={FIELD} value={order.tenKhachLe} onChange={e => setOrder({ ...order, tenKhachLe: e.target.value })} />
-                                    <input type="text" placeholder="Số điện thoại" disabled={customerConfirmed} className={FIELD} value={order.sdtKhachLe} onChange={e => setOrder({ ...order, sdtKhachLe: e.target.value })} />
-                                </div>
-                            ) : (
-                                <select className={FIELD} disabled={customerConfirmed} value={order.idthongtinkhachhang} onChange={e => setOrder({ ...order, idthongtinkhachhang: e.target.value })}>
-                                    <option value="">-- Chọn khách sỉ --</option>
-                                    {customers.map(c => <option key={c.idtaikhoan} value={c.idtaikhoan}>{c.ho} {c.ten} ({c.sodienthoai || "—"})</option>)}
-                                </select>
-                            )}
-
-                            {customerConfirmed ? (
-                                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-green-50 border border-green-200">
-                                    <span className="text-green-700 text-xs font-bold">Đã xác nhận khách hàng</span>
-                                    <button onClick={() => setCustomerConfirmed(false)} className="text-xs text-slate-400 hover:text-red-500 cursor-pointer">Sửa</button>
-                                </div>
-                            ) : (
-                                <button onClick={handleConfirmCustomer} className="w-full py-2.5 rounded-xl bg-cyan-600 text-white font-bold text-sm hover:bg-cyan-700 transition-colors cursor-pointer">
-                                    Xác nhận khách hàng
-                                </button>
-                            )}
+                    {/* KHÓA CHỌN KHÁCH HÀNG */}
+                    <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <span className="text-xs font-bold text-slate-400 uppercase">1. Chọn loại khách</span>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-1.5 font-medium">
+                                <input type="radio" checked={customerType === "LE"} disabled={customerConfirmed} onChange={() => setCustomerType("LE")} /> Khách lẻ
+                            </label>
+                            <label className="flex items-center gap-1.5 font-medium">
+                                <input type="radio" checked={customerType === "SI"} disabled={customerConfirmed} onChange={() => setCustomerType("SI")} /> Khách sỉ
+                            </label>
                         </div>
 
-                        {/* Bước 2: Sản phẩm */}
-                        <div className={`space-y-3 transition-opacity ${!customerConfirmed ? "opacity-30 pointer-events-none" : ""}`}>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bước 2 — Thêm mặt hàng</p>
-
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className={LABEL}>Loại cá</label>
-                                    <select className={FIELD} value={item.fishId} onChange={e => handleFishChange(e.target.value)}>
-                                        <option value="">-- Chọn --</option>
-                                        {fishTypes.map(f => <option key={f.id} value={f.id}>{f.ten}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={LABEL}>Size</label>
-                                    <select className={FIELD} value={item.sizeId} onChange={e => handleSizeChange(e.target.value)}>
-                                        <option value="">-- Chọn --</option>
-                                        {sizes.map(s => <option key={s.idsizeca} value={s.idsizeca}>{s.sizeca}</option>)}
-                                    </select>
-                                </div>
+                        {customerType === "LE" ? (
+                            <div className="space-y-2">
+                                <input type="text" placeholder="Tên khách hàng" disabled={customerConfirmed} className="w-full p-2 border border-slate-200 rounded-lg bg-white" value={newOrder.tenKhachLe} onChange={(e) => setNewOrder({ ...newOrder, tenKhachLe: e.target.value })} />
+                                <input type="text" placeholder="Số điện thoại" disabled={customerConfirmed} className="w-full p-2 border border-slate-200 rounded-lg bg-white" value={newOrder.sdtKhachLe} onChange={(e) => setNewOrder({ ...newOrder, sdtKhachLe: e.target.value })} />
                             </div>
+                        ) : (
+                            <select className="w-full p-2 border border-slate-200 rounded-lg bg-white" disabled={customerConfirmed} value={newOrder.idthongtinkhachhang} onChange={(e) => setNewOrder({ ...newOrder, idthongtinkhachhang: e.target.value })}>
+                                <option value="">-- Chọn khách sỉ từ hệ thống --</option>
+                                {customers.map(c => <option key={c.idtaikhoan} value={c.idtaikhoan}>{c.ho} {c.ten} ({c.sodienthoai || "Trống số"})</option>)}
+                            </select>
+                        )}
 
+                        {!customerConfirmed ? (
+                            <button onClick={handleConfirmCustomer} className="w-full py-2 bg-cyan-600 text-white font-bold rounded-lg text-xs">Xác nhận khách hàng</button>
+                        ) : (
+                            <div className="text-center text-xs text-green-700 bg-green-50 py-1.5 border border-green-200 rounded-lg font-bold">Đã khóa</div>
+                        )}
+                    </div>
+
+                    {/* FORM CHỌN SẢN PHẨM */}
+                    <div className={`space-y-4 ${!customerConfirmed ? "opacity-30 pointer-events-none" : ""}`}>
+                        <span className="text-xs font-bold text-slate-400 uppercase block border-b pb-1">2. Thêm mặt hàng</span>
+                        <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className={LABEL}>Đơn vị tính</label>
-                                <select className={FIELD} value={item.unitId} onChange={e => handleUnitChange(e.target.value)}>
+                                <label className="text-xs font-bold text-slate-500 block mb-1">Loại cá</label>
+                                <select className="w-full p-2 border border-slate-200 rounded-lg bg-white" value={currentItem.fishId} onChange={(e) => handleFishChange(e.target.value)}>
                                     <option value="">-- Chọn --</option>
+                                    {fishTypes.map(f => <option key={f.id} value={f.id}>{f.tenloaica}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 block mb-1">Size</label>
+                                <select className="w-full p-2 border border-slate-200 rounded-lg bg-white" value={currentItem.sizeId} onChange={(e) => handleSizeChange(e.target.value)}>
+                                    <option value="">-- Chọn --</option>
+                                    {sizes.map(s => <option key={s.idsizeca} value={s.idsizeca}>{s.sizeca}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 block mb-1">Đơn vị tính</label>
+                                <select className="w-full p-2 border border-slate-200 rounded-lg bg-white" value={currentItem.unitId} onChange={(e) => handleUnitChange(e.target.value)}>
+                                    <option value="">-- Chọn ĐVT --</option>
                                     {units.map(u => <option key={u.id} value={u.id}>{u.tendvt}</option>)}
                                 </select>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className={LABEL}>Số lượng</label>
-                                    <input type="number" min="1" className={FIELD + " text-center font-bold"} value={item.quantity} onChange={e => handleQtyChange(e.target.value)} />
+                                    <label className="text-xs font-bold text-slate-500 block mb-1">Số lượng</label>
+                                    <input type="number" min="1" className="w-full p-2 border border-slate-200 rounded-lg text-center font-bold" value={currentItem.quantity} onChange={(e) => handleQuantityChange(e.target.value)} />
                                 </div>
                                 <div>
-                                    <label className={LABEL}>Kg ước tính</label>
-                                    <input type="number" disabled={item.factor > 0} className={FIELD + " text-center font-bold disabled:bg-slate-50"} value={item.estimatedKg} onChange={e => setItem({ ...item, estimatedKg: parseFloat(e.target.value) || 0 })} />
+                                    <label className="text-xs font-bold text-slate-500 block mb-1">Cân nặng (Kg)</label>
+                                    <input type="number" disabled={currentItem.factor > 0} className="w-full p-2 border border-slate-200 rounded-lg text-center font-bold bg-white disabled:bg-slate-100" value={currentItem.estimatedKg} onChange={(e) => setCurrentItem({ ...currentItem, estimatedKg: parseFloat(e.target.value) || 0 })} />
                                 </div>
                             </div>
-
-                            <div className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 flex justify-between items-center">
-                                <span className="text-xs text-slate-500 font-bold">Đơn giá</span>
-                                <span className="font-bold text-slate-800">{fmt(item.pricePerKg)}</span>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 block mb-1">Đơn giá áp dụng</label>
+                                <div className="p-2 border border-slate-200 rounded-lg bg-slate-100 font-bold text-slate-700">{formatCurrency(currentItem.pricePerKg)}</div>
                             </div>
-
-                            <button onClick={handleAddItem} className="w-full py-2.5 rounded-xl bg-cyan-600 text-white font-bold text-sm hover:bg-cyan-700 transition-colors cursor-pointer">
-                                + Thêm vào giỏ
-                            </button>
                         </div>
+
+                        <button onClick={handleAddItem} className="w-full py-2.5 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700">
+                            Thêm vào giỏ
+                        </button>
                     </div>
                 </div>
 
-                {/* ── CỘT PHẢI ── */}
+                {/* BÊN PHẢI: GIỎ HÀNG */}
                 <div className="lg:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                        <p className="font-bold text-slate-700">Danh sách mặt hàng</p>
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-700">
-                            {order.items.length} món
-                        </span>
+                    <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                        <h4 className="font-bold text-slate-700">Giỏ hàng thanh toán</h4>
+                        <span className="bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-0.5 rounded-md text-xs font-bold">{newOrder.items.length} món</span>
                     </div>
-
                     <div className="flex-1 overflow-auto">
-                        <table className="w-full text-left min-w-[600px] border-collapse">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-100 border-b border-slate-200 text-xs font-bold uppercase text-slate-500">
                                 <tr>
-                                    <th className="p-4">Sản phẩm</th>
-                                    <th className="p-4">ĐVT</th>
-                                    <th className="p-4 text-center">SL</th>
-                                    <th className="p-4 text-center">Kg</th>
-                                    <th className="p-4 text-right">Đơn giá</th>
-                                    <th className="p-4 text-right">Thành tiền</th>
-                                    <th className="p-4" />
+                                    <th className="p-3">Sản phẩm</th>
+                                    <th className="p-3">ĐVT</th>
+                                    <th className="p-3 text-center">SL</th>
+                                    <th className="p-3 text-center">Tổng Kg</th>
+                                    <th className="p-3 text-right">Giá/Kg</th>
+                                    <th className="p-3 text-right">Thành tiền</th>
+                                    <th className="p-3 text-center">Xóa</th>
                                 </tr>
                             </thead>
-                            <tbody className="text-sm divide-y divide-slate-100">
-                                {order.items.length === 0 ? (
-                                    <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Chưa có sản phẩm nào.</td></tr>
-                                ) : order.items.map(i => (
-                                    <tr key={i.id} className="hover:bg-slate-50/50">
-                                        <td className="p-4">
-                                            <p className="font-bold text-slate-900">{i.fishName}</p>
-                                            <p className="text-xs text-slate-500">{i.sizeName}</p>
-                                        </td>
-                                        <td className="p-4 text-slate-600">{i.unitName}</td>
-                                        <td className="p-4 text-center font-bold text-slate-700">{i.quantity}</td>
-                                        <td className="p-4 text-center font-bold text-cyan-600">{i.estimatedKg} kg</td>
-                                        <td className="p-4 text-right text-slate-500 text-xs">{fmt(i.pricePerKg)}</td>
-                                        <td className="p-4 text-right font-bold text-slate-900">{fmt(i.total)}</td>
-                                        <td className="p-4 text-center">
-                                            <button onClick={() => setOrder(prev => ({ ...prev, items: prev.items.filter(x => x.id !== i.id) }))} className="px-2 py-1 bg-red-50 text-red-500 rounded-lg text-xs font-medium hover:bg-red-100 cursor-pointer">
-                                                Xóa
-                                            </button>
+                            <tbody className="divide-y divide-slate-100">
+                                {newOrder.items.map(item => (
+                                    <tr key={item.id} className="hover:bg-slate-50/50">
+                                        <td className="p-3"><div className="font-bold text-slate-700">{item.fishName}</div><div className="text-xs text-slate-400">{item.sizeName}</div></td>
+                                        <td className="p-3 font-medium text-slate-600">{item.unitName}</td>
+                                        <td className="p-3 text-center font-bold">{item.quantity}</td>
+                                        <td className="p-3 text-center text-cyan-600 font-bold">{item.estimatedKg} kg</td>
+                                        <td className="p-3 text-right text-slate-500">{formatCurrency(item.pricePerKg)}</td>
+                                        <td className="p-3 text-right font-bold text-slate-900">{formatCurrency(item.total)}</td>
+                                        <td className="p-3 text-center">
+                                            <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 font-bold hover:text-red-700">Xóa</button>
                                         </td>
                                     </tr>
                                 ))}
+                                {newOrder.items.length === 0 && <tr><td colSpan="7" className="p-12 text-center text-slate-400 italic">Giỏ hàng đang trống.</td></tr>}
                             </tbody>
                         </table>
                     </div>
-
-                    <div className="px-5 py-4 border-t border-slate-200 bg-slate-50/50">
+                    <div className="p-4 border-t border-slate-200 bg-slate-50/50">
                         <div className="flex justify-between items-center mb-4">
-                            <span className="text-slate-600 font-bold">Tổng tiền cần thu</span>
-                            <span className="text-2xl font-bold text-cyan-600">{fmt(orderTotal)}</span>
+                            <span className="text-slate-500 font-medium">Tổng tiền cần thu:</span>
+                            <span className="text-2xl font-bold text-cyan-700">{formatCurrency(newOrderTotal)}</span>
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-sm cursor-pointer transition-colors">
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={!order.items.length}
-                                className="flex-1 py-2.5 rounded-xl bg-cyan-600 text-white font-bold text-sm hover:bg-cyan-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
+                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50">Hủy</button>
+                            <button onClick={handleSubmitOrder} disabled={newOrder.items.length === 0} className={`flex-1 py-3.5 font-bold rounded-xl text-center ${newOrder.items.length > 0 ? "bg-cyan-600 text-white hover:bg-cyan-700 shadow-md cursor-pointer" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`}>
                                 Hoàn tất xuất hóa đơn
                             </button>
                         </div>
                     </div>
                 </div>
-
             </div>
         </AdminLayout>
     );

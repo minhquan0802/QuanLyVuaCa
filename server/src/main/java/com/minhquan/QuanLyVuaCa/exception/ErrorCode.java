@@ -60,7 +60,21 @@ public enum ErrorCode {
     // --- CONG NO ---
     CONGNO_DA_KHOI_TAO(1043, "Tai khoan nay da duoc khoi tao cong no truoc do", HttpStatus.CONFLICT),
     VUOT_HAN_MUC_TIN_DUNG(1044, "Don hang du kien se vuot han muc tin dung", HttpStatus.CONFLICT),
-    TAIKHOAN_BI_KHOA_DAT_HANG(1045, "Tai khoan dang bi khoa dat hang do qua han cong no", HttpStatus.FORBIDDEN);
+    TAIKHOAN_BI_KHOA_DAT_HANG(1045, "Tai khoan dang bi khoa dat hang do qua han cong no", HttpStatus.FORBIDDEN),
+
+    // --- THEM MOI: thay cho cac RuntimeException truoc day ---
+    THIEU_ID_CHITIET_CABAN(1046, "Thieu ID chi tiet ca ban (san pham kho)", HttpStatus.BAD_REQUEST),
+    QUYDOI_NOT_EXISTED(1047, "San pham chua cau hinh quy doi kg", HttpStatus.NOT_FOUND),
+    BANGGIA_CHUA_AP_DUNG(1048, "San pham chua co bang gia ap dung", HttpStatus.NOT_FOUND),
+    LO_KHONG_KHOP_TON_KHO(1049, "Du lieu lo hang khong khop voi ton kho tong", HttpStatus.CONFLICT),
+    SOTIEN_THANH_TOAN_KHONG_HOP_LE(1050, "So tien thanh toan khong hop le", HttpStatus.BAD_REQUEST),
+    UPLOAD_ANH_THAT_BAI(1051, "Khong the upload anh", HttpStatus.INTERNAL_SERVER_ERROR),
+    BANGGIA_NOT_EXISTED(1052, "Bang gia khong ton tai", HttpStatus.NOT_FOUND),
+    DONVITINH_NOT_EXISTED(1053, "Don vi tinh khong ton tai", HttpStatus.NOT_FOUND),
+    CHITIET_GIOHANG_NOT_EXISTED(1054, "San pham khong ton tai trong gio hang", HttpStatus.NOT_FOUND),
+    NHACUNGCAP_NOT_EXISTED(1055, "Nha cung cap khong ton tai", HttpStatus.NOT_FOUND),
+    THANHTOAN_NOT_EXISTED(1056, "Ban ghi thanh toan khong ton tai", HttpStatus.NOT_FOUND),
+    TOKEN_CREATION_FAILED(1057, "Khong the tao token xac thuc", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;

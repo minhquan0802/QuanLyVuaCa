@@ -146,7 +146,7 @@ public class LoaicaService {
             );
             return (String) result.get("secure_url");
         } catch (IOException e) {
-            throw new RuntimeException("Không thể upload ảnh: " + e.getMessage(), e);
+            throw new AppExceptions(ErrorCode.UPLOAD_ANH_THAT_BAI, "Không thể upload ảnh: " + e.getMessage(), e);
         }
     }
 

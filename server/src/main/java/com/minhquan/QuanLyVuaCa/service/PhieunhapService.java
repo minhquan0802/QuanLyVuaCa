@@ -6,6 +6,8 @@ import com.minhquan.QuanLyVuaCa.dto.response.PhieunhapResponse;
 import com.minhquan.QuanLyVuaCa.entity.*;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.ChitietphieunhapMapper;
 import com.minhquan.QuanLyVuaCa.mapper.PhieunhapMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
@@ -45,12 +47,12 @@ public class PhieunhapService {
 
         // Tìm và Set Nhà cung cấp
         Nhacungcap ncc = nhacungcapRepository.findById(request.getIdncc())
-                .orElseThrow(() -> new RuntimeException("Nhà cung cấp không tồn tại"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.NHACUNGCAP_NOT_EXISTED));
         phieunhap.setIdncc(ncc);
 
         // Tìm và Set Loại cá
         Loaica loaica = loaicaRepository.findById(request.getIdloaica())
-                .orElseThrow(() -> new RuntimeException("Loại cá không tồn tại"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
         phieunhap.setIdloaica(loaica);
 
         // Set mặc định ngày nhập
@@ -104,7 +106,7 @@ public class PhieunhapService {
                 // --- LOGIC KHO (Bảng chitietcaban) ---
                 // Cần Size để tìm trong kho
                 Sizeca sizeca = sizecaRepository.findById(itemRequest.getIdsizeca())
-                        .orElseThrow(() -> new RuntimeException("Size cá không tồn tại"));
+                        .orElseThrow(() -> new AppExceptions(ErrorCode.SIZECA_NOT_EXISTED));
 
                 // Tìm trong kho xem đã có cặp (Loại cá - Size) này chưa
                 Chitietcaban khoItem = chitietcabanRepository.findByIdloaicaAndIdsizeca(loaica, sizeca)

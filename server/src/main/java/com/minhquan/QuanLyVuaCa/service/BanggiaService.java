@@ -4,6 +4,8 @@ import com.minhquan.QuanLyVuaCa.dto.request.BanggiaRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.BanggiaResponse;
 import com.minhquan.QuanLyVuaCa.entity.Banggia;
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.BanggiaMapper;
 import com.minhquan.QuanLyVuaCa.repository.BanggiaRepository;
 import com.minhquan.QuanLyVuaCa.repository.ChitietcabanRepository;
@@ -40,7 +42,7 @@ public class BanggiaService {
 
         // 1. Tìm sản phẩm trong kho
         Chitietcaban sp = chitietcabanRepository.findById(request.getIdchitietcaban())
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại trong kho"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
 
         // 2. XỬ LÝ BẢNG GIÁ CŨ (Nếu có)
         // Tìm xem sản phẩm này có giá nào đang chạy không (ngayketthuc = null)
@@ -89,7 +91,7 @@ public class BanggiaService {
     }
 
     public void delete(Integer id) {
-        if(!banggiaRepository.existsById(id)) throw new RuntimeException("Không tìm thấy");
+        if(!banggiaRepository.existsById(id)) throw new AppExceptions(ErrorCode.BANGGIA_NOT_EXISTED);
         banggiaRepository.deleteById(id);
     }
 }

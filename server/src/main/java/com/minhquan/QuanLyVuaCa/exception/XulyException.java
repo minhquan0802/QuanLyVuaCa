@@ -51,7 +51,7 @@ public class XulyException {
         return ResponseEntity.status(errorCode.getStatus()).body(
                 ApiResponse.builder()
                         .code(errorCode.getCode())
-                        .message(errorCode.getMessage())
+                        .message(exception.getMessage())
                         .build()
         );
     }
