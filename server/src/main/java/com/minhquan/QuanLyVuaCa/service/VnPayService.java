@@ -153,7 +153,12 @@ public class VnPayService {
                         }
                     }
                 } else {
-                    return 0; // Return 0: Giao dịch lỗi/Hủy
+                    // VNPAY trả về thất bại/hủy → xóa record pending nếu là partial payment
+                    String failedTxnRef = request.getParameter("vnp_TxnRef");
+                    if (failedTxnRef != null && failedTxnRef.startsWith("DEBT-")) {
+                        thanhtoanService.huyBienBanVnpay(failedTxnRef.substring(5));
+                    }
+                    return 0;
                 }
             } else {
                 return -1; // Return -1: Sai chữ ký

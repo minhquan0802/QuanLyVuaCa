@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -131,6 +132,19 @@ public class CongNoService {
 
         ghiSoCai(khach, LoaiThayDoiCongNo.TANG, tongTienDon, congNoMoi,
                 donhang.getIddonhang(), NguonGocCongNo.DON_HANG, null, null);
+
+        // Nếu khách có số dư trả trước (congNoCu âm), tạo Thanhtoan record khấu trừ tự động
+        if (congNoCu.compareTo(BigDecimal.ZERO) < 0) {
+            BigDecimal khauTru = congNoCu.negate().min(tongTienDon);
+            Thanhtoan t = new Thanhtoan();
+            t.setIddonhang(donhang);
+            t.setSotien(khauTru);
+            t.setPhuongthuc("SO_DU");
+            t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
+            t.setNgaythanhtoan(LocalDateTime.now());
+            t.setGhichu("Khấu trừ từ số dư trả trước");
+            thanhtoanRepository.save(t);
+        }
     }
 
     // Thanh toán được xác nhận -> giảm nợ

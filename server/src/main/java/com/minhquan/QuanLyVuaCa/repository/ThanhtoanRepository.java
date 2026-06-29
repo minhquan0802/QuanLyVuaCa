@@ -12,4 +12,6 @@ import java.util.List;
 public interface ThanhtoanRepository extends JpaRepository<Thanhtoan, String> {
     List<Thanhtoan> findByIddonhang(Donhang donhang);
     List<Thanhtoan> findByIddonhangAndTrangthai(Donhang donhang, TrangThaiThanhToan trangthai);
+    List<Thanhtoan> findByIddonhangAndPhuongthucAndTrangthai(Donhang donhang, String phuongthuc, TrangThaiThanhToan trangthai);
+    void deleteByIddonhangAndPhuongthucAndTrangthai(Donhang donhang, String phuongthuc, TrangThaiThanhToan trangthai);
 }

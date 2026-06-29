@@ -93,6 +93,9 @@ public class ThanhtoanService {
         Donhang dh = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
+        // Xóa các bản ghi VNPAY "Chờ xác nhận" cũ còn treo (user bỏ trang VNPAY không trả)
+        thanhtoanRepository.deleteByIddonhangAndPhuongthucAndTrangthai(dh, "VNPAY", TrangThaiThanhToan.CHO_XAC_NHAN);
+
         Thanhtoan t = new Thanhtoan();
         t.setIddonhang(dh);
         t.setSotien(sotien);
@@ -100,6 +103,15 @@ public class ThanhtoanService {
         t.setTrangthai(TrangThaiThanhToan.CHO_XAC_NHAN);
         t.setNgaythanhtoan(LocalDateTime.now());
         return thanhtoanRepository.save(t);
+    }
+
+    @Transactional
+    public void huyBienBanVnpay(String idThanhtoan) {
+        thanhtoanRepository.findById(idThanhtoan).ifPresent(t -> {
+            if (t.getTrangthai() == TrangThaiThanhToan.CHO_XAC_NHAN) {
+                thanhtoanRepository.delete(t);
+            }
+        });
     }
 
     // Gọi từ VNPay callback hoặc admin xác nhận chuyển khoản

@@ -116,9 +116,11 @@ export default function ThongTinDonHang() {
         }
     };
 
+    const VNPAY_MIN = 10000;
+
     const getSoTienThanhToan = () => {
         if (!tinhTrang) return 0;
-        if (payType === 'full') return Number(tinhTrang.conNo);
+        if (payType === 'full') return Math.max(VNPAY_MIN, Number(tinhTrang.conNo));
         return Number(partialAmount) || 0;
     };
 
@@ -127,33 +129,28 @@ export default function ThongTinDonHang() {
         return `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACCOUNT}-compact2.png?amount=${amount}&addInfo=${info}&accountName=${encodeURIComponent(BANK_NAME)}`;
     };
 
+    const getMinPartial = () => Math.max(VNPAY_MIN, Math.ceil(Number(tinhTrang?.conNo || 0) * 0.1));
+
     const handleConfirmPay = async () => {
         const soTien = getSoTienThanhToan();
         if (soTien <= 0) { alert("Số tiền không hợp lệ"); return; }
+        if (payType === 'partial' && soTien < getMinPartial()) {
+            alert(`Số tiền tối thiểu là 10% số còn nợ: ${getMinPartial().toLocaleString()}đ`);
+            return;
+        }
 
         setPayLoading(true);
         try {
-            if (payMethod === 'vnpay') {
-                const { data } = await api.post("/payment/create-payment", {
-                    orderId: payOrder.iddonhang,
-                    bankCode: "NCB",
-                    language: "vn",
-                    soTienThanhToan: soTien
-                });
-                if (data.paymentUrl) {
-                    window.location.href = data.paymentUrl;
-                } else {
-                    alert("Lỗi tạo link VNPAY");
-                }
+            const { data } = await api.post("/payment/create-payment", {
+                orderId: payOrder.iddonhang,
+                bankCode: "NCB",
+                language: "vn",
+                soTienThanhToan: soTien
+            });
+            if (data.paymentUrl) {
+                window.location.href = data.paymentUrl;
             } else {
-                // Chuyển khoản: ghi nhận chờ admin xác nhận
-                await api.post("/Thanhtoan/chuyen-khoan", {
-                    iddonhang: payOrder.iddonhang,
-                    sotien: soTien,
-                    ghichu: `Chuyển khoản qua VietQR`
-                });
-                alert("Đã ghi nhận! Vui lòng chuyển khoản và chờ admin xác nhận.");
-                setIsPayModalOpen(false);
+                alert("Lỗi tạo link VNPAY");
             }
         } catch (e) {
             alert("Lỗi: " + (e.response?.data?.message || e.message));
@@ -545,7 +542,11 @@ export default function ThongTinDonHang() {
                                         <input type="radio" name="payType" checked={payType === 'full'} onChange={() => setPayType('full')} className="text-orange-500" />
                                         <div>
                                             <p className="text-sm font-bold text-slate-700">Trả hết</p>
-                                            <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString() : 0}đ</p>
+                                            {tinhTrang && Number(tinhTrang.conNo) < VNPAY_MIN ? (
+                                                <p className="text-xs text-orange-600">{VNPAY_MIN.toLocaleString()}đ <span className="text-slate-400">(tối thiểu VNPAY)</span></p>
+                                            ) : (
+                                                <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString() : 0}đ</p>
+                                            )}
                                         </div>
                                     </label>
                                     <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payType === 'partial' ? 'border-orange-500 bg-orange-50' : 'border-slate-200'}`}>
@@ -556,64 +557,55 @@ export default function ThongTinDonHang() {
                                         </div>
                                     </label>
                                 </div>
+                                {tinhTrang && Number(tinhTrang.conNo) < VNPAY_MIN && payType === 'full' && (
+                                    <p className="text-xs text-amber-600 mt-2">
+                                        Số nợ còn lại dưới 10,000đ — VNPAY yêu cầu tối thiểu 10,000đ. Phần dư sẽ được ghi nhận làm tín dụng cho đơn tiếp theo.
+                                    </p>
+                                )}
                                 {payType === 'partial' && (
-                                    <input
-                                        type="number"
-                                        value={partialAmount}
-                                        onChange={e => setPartialAmount(e.target.value)}
-                                        className="mt-3 w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-                                        placeholder="Nhập số tiền muốn trả (VNĐ)"
-                                        min={1000}
-                                        max={tinhTrang?.conNo}
-                                    />
+                                    <div className="mt-3">
+                                        <input
+                                            type="number"
+                                            value={partialAmount}
+                                            onChange={e => setPartialAmount(e.target.value)}
+                                            className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-400 text-sm"
+                                            placeholder="Nhập số tiền muốn trả (VNĐ)"
+                                            min={getMinPartial()}
+                                        />
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            Tối thiểu: <span className="font-semibold text-orange-500">{getMinPartial().toLocaleString()}đ</span>
+                                            {getMinPartial() === VNPAY_MIN && <span className="text-slate-400"> (giới hạn tối thiểu VNPAY)</span>}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Chọn phương thức */}
+                            {/* Phương thức thanh toán — chỉ VNPAY */}
                             <div>
                                 <p className="text-sm font-bold text-slate-600 mb-2">Phương thức thanh toán</p>
                                 <div className="flex gap-3">
-                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'vnpay' ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}>
-                                        <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="text-blue-500" />
+                                    <label className="flex-1 flex items-center gap-2 p-3 rounded-xl border border-blue-500 bg-blue-50 cursor-pointer">
+                                        <input type="radio" name="payMethod" checked readOnly className="text-blue-500" />
                                         <div className="flex items-center gap-2">
                                             <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png" alt="VNPAY" className="h-6 object-contain" />
                                             <span className="text-sm font-bold text-slate-700">VNPAY</span>
                                         </div>
                                     </label>
-                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'bank' ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}>
-                                        <input type="radio" name="payMethod" checked={payMethod === 'bank'} onChange={() => setPayMethod('bank')} className="text-blue-500" />
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-700">Chuyển khoản</p>
-                                            <p className="text-xs text-slate-400">Quét QR ngân hàng</p>
-                                        </div>
-                                    </label>
                                 </div>
                             </div>
-
-                            {/* QR chuyển khoản */}
-                            {payMethod === 'bank' && getSoTienThanhToan() > 0 && (
-                                <div className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl">
-                                    <p className="text-xs text-slate-500">Quét mã để chuyển khoản</p>
-                                    <img
-                                        src={getVietQrUrl(getSoTienThanhToan())}
-                                        alt="VietQR"
-                                        className="w-48 h-48 object-contain rounded-lg"
-                                    />
-                                    <p className="text-xs font-bold text-slate-600">{BANK_ID} - {BANK_ACCOUNT}</p>
-                                    <p className="text-sm font-bold text-orange-600">{getSoTienThanhToan().toLocaleString()}đ</p>
-                                </div>
-                            )}
 
                             {/* Lịch sử thanh toán */}
                             {tinhTrang?.lichSuThanhToan?.length > 0 && (
                                 <div>
                                     <p className="text-sm font-bold text-slate-600 mb-2">Lịch sử thanh toán</p>
                                     <div className="space-y-2">
-                                        {tinhTrang.lichSuThanhToan.map(item => (
+                                        {tinhTrang.lichSuThanhToan.filter(item => !(item.phuongthuc === 'VNPAY' && item.trangthai === 'CHO_XAC_NHAN')).map(item => (
                                             <div key={item.idthanhtoan} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
                                                 <div>
                                                     <span className="font-medium">{Number(item.sotien).toLocaleString()}đ</span>
-                                                    <span className="text-slate-400 ml-2 text-xs">({item.phuongthuc})</span>
+                                                    <span className="text-slate-400 ml-2 text-xs">
+                                                        ({item.phuongthuc === 'SO_DU' ? 'Số dư trả trước' : item.phuongthuc})
+                                                    </span>
                                                 </div>
                                                 <span className={`text-xs px-2 py-0.5 rounded font-bold ${item.trangthai === 'DA_THANH_TOAN' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                                                     {item.trangthai === 'DA_THANH_TOAN' ? 'Đã xác nhận' : 'Chờ xác nhận'}
