@@ -299,7 +299,7 @@ export default function ProductDetail() {
                                         {adding ? "Đang thêm..." : currentStock <= 0 ? "Hết hàng" : selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size"}
                                     </button>
                                 ) : (
-                                    <a href="/" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-cyan-50 text-cyan-600 border border-cyan-200 hover:bg-cyan-100 transition-all">
+                                    <a href="/login" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-cyan-50 text-cyan-600 border border-cyan-200 hover:bg-cyan-100 transition-all">
                                         <span className="material-symbols-outlined text-[20px]">login</span>
                                         Đăng nhập để đặt hàng
                                     </a>
