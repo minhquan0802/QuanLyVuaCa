@@ -8,27 +8,37 @@ export default function TaoPhieuThanhLy() {
     const navigate = useNavigate();
     const { showToast } = useToast();
 
+    // 1. STATE QUẢN LÝ TỒN KHO & LÔ HÀNG
+    // Lưu danh sách tất cả các "Sản phẩm" (Loại cá + Size) đang có trong kho
     const [inventory, setInventory] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Lưu danh sách các Lô Nhập Hàng cụ thể của một sản phẩm (chỉ load khi đã chọn xong loại & size)
     const [lots, setLots] = useState([]);
 
+    // 2. STATE QUẢN LÝ THÔNG TIN CHUNG CỦA PHIẾU
     const [headerForm, setHeaderForm] = useState({
         lydothanhly: "",
-        trangthai: "DA_TIEU_HUY",
+        trangthai: "DA_TIEU_HUY", // Mặc định là đem đi tiêu hủy (đơn giá = 0)
         ghichu: "",
     });
 
+    // 3. STATE QUẢN LÝ VIỆC CHỌN SẢN PHẨM Ở CỘT PHẢI
     const [idloaica, setIdloaica] = useState("");
     const [idsizeca, setIdsizeca] = useState("");
 
+    // 4. STATE QUẢN LÝ THÔNG TIN CHI TIẾT ĐANG NHẬP (LÔ ĐƯỢC CHỌN)
     const [currentDetail, setCurrentDetail] = useState({
-        idchitietphieunhap: "",
+        idchitietphieunhap: "", // Lưu trữ ID của lô đang chọn
         soluongthanhly: 0,
         dongia: 0,
     });
 
+    // 5. STATE QUẢN LÝ DANH SÁCH CHI TIẾT ĐÃ THÊM VÀO BẢNG
     const [addedDetails, setAddedDetails] = useState([]);
 
+    // --- EFFECT LẤY DỮ LIỆU ---
+    // Gọi API lấy danh sách tổng hợp sản phẩm trong kho khi vừa vào trang
     useEffect(() => {
         api.get("/Chitietcabans")
             .then(res => setInventory(res.data.result || []))
@@ -36,6 +46,8 @@ export default function TaoPhieuThanhLy() {
             .finally(() => setLoading(false));
     }, []);
 
+    // --- CÁC HÀM TIỆN ÍCH LỌC DỮ LIỆU TỪ INVENTORY ---
+    // Lọc ra các "Loại cá" duy nhất từ danh sách tồn kho (không để bị trùng lặp)
     const fishTypes = inventory.reduce((acc, item) => {
         if (!acc.some(f => f.id === item.idLoaiCa)) {
             acc.push({ id: item.idLoaiCa, tenloaica: item.tenLoaiCa });
@@ -43,14 +55,17 @@ export default function TaoPhieuThanhLy() {
         return acc;
     }, []);
 
+    // Tìm các "Size cá" tương ứng với "Loại cá" mà người dùng vừa chọn
     const availableSizes = idloaica
         ? inventory.filter(item => item.idLoaiCa == idloaica).map(item => ({ id: item.idSizeCa, sizeca: item.tenSize }))
         : [];
 
+    // Tìm ra record "Chi Tiết Cá Bán" (idchitietcaban) cụ thể khớp với loại và size người dùng đã chọn
     const selectedProduct = inventory.find(i => i.idLoaiCa == idloaica && i.idSizeCa == idsizeca);
     const productId = selectedProduct?.id || "";
 
-    // Khi đã xác định được sản phẩm kho (loại cá + size), tải danh sách lô còn hàng
+    // Effect: Khi productId thay đổi (nghĩa là đã chọn xong Loại + Size), 
+    // tiến hành gọi API để lấy danh sách CÁC LÔ HÀNG (chỉ lấy lô có số lượng > 0) thuộc sản phẩm này.
     useEffect(() => {
         if (!productId) { setLots([]); return; }
         api.get(`/Phieuthanhlys/lo-con-hang?idchitietcaban=${productId}`)
@@ -58,30 +73,39 @@ export default function TaoPhieuThanhLy() {
             .catch(() => showToast("Không thể tải danh sách lô!", "error"));
     }, [productId]);
 
+    // --- CÁC HÀM XỬ LÝ SỰ KIỆN GIAO DIỆN ---
+    // Đổi loại cá -> reset size và lô đang chọn
     const handleSelectFish = (fishId) => {
         setIdloaica(fishId);
         setIdsizeca("");
         setCurrentDetail(prev => ({ ...prev, idchitietphieunhap: "" }));
     };
 
+    // Đổi size -> reset lô đang chọn
     const handleSelectSize = (sizeId) => {
         setIdsizeca(sizeId);
         setCurrentDetail(prev => ({ ...prev, idchitietphieunhap: "" }));
     };
 
+    // Lấy thông tin chi tiết (ngày nhập, số lượng tồn...) của lô đang được focus trên Dropdown
     const selectedLot = lots.find(l => l.idchitietphieunhap === currentDetail.idchitietphieunhap);
 
+    // Hàm xử lý khi bấm nút "Thêm dòng"
     const handleAddDetail = () => {
+        // Validate dữ liệu đầu vào
         if (!selectedProduct) { showToast("Vui lòng chọn Loại cá và Size!", "error"); return; }
         if (!selectedLot) { showToast("Vui lòng chọn lô hàng!", "error"); return; }
 
         const soLuong = Number(currentDetail.soluongthanhly);
         if (soLuong <= 0) { showToast("Số lượng thanh lý phải > 0", "error"); return; }
+
+        // Cực kì quan trọng: Số lượng mang đi thanh lý không được vượt quá số lượng cá còn tồn trong lô đó
         if (soLuong > Number(selectedLot.soluongconlai)) { showToast(`Lô này chỉ còn ${selectedLot.soluongconlai}kg!`, "error"); return; }
         if (Number(currentDetail.dongia) < 0) { showToast("Đơn giá không được âm", "error"); return; }
 
+        // Đẩy thông tin lô vào mảng tạm `addedDetails`
         setAddedDetails(prev => [...prev, {
-            idTemp: Date.now(),
+            idTemp: Date.now(), // Tạo key ảo để có thể xóa dòng sau này
             idchitietphieunhap: selectedLot.idchitietphieunhap,
             tenLoaiCa: selectedProduct.tenLoaiCa,
             tenSize: selectedProduct.tenSize,
@@ -90,17 +114,27 @@ export default function TaoPhieuThanhLy() {
             dongia: Number(currentDetail.dongia),
         }]);
 
+        // Reset form nhập chi tiết lô sau khi thêm thành công
         setCurrentDetail({ idchitietphieunhap: "", soluongthanhly: 0, dongia: 0 });
     };
 
+    // Xóa một dòng trong bảng chi tiết dựa vào idTemp
     const handleRemoveDetail = (idTemp) => setAddedDetails(prev => prev.filter(item => item.idTemp !== idTemp));
+
+    // Tính toán tổng số kg cá thanh lý trong toàn bộ phiếu
     const calculateTotalQuantity = () => addedDetails.reduce((sum, item) => sum + Number(item.soluongthanhly), 0);
+
+    // Tính tổng tiền thu về (nếu trạng thái là Đã bán thanh lý)
     const calculateTotalMoney = () => addedDetails.reduce((sum, item) => sum + item.soluongthanhly * item.dongia, 0);
 
+    // --- HÀM GỬI DỮ LIỆU LÊN SERVER ---
     const handleSubmit = async () => {
+        // Validate phần Header (Thông tin chung)
         if (!headerForm.lydothanhly.trim()) { showToast("Vui lòng nhập lý do thanh lý!", "error"); return; }
+        // Validate phần Body (Chi tiết)
         if (addedDetails.length === 0) { showToast("Phiếu thanh lý chưa có chi tiết lô hàng nào!", "error"); return; }
 
+        // Định dạng lại Payload theo cấu trúc API yêu cầu
         const payload = {
             lydothanhly: headerForm.lydothanhly,
             trangthai: headerForm.trangthai,
@@ -113,9 +147,9 @@ export default function TaoPhieuThanhLy() {
         };
 
         try {
-            await api.post("/Phieuthanhlys", payload);
+            await api.post("/Phieuthanhlys", payload); // Gọi API tạo phiếu mới
             showToast("Lập phiếu thanh lý thành công!", "success");
-            navigate("/admin/QuanLyThanhLy");
+            navigate("/admin/QuanLyThanhLy"); // Trở về danh sách sau khi tạo xong
         } catch {
             showToast("Lỗi hệ thống hoặc kết nối thất bại!", "error");
         }

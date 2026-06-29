@@ -12,6 +12,9 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class LoHangResponse {
     String idchitietphieunhap;
+    Integer idchitietcaban;
+    String tenLoaiCa;
+    String tenSize;
     LocalDate ngaynhap;
     BigDecimal soluongnhap;
     BigDecimal soluongconlai;

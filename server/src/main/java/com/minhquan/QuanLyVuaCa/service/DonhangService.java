@@ -42,6 +42,7 @@ public class DonhangService {
     DonvitinhRepository donvitinhRepository;
     TaiKhoanRepository taikhoanRepository;
     DonhangMapper donhangMapper;
+    CongNoService congNoService;
 
     QuydoiRepository quydoiRepository;
     BanggiaRepository banggiaRepository;
@@ -84,6 +85,11 @@ public class DonhangService {
             if (khachOpt.isPresent()) {
                 isWholesale = "CUSTOMER".equals(khachOpt.get().getVaitro()) || "WHOLESALE_CUSTOMER".equals(khachOpt.get().getVaitro());
             }
+        }
+
+        // Công nợ Phase 4: chặn nếu vượt hạn mức hoặc đang bị khóa đặt hàng (không tác động khách lẻ/khách chưa mở công nợ)
+        if (request.getIdthongtinkhachhang() != null) {
+            congNoService.kiemTraDuocDatHang(request.getIdthongtinkhachhang(), isWholesale);
         }
 
         // 2. Xử lý chi tiết đơn hàng
@@ -307,6 +313,9 @@ public class DonhangService {
 
         donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
         Donhang saved = donhangRepository.save(donhang);
+
+        congNoService.xuLyDonGiaoThanhCong(saved, tinhTongTienDonHang(saved.getIddonhang()));
+
         return donhangMapper.toDonhangResponse(saved, currentUser.getHo() + " " + currentUser.getTen(), currentUser.getSodienthoai());
     }
 
@@ -340,8 +349,14 @@ public class DonhangService {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + id));
 
+        TrangThaiDonHang oldStatus = donhang.getTrangthaidonhang();
         donhang.setTrangthaidonhang(newStatus);
         Donhang savedDonhang = donhangRepository.save(donhang);
+
+        // Admin có thể set thẳng GIAO_HANG_THANH_CONG ở đây, không chỉ qua xacNhanNhanHang() của khách
+        if (newStatus == TrangThaiDonHang.GIAO_HANG_THANH_CONG && oldStatus != TrangThaiDonHang.GIAO_HANG_THANH_CONG) {
+            congNoService.xuLyDonGiaoThanhCong(savedDonhang, tinhTongTienDonHang(savedDonhang.getIddonhang()));
+        }
 
         return donhangMapper.toDonhangResponse(savedDonhang, null, null);
     }

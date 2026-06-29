@@ -13,20 +13,30 @@ export default function TaoDonHang() {
     const navigate = useNavigate();
     const { showToast } = useToast();
 
-    const [customerType, setCustomerType] = useState("LE");
-    const [customerConfirmed, setCustomerConfirmed] = useState(false);
-    const [customers, setCustomers] = useState([]);
-    const [fishes, setFishes] = useState([]);
-    const [sizes, setSizes] = useState([]);
-    const [units, setUnits] = useState([]);
-    const [priceList, setPriceList] = useState([]);
-    const [conversionList, setConversionList] = useState([]);
-    const [order, setOrder] = useState({ idthongtinkhachhang: "", tenKhachLe: "", sdtKhachLe: "", items: [] });
-    const [item, setItem] = useState({ fishId: "", sizeId: "", repoId: "", unitId: "", unitName: "", factor: 0, quantity: 1, estimatedKg: 0, pricePerKg: 0 });
-    const [done, setDone] = useState(false);
-    const [doneTotal, setDoneTotal] = useState(0);
+    // --- 1. STATE QUẢN LÝ KHÁCH HÀNG ---
+    const [customerType, setCustomerType] = useState("LE"); // Loại khách: "LE" (Lẻ) hoặc "SI" (Sỉ)
+    const [customerConfirmed, setCustomerConfirmed] = useState(false); // Cờ xác nhận đã nhập/chọn xong thông tin khách
+    const [customers, setCustomers] = useState([]); // Danh sách khách sỉ (từ API tài khoản)
 
+    // --- 2. STATE QUẢN LÝ DỮ LIỆU KHO (MASTER DATA) ---
+    const [fishes, setFishes] = useState([]); // Toàn bộ dữ liệu chi tiết cá bán
+    const [sizes, setSizes] = useState([]); // Danh sách size tương ứng với loại cá đang chọn
+    const [units, setUnits] = useState([]); // Danh sách đơn vị tính (Con, Lô, Kg...)
+    const [priceList, setPriceList] = useState([]); // Bảng giá hiện hành
+    const [conversionList, setConversionList] = useState([]); // Bảng quy đổi (để tính ra số Kg tương ứng)
+
+    // --- 3. STATE QUẢN LÝ ĐƠN HÀNG VÀ CHI TIẾT ---
+    const [order, setOrder] = useState({ idthongtinkhachhang: "", tenKhachLe: "", sdtKhachLe: "", items: [] });
+    // item: Lưu thông tin của 1 dòng sản phẩm đang được chọn trước khi bấm "Thêm" vào đơn
+    const [item, setItem] = useState({ fishId: "", sizeId: "", repoId: "", unitId: "", unitName: "", factor: 0, quantity: 1, estimatedKg: 0, pricePerKg: 0 });
+
+    // --- 4. STATE TRẠNG THÁI THANH TOÁN ---
+    const [done, setDone] = useState(false); // Cờ báo hiệu đơn hàng đã tạo thành công
+    const [doneTotal, setDoneTotal] = useState(0); // Lưu lại tổng tiền để hiển thị sau khi hoàn tất
+
+    // --- EFFECT LẤY DỮ LIỆU ĐẦU VÀO ---
     useEffect(() => {
+        // Tải đồng loạt 5 API cần thiết cho màn hình POS
         Promise.all([
             api.get("/tai-khoan"),
             api.get("/Chitietcabans"),
@@ -34,7 +44,7 @@ export default function TaoDonHang() {
             api.get("/Banggias"),
             api.get("/Quydois"),
         ]).then(([resCust, resFish, resUnits, resPrices, resConv]) => {
-            setCustomers((resCust.data?.result || []).filter(u => u.vaitro === "CUSTOMER"));
+            setCustomers((resCust.data?.result || []).filter(u => u.vaitro === "CUSTOMER")); // Lọc ra tài khoản là khách hàng
             setFishes(resFish.data?.result || []);
             setUnits(resUnits.data?.result || []);
             setPriceList(resPrices.data?.result || []);
@@ -42,20 +52,27 @@ export default function TaoDonHang() {
         }).catch(() => showToast("Không thể tải dữ liệu!", "error"));
     }, []);
 
+    // Lọc ra danh sách "Loại cá" duy nhất từ kho để hiển thị ở Dropdown đầu tiên
     const fishTypes = fishes.reduce((acc, f) => {
         if (!acc.some(x => x.id === f.idLoaiCa)) acc.push({ id: f.idLoaiCa, ten: f.tenLoaiCa });
         return acc;
     }, []);
 
+    // --- CÁC HÀM TIỆN ÍCH TÍNH TOÁN ---
+    // Lấy hệ số quy đổi ra Kg dựa vào id chi tiết cá bán
     const getFactor = (repoId) =>
         conversionList.find(c => Number(c.idchitietcaban?.id) === Number(repoId))?.sokgtuongung || 0;
 
+    // Tra cứu giá bán (Sỉ hoặc Lẻ) tùy thuộc vào loại khách hàng hiện tại
     const getPrice = (repoId) => {
         const p = priceList.find(p => Number(p.idChitietcaban) === Number(repoId) && p.trangThai === "Đang áp dụng");
         if (!p) return 0;
         return customerType === "SI" ? p.giaBanSi : p.giaBanLe;
     };
 
+    // --- CÁC HÀM XỬ LÝ KHI NGƯỜI DÙNG THAO TÁC TRÊN FORM ---
+
+    // 1. Khi chọn Loại Cá: Reset size, repoId, giá và lọc lại danh sách Size phù hợp
     const handleFishChange = (fishId) => {
         setItem(prev => ({ ...prev, fishId, sizeId: "", repoId: "", pricePerKg: 0 }));
         setSizes(fishes
@@ -64,9 +81,11 @@ export default function TaoDonHang() {
         );
     };
 
+    // 2. Khi chọn Size: Tìm ra chi tiết lô (repoId), tra cứu lại giá và tính lại số Kg ước tính
     const handleSizeChange = (sizeId) => {
         const sz = sizes.find(s => s.idsizeca == sizeId);
         const repoId = sz?.repoId || "";
+        // Nếu đã chọn Đơn vị tính thì lấy hệ số của đơn vị đó, ngược lại lấy hệ số từ bảng quy đổi
         const factor = item.unitId ? (units.find(u => u.id == item.unitId)?.hesokg || getFactor(repoId)) : 0;
         setItem(prev => ({
             ...prev, sizeId, repoId,
@@ -76,6 +95,7 @@ export default function TaoDonHang() {
         }));
     };
 
+    // 3. Khi chọn Đơn vị tính: Cập nhật lại hệ số và tính lại số Kg ước tính
     const handleUnitChange = (unitId) => {
         const u = units.find(u => u.id == Number(unitId));
         if (!u) return;
@@ -86,16 +106,21 @@ export default function TaoDonHang() {
         }));
     };
 
+    // 4. Khi nhập Số lượng: Tự động nhân với hệ số quy đổi ra số Kg ước tính
     const handleQtyChange = (qty) => {
         const quantity = parseFloat(qty) || 0;
         setItem(prev => ({ ...prev, quantity, estimatedKg: prev.factor > 0 ? quantity * prev.factor : prev.estimatedKg }));
     };
 
+    // 5. Thêm sản phẩm vừa chọn vào giỏ hàng (mảng items trong order)
     const handleAddItem = () => {
         if (!item.fishId || !item.sizeId || !item.unitId) { showToast("Điền thiếu thông tin!", "error"); return; }
         if (!item.pricePerKg) { showToast("Chưa có giá bán!", "error"); return; }
+
         const fish = fishTypes.find(f => f.id == item.fishId);
         const size = sizes.find(s => s.idsizeca == item.sizeId);
+
+        // Đẩy item vào mảng items và tính luôn Thành tiền (total) = Kg ước tính * Giá/Kg
         setOrder(prev => ({
             ...prev, items: [...prev.items, {
                 id: Date.now(), repoId: item.repoId, unitId: item.unitId, unitName: item.unitName,
@@ -104,36 +129,45 @@ export default function TaoDonHang() {
                 total: item.estimatedKg * item.pricePerKg,
             }]
         }));
+
+        // Reset form nhập liệu để chọn sản phẩm tiếp theo
         setItem(prev => ({ ...prev, quantity: 1, estimatedKg: 0 }));
     };
 
+    // Xác nhận thông tin khách hàng hợp lệ trước khi cho phép bấm thanh toán
     const handleConfirmCustomer = () => {
         if (customerType === "LE" && !order.tenKhachLe.trim()) { showToast("Vui lòng nhập tên khách!", "error"); return; }
         if (customerType === "SI" && !order.idthongtinkhachhang) { showToast("Vui lòng chọn khách sỉ!", "error"); return; }
         setCustomerConfirmed(true);
     };
 
+    // Tính tổng tiền của toàn bộ đơn hàng
     const orderTotal = order.items.reduce((sum, i) => sum + i.total, 0);
 
+    // --- HÀM SUBMIT TẠO ĐƠN HÀNG LÊN SERVER ---
     const handleSubmit = async () => {
         if (!order.items.length) { showToast("Đơn hàng đang trống!", "error"); return; }
+
         const si = customers.find(c => c.idtaikhoan === order.idthongtinkhachhang);
+
+        // Đóng gói payload tương thích với API Donhangs
         const payload = {
             idthongtinkhachhang: customerType === "LE" ? null : order.idthongtinkhachhang,
             tenKhachHang: customerType === "LE" ? order.tenKhachLe : `${si?.ho} ${si?.ten}`,
             sdtKhachHang: customerType === "LE" ? order.sdtKhachLe : si?.sodienthoai,
-            trangthaidonhang: "DA_THANH_TOAN",
-            ghichu: "[POS]",
+            trangthaidonhang: "DA_THANH_TOAN", // Mặc định POS là thanh toán ngay
+            ghichu: "[POS]", // Gắn tag để phân biệt với đơn đặt online
             chiTietDonHang: order.items.map(i => ({
                 idchitietcaban: i.repoId, iddonvitinh: i.unitId, soluong: i.quantity,
                 soluongkgthucte: i.estimatedKg, soluongkgthuctequydoi: i.estimatedKg,
                 tongtiendukien: i.total, tongtienthucte: i.total,
             })),
         };
+
         try {
             await api.post("/Donhangs", payload);
-            setDoneTotal(orderTotal);
-            setDone(true);
+            setDoneTotal(orderTotal); // Lưu lại tổng tiền để show màn hình thành công
+            setDone(true); // Bật cờ hoàn tất
         } catch {
             showToast("Lỗi tạo đơn hàng!", "error");
         }

@@ -156,13 +156,22 @@ export default function QuanLyTaiKhoan() {
                                         </td>
                                         {/* Đơn giản hóa nút Sửa thành văn bản trơn có hover gạch chân */}
                                         <td className="p-4 text-center">
-                                            <button
-                                                onClick={() => handleEdit(item)}
-                                                className="text-cyan-600 font-semibold text-xs hover:underline cursor-pointer"
-                                            >
-                                                Sửa
-                                            </button>
-
+                                            <div className="flex items-center justify-center gap-3">
+                                                {item.trangthaitk === 'CHO_DUYET' && (
+                                                    <button
+                                                        onClick={() => handleApprove(item)}
+                                                        className="text-green-600 font-semibold text-xs hover:underline cursor-pointer"
+                                                    >
+                                                        Duyệt
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="text-cyan-600 font-semibold text-xs hover:underline cursor-pointer"
+                                                >
+                                                    Sửa
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

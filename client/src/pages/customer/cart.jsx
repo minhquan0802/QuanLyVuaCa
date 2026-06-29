@@ -33,7 +33,7 @@ export default function Cart() {
             <div className="bg-slate-50 min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-slate-500 mb-4">Vui lòng đăng nhập để xem giỏ hàng.</p>
-                    <a href="/" className="px-6 py-2 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 transition-colors">Đăng nhập</a>
+                    <a href="/login" className="px-6 py-2 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 transition-colors">Đăng nhập</a>
                 </div>
             </div>
         );

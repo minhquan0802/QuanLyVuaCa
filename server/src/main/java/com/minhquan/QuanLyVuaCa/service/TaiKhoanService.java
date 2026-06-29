@@ -37,6 +37,7 @@ public class TaiKhoanService {
     GioHangRepository gioHangRepository;
     ChitietGioHangRepository chitietGioHangRepository;
     EmailService emailService;
+    CongNoService congNoService;
 
     public TaikhoanResponse taoTaiKhoan(TaiKhoanCreationRequest request) {
         if (taiKhoanRepository.existsByEmail(request.getEmail()))
@@ -223,6 +224,8 @@ public class TaiKhoanService {
         String email = context.getAuthentication().getName();
         Taikhoan tk = taiKhoanRepository.findByEmail(email).orElseThrow(
                 () -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
-        return taikhoanMapper.toTaikhoanResponse(tk);
+        TaikhoanResponse response = taikhoanMapper.toTaikhoanResponse(tk);
+        response.setDangBiKhoa(congNoService.kiemTraDangBiKhoa(tk));
+        return response;
     }
 }
