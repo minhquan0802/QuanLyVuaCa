@@ -62,9 +62,14 @@ public class GioHangService {
             Chitietcaban sanpham = item.getIdchitietcaban();
             Donvitinh dvt = item.getIddonvitinh();
 
-            BigDecimal heSoQuyDoi = quydoiRepository.findByIdchitietcaban(sanpham)
-                    .map(Quydoi::getSokgtuongung)
-                    .orElse(BigDecimal.ONE);
+            BigDecimal heSoQuyDoi;
+            if (dvt != null && dvt.getHesokg() != null && dvt.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
+                heSoQuyDoi = dvt.getHesokg(); // Kg hoặc Bao: dùng hesokg cố định
+            } else {
+                heSoQuyDoi = quydoiRepository.findByIdchitietcaban(sanpham) // Con: dùng hệ số theo loại cá
+                        .map(Quydoi::getSokgtuongung)
+                        .orElse(BigDecimal.ONE);
+            }
 
             BigDecimal giaBan = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(sanpham)
                     .map(bg -> isWholesale && bg.getGiabansi() != null ? bg.getGiabansi() : bg.getGiabanle())

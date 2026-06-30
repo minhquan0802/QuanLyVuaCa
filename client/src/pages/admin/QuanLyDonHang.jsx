@@ -11,12 +11,13 @@ const ORDER_STATUS = {
     "DANG_DONG_HANG": { label: "Đang đóng hàng", dot: "bg-blue-500", badge: "bg-blue-50 text-blue-700 border-blue-200" },
     "DANG_VAN_CHUYEN": { label: "Đang vận chuyển", dot: "bg-purple-500", badge: "bg-purple-50 text-purple-700 border-purple-200" },
     "GIAO_HANG_THANH_CONG": { label: "Giao thành công", dot: "bg-green-500", badge: "bg-green-50 text-green-700 border-green-200" },
+    "HOAN_TAT": { label: "Hoàn tất", dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     "HUY": { label: "Đã hủy", dot: "bg-red-500", badge: "bg-red-50 text-red-700 border-red-200" }
 };
 
 const STATUS_PRIORITY = {
     "CHO_XAC_NHAN": 1, "DANG_DONG_HANG": 2, "DANG_VAN_CHUYEN": 3,
-    "GIAO_HANG_THANH_CONG": 4, "DA_THANH_TOAN": 5, "HUY": 6
+    "GIAO_HANG_THANH_CONG": 4, "DA_THANH_TOAN": 5, "HOAN_TAT": 6, "HUY": 7
 };
 
 export default function QuanLyDonHang() {

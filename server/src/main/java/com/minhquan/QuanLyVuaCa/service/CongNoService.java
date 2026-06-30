@@ -144,6 +144,12 @@ public class CongNoService {
             t.setNgaythanhtoan(LocalDateTime.now());
             t.setGhichu("Khấu trừ từ số dư trả trước");
             thanhtoanRepository.save(t);
+
+            // Nếu số dư đủ cover toàn đơn → đã giao + đã trả đủ = HOAN_TAT
+            if (khauTru.compareTo(tongTienDon) >= 0) {
+                donhang.setTrangthaidonhang(TrangThaiDonHang.HOAN_TAT);
+                donhangRepository.save(donhang);
+            }
         }
     }
 
@@ -189,9 +195,12 @@ public class CongNoService {
     }
 
     private BigDecimal tongTienDonDangXuLy(Taikhoan khach) {
+        // DA_THANH_TOAN bị loại vì với khách sỉ (trả sau), DA_THANH_TOAN = đã giao + đã trả đủ.
+        // Giữ nó sẽ đếm double với congnohientai (đã tăng khi giao, đã giảm khi trả).
         List<TrangThaiDonHang> dangXuLy = List.of(
-                TrangThaiDonHang.CHO_XAC_NHAN, TrangThaiDonHang.DA_THANH_TOAN,
-                TrangThaiDonHang.DANG_DONG_HANG, TrangThaiDonHang.DANG_VAN_CHUYEN);
+                TrangThaiDonHang.CHO_XAC_NHAN,
+                TrangThaiDonHang.DANG_DONG_HANG,
+                TrangThaiDonHang.DANG_VAN_CHUYEN);
         return donhangRepository.findByIdthongtinkhachhang(khach.getIdtaikhoan()).stream()
                 .filter(d -> dangXuLy.contains(d.getTrangthaidonhang()))
                 .map(d -> donhangService.tinhTongTienDonHang(d.getIddonhang()))

@@ -120,7 +120,9 @@ export default function ThongTinDonHang() {
 
     const getSoTienThanhToan = () => {
         if (!tinhTrang) return 0;
-        if (payType === 'full') return Math.max(VNPAY_MIN, Number(tinhTrang.conNo));
+        const conNo = Number(tinhTrang.conNo);
+        if (conNo <= 0) return 0; // đã thanh toán đủ, không cho thanh toán thêm
+        if (payType === 'full') return Math.max(VNPAY_MIN, conNo);
         return Number(partialAmount) || 0;
     };
 
@@ -542,7 +544,9 @@ export default function ThongTinDonHang() {
                                         <input type="radio" name="payType" checked={payType === 'full'} onChange={() => setPayType('full')} className="text-orange-500" />
                                         <div>
                                             <p className="text-sm font-bold text-slate-700">Trả hết</p>
-                                            {tinhTrang && Number(tinhTrang.conNo) < VNPAY_MIN ? (
+                                            {tinhTrang && Number(tinhTrang.conNo) <= 0 ? (
+                                                <p className="text-xs text-green-600">Đã thanh toán đầy đủ</p>
+                                            ) : tinhTrang && Number(tinhTrang.conNo) < VNPAY_MIN ? (
                                                 <p className="text-xs text-orange-600">{VNPAY_MIN.toLocaleString()}đ <span className="text-slate-400">(tối thiểu VNPAY)</span></p>
                                             ) : (
                                                 <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString() : 0}đ</p>
@@ -557,7 +561,7 @@ export default function ThongTinDonHang() {
                                         </div>
                                     </label>
                                 </div>
-                                {tinhTrang && Number(tinhTrang.conNo) < VNPAY_MIN && payType === 'full' && (
+                                {tinhTrang && Number(tinhTrang.conNo) > 0 && Number(tinhTrang.conNo) < VNPAY_MIN && payType === 'full' && (
                                     <p className="text-xs text-amber-600 mt-2">
                                         Số nợ còn lại dưới 10,000đ — VNPAY yêu cầu tối thiểu 10,000đ. Phần dư sẽ được ghi nhận làm tín dụng cho đơn tiếp theo.
                                     </p>
@@ -622,13 +626,19 @@ export default function ThongTinDonHang() {
                             <button onClick={() => setIsPayModalOpen(false)} className="px-5 py-2 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
                                 Đóng
                             </button>
-                            <button
-                                onClick={handleConfirmPay}
-                                disabled={payLoading || getSoTienThanhToan() <= 0}
-                                className={`px-5 py-2 rounded-xl text-white font-bold transition-all ${payLoading || getSoTienThanhToan() <= 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
-                            >
-                                {payLoading ? 'Đang xử lý...' : payMethod === 'vnpay' ? 'Thanh toán VNPAY' : 'Xác nhận đã chuyển khoản'}
-                            </button>
+                            {tinhTrang && Number(tinhTrang.conNo) <= 0 ? (
+                                <div className="px-5 py-2 rounded-xl bg-green-100 text-green-700 font-bold text-sm flex items-center gap-1">
+                                    Đơn hàng đã thanh toán đầy đủ
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleConfirmPay}
+                                    disabled={payLoading || getSoTienThanhToan() <= 0}
+                                    className={`px-5 py-2 rounded-xl text-white font-bold transition-all ${payLoading || getSoTienThanhToan() <= 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
+                                >
+                                    {payLoading ? 'Đang xử lý...' : 'Thanh toán VNPAY'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

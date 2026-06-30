@@ -72,10 +72,6 @@ public class DonhangService {
             }
         }
 
-        // Lưu đơn hàng trước để có ID gán cho chi tiết
-        Donhang savedDonhang = donhangRepository.save(donhang);
-        BigDecimal tongTienDonHang = BigDecimal.ZERO;
-
         // Xác định loại khách hàng để áp giá đúng
         boolean isWholesale = false;
         if (request.getIdthongtinkhachhang() != null) {
@@ -85,10 +81,15 @@ public class DonhangService {
             }
         }
 
-        // Công nợ Phase 4: chặn nếu vượt hạn mức hoặc đang bị khóa đặt hàng (không tác động khách lẻ/khách chưa mở công nợ)
+        // Công nợ Phase 4: chặn TRƯỚC KHI lưu đơn để tránh tính đôi giỏ hàng
+        // (nếu check sau save thì đơn mới đã vào DB → tongTienDonDangXuLy đếm nó + gioHang đếm lại = double count)
         if (request.getIdthongtinkhachhang() != null) {
             congNoService.kiemTraDuocDatHang(request.getIdthongtinkhachhang(), isWholesale);
         }
+
+        // Lưu đơn hàng sau khi đã qua kiểm tra công nợ
+        Donhang savedDonhang = donhangRepository.save(donhang);
+        BigDecimal tongTienDonHang = BigDecimal.ZERO;
 
         // 2. Xử lý chi tiết đơn hàng
         if (request.getChiTietDonHang() != null && !request.getChiTietDonHang().isEmpty()) {
@@ -116,12 +117,21 @@ public class DonhangService {
 
                 // --- B. Tính toán Tiền & Số lượng quy đổi ---
 
-                // B1. Lấy hệ số quy đổi
-                Quydoi quydoi = quydoiRepository.findByIdchitietcaban(finalChitietcaban)
-                        .orElseThrow(() -> new AppExceptions(ErrorCode.QUYDOI_NOT_EXISTED,
-                                "Sản phẩm chưa cấu hình quy đổi kg (ID Kho: " + finalChitietcaban.getId() + ")"));
+                // B1. Lấy đơn vị tính và hệ số quy đổi
+                String idDvtStr = ctdhRequest.getIddonvitinh();
+                Donvitinh donvitinh = idDvtStr != null
+                        ? donvitinhRepository.findById(Integer.parseInt(idDvtStr)).orElse(null)
+                        : donvitinhRepository.findById(1).orElse(null);
+                ct.setIddonvitinh(donvitinh);
 
-                BigDecimal heSoQuyDoi = quydoi.getSokgtuongung();
+                BigDecimal heSoQuyDoi;
+                if (donvitinh != null && donvitinh.getHesokg() != null && donvitinh.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
+                    heSoQuyDoi = donvitinh.getHesokg(); // Kg hoặc Bao: dùng hesokg cố định
+                } else {
+                    heSoQuyDoi = quydoiRepository.findByIdchitietcaban(finalChitietcaban) // Con: dùng hệ số theo loại cá
+                            .map(Quydoi::getSokgtuongung)
+                            .orElse(BigDecimal.ONE);
+                }
 
                 // B2. Lấy giá bán hiện tại
                 Banggia banggia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(finalChitietcaban)
@@ -170,13 +180,7 @@ public class DonhangService {
                 }
 
                 // --- D. Xử lý Đơn vị tính ---
-                if (ctdhRequest.getIddonvitinh() != null) {
-                    Donvitinh donvitinh = donvitinhRepository.findById(Integer.parseInt(ctdhRequest.getIddonvitinh())).orElse(null);
-                    ct.setIddonvitinh(donvitinh);
-                } else {
-                    Donvitinh defaultDvt = donvitinhRepository.findById(1).orElse(null);
-                    ct.setIddonvitinh(defaultDvt);
-                }
+                // Đơn vị tính đã được set ở B1
 
                 listChiTietEntity.add(ct);
             }
@@ -404,15 +408,22 @@ public class DonhangService {
             // Trường hợp 2: DB chưa có (Đơn cũ) -> Tính lại on-the-fly
             else {
                 try {
-                    // Lấy lại thông tin kho và quy đổi
+                    // Lấy lại thông tin kho và đơn vị tính
                     Chitietcaban kho = ct.getIdchitietcaban();
-                    Quydoi quydoi = quydoiRepository.findByIdchitietcaban(kho).orElse(null);
+                    Donvitinh dvtCt = ct.getIddonvitinh();
 
                     // Lấy giá đang áp dụng
                     Banggia banggia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(kho).orElse(null);
 
-                    if (quydoi != null && banggia != null) {
-                        BigDecimal heSo = quydoi.getSokgtuongung();
+                    if (dvtCt != null && banggia != null) {
+                        BigDecimal heSo;
+                        if (dvtCt.getHesokg() != null && dvtCt.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
+                            heSo = dvtCt.getHesokg();
+                        } else {
+                            heSo = quydoiRepository.findByIdchitietcaban(kho)
+                                    .map(Quydoi::getSokgtuongung)
+                                    .orElse(BigDecimal.ONE);
+                        }
                         BigDecimal gia = banggia.getGiabanle(); // Mặc định lấy giá lẻ cho an toàn
 
                         // Tính tiền: Số lượng * Hệ số * Giá
@@ -590,6 +601,7 @@ public class DonhangService {
         for (Chitietphieunhap lo : danhSachLo) {
             if (conLai.compareTo(BigDecimal.ZERO) <= 0) break;
             if (lo.getTrangthaica() == TrangThaiCa.THANH_LY) continue;
+            if (lo.getSoluongnhap() == null || lo.getSoluongconlai() == null) continue;
 
             BigDecimal daTieuThu = lo.getSoluongnhap().subtract(lo.getSoluongconlai());
             if (daTieuThu.compareTo(BigDecimal.ZERO) <= 0) continue;
@@ -608,7 +620,8 @@ public class DonhangService {
         // để không làm thất lạc số lượng, chấp nhận lô đó vượt nhẹ so với soluongnhap ban đầu.
         if (conLai.compareTo(BigDecimal.ZERO) > 0 && !danhSachLo.isEmpty()) {
             Chitietphieunhap loMoiNhat = danhSachLo.get(0);
-            loMoiNhat.setSoluongconlai(loMoiNhat.getSoluongconlai().add(conLai));
+            BigDecimal conLaiHienTai = loMoiNhat.getSoluongconlai() != null ? loMoiNhat.getSoluongconlai() : BigDecimal.ZERO;
+            loMoiNhat.setSoluongconlai(conLaiHienTai.add(conLai));
             if (loMoiNhat.getTrangthaica() == TrangThaiCa.HET_HANG) {
                 loMoiNhat.setTrangthaica(TrangThaiCa.CON_HANG);
             }

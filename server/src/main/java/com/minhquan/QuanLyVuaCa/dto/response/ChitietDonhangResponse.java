@@ -21,5 +21,6 @@ public class ChitietDonhangResponse {
     BigDecimal soluongkgthuctequydoi;
     BigDecimal tongtienthucte;
 
-   Integer iddonvitinh;   // Để map ID
+   Integer iddonvitinh;
+   String tenDonViTinh;
 }

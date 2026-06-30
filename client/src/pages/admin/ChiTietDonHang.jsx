@@ -10,6 +10,7 @@ const ORDER_STATUS = {
     DANG_DONG_HANG:    { label: "Đang đóng hàng",   color: "bg-blue-50 text-blue-700 border-blue-200" },
     DANG_VAN_CHUYEN:   { label: "Đang vận chuyển",  color: "bg-purple-50 text-purple-700 border-purple-200" },
     GIAO_HANG_THANH_CONG: { label: "Giao thành công",  color: "bg-green-50 text-green-700 border-green-200" },
+    HOAN_TAT:          { label: "Hoàn tất",         color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     HUY:               { label: "Đã hủy",           color: "bg-red-50 text-red-700 border-red-200" },
 };
 
@@ -38,7 +39,7 @@ export default function ChiTietDonHang() {
             const rawDetails = resDetails.data?.result || [];
             setViewDetails(rawDetails.map(d => ({
                 ...d,
-                editWeight: d.soluongkgthucte || d.soluongkgthuctequydoi || 0
+                editWeight: String(d.soluongkgthucte ?? d.soluongkgthuctequydoi ?? 0)
             })));
         }).catch(() => showToast("Không thể tải thông tin đơn hàng!", "error"))
           .finally(() => setLoading(false));
@@ -46,10 +47,9 @@ export default function ChiTietDonHang() {
 
     // Thay đổi số kg thực tế trực tiếp trên bảng
     const handleWeightInputChange = useCallback((idDetail, newVal) => {
-        const val = parseFloat(newVal) || 0;
         setViewDetails(prev => prev.map(item =>
             item.idchitietdonhang === idDetail
-                ? { ...item, editWeight: val, tongtienthucte: val * item.dongia }
+                ? { ...item, editWeight: newVal, tongtienthucte: (parseFloat(newVal) || 0) * item.dongia }
                 : item
         ));
         setIsEdited(true);
@@ -57,12 +57,16 @@ export default function ChiTietDonHang() {
 
     // Lưu cân nặng thực tế về backend
     const handleSaveRealWeight = async () => {
-        const payload = viewDetails.map(item => ({ 
-            idChitietdonhang: item.idchitietdonhang, 
-            soluongkgthucte: item.editWeight 
+        const payload = viewDetails.map(item => ({
+            idChitietdonhang: item.idchitietdonhang,
+            soluongkgthucte: parseFloat(item.editWeight) || 0
         }));
         try {
             await api.put(`/Donhangs/${id}/cap-nhat-can-nang`, payload);
+            setViewDetails(prev => prev.map(item => ({
+                ...item,
+                soluongkgthucte: parseFloat(item.editWeight) || 0
+            })));
             showToast("Đã cập nhật cân nặng thực tế!", "success");
             setIsEdited(false);
         } catch {
@@ -144,7 +148,7 @@ export default function ChiTietDonHang() {
                                 <tr>
                                     <th className="p-3">Sản phẩm</th>
                                     <th className="p-3">Size</th>
-                                    <th className="p-3 text-center">SL (Con)</th>
+                                    <th className="p-3 text-center">Số lượng</th>
                                     <th className="p-3 text-center text-slate-400">Dự kiến (Kg)</th>
                                     <th className="p-3 text-center bg-yellow-50 text-yellow-800 border-x border-slate-200 w-[140px]">
                                         {isEditingMode ? "✏️ Gõ Số Kg Thật" : "Kg Thực tế"}
@@ -158,7 +162,7 @@ export default function ChiTietDonHang() {
                                     <tr key={d.idchitietdonhang} className="hover:bg-slate-50/30">
                                         <td className="p-3 font-bold text-slate-700">{d.tenLoaiCa}</td>
                                         <td className="p-3 text-slate-500 text-xs">{d.tenSize}</td>
-                                        <td className="p-3 text-center font-bold text-slate-800">{d.soluong}</td>
+                                        <td className="p-3 text-center font-bold text-slate-800">{d.soluong} {d.tenDonViTinh}</td>
                                         <td className="p-3 text-center text-slate-400 font-medium">{d.soluongkgthuctequydoi} kg</td>
                                         <td className={`p-1 text-center border-x border-slate-200 ${isEditingMode ? "bg-yellow-50/50" : ""}`}>
                                             {isEditingMode ? (
