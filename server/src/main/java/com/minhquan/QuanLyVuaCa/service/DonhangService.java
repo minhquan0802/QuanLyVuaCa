@@ -2,6 +2,7 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietDonhangRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.DonhangRequestCreation;
 import com.minhquan.QuanLyVuaCa.dto.request.UpdateCanNangRequest;
@@ -63,6 +64,11 @@ public class DonhangService {
             donhang.setTrangthaidonhang(request.getTrangthaidonhang());
         } else {
             donhang.setTrangthaidonhang(TrangThaiDonHang.CHO_XAC_NHAN);
+        }
+
+        // trangthaithanhtoan: FE có thể truyền DA_THANH_TOAN (POS khách lẻ), mặc định CHUA_THANH_TOAN
+        if (donhang.getTrangthaithanhtoan() == null) {
+            donhang.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.CHUA_THANH_TOAN);
         }
 
         // Khách lẻ: auto-fill tên nếu FE bỏ trống
@@ -161,11 +167,10 @@ public class DonhangService {
                 tongTienDonHang = tongTienDonHang.add(thanhTienDuKien);
 
                 // --- C. TRỪ TỒN KHO NGAY NẾU ĐƠN KHÔNG ĐI QUA PIPELINE CHỜ XÁC NHẬN ---
-                // Đơn tạo thẳng với trạng thái khác CHO_XAC_NHAN (ví dụ bán tại quầy - POS, xem
-                // TaoDonHang.jsx gửi thẳng "DA_THANH_TOAN") coi như đã hoàn tất ngay -> trừ kho/lô
-                // lúc tạo luôn. Đơn CHO_XAC_NHAN (mặc định, đặt qua checkout online) để dành trừ ở
-                // updateStatus() khi rời CHO_XAC_NHAN — riêng đơn thanh toán VNPAY thì callback
-                // thanh toán tự trừ qua truSoluongTon(), không đi qua updateStatus() nên không trừ trùng.
+                // POS khách lẻ: GIAO_HANG_THANH_CONG; POS khách sỉ: DANG_DONG_HANG.
+                // Cả hai != CHO_XAC_NHAN → trừ kho/lô ngay lúc tạo.
+                // Đơn online CHO_XAC_NHAN: trừ kho khi admin xác nhận qua updateStatus()
+                // hoặc khi VNPAY callback gọi truSoluongTon().
                 if (savedDonhang.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
                     BigDecimal luongCanTru = soLuongKgQuyDoi;
 
