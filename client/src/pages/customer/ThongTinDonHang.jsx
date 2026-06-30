@@ -183,7 +183,7 @@ export default function ThongTinDonHang() {
                 case 'DANG_XU_LY': return ['DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(status);
                 case 'DANG_GIAO': return ['DANG_GIAO_HANG', 'DANG_VAN_CHUYEN'].includes(status);
                 case 'DA_GIAO': return status === 'GIAO_HANG_THANH_CONG';
-                case 'DA_THANH_TOAN': return ['DA_THANH_TOAN', 'HOAN_TAT'].includes(status);
+                case 'DA_THANH_TOAN': return order.trangthaithanhtoan === 'DA_THANH_TOAN';
                 case 'DA_HUY': return ['HUY', 'DA_HUY'].includes(status);
                 default: return false;
             }
@@ -197,9 +197,7 @@ export default function ThongTinDonHang() {
             case "DANG_CHUAN_BI_HANG": return "Đang đóng gói";
             case "DANG_GIAO_HANG": 
             case "DANG_VAN_CHUYEN": return "Đang giao hàng";
-            case "GIAO_HANG_THANH_CONG": return "Giao thành công"; 
-            case "DA_THANH_TOAN": return "Đã thanh toán";       
-            case "HOAN_TAT": return "Hoàn tất";
+            case "GIAO_HANG_THANH_CONG": return "Giao thành công";
             case "HUY": return "Đã hủy";
             default: return status;
         }
@@ -212,9 +210,7 @@ export default function ThongTinDonHang() {
             case "DANG_CHUAN_BI_HANG": return "bg-blue-100 text-blue-600";
             case "DANG_GIAO_HANG": 
             case "DANG_VAN_CHUYEN": return "bg-cyan-100 text-cyan-600";
-            case "GIAO_HANG_THANH_CONG": return "bg-teal-100 text-teal-700"; 
-            case "DA_THANH_TOAN": 
-            case "HOAN_TAT": return "bg-green-100 text-green-700";           
+            case "GIAO_HANG_THANH_CONG": return "bg-teal-100 text-teal-700";
             case "DA_HUY":
             case "HUY": return "bg-red-100 text-red-600";
             default: return "bg-gray-100 text-gray-600";
@@ -256,7 +252,7 @@ export default function ThongTinDonHang() {
                                         if (tab.id === 'DANG_XU_LY') return ['DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(s);
                                         if (tab.id === 'DANG_GIAO') return ['DANG_GIAO_HANG', 'DANG_VAN_CHUYEN'].includes(s);
                                         if (tab.id === 'DA_GIAO') return s === 'GIAO_HANG_THANH_CONG';
-                                        if (tab.id === 'DA_THANH_TOAN') return ['DA_THANH_TOAN', 'HOAN_TAT'].includes(s);
+                                        if (tab.id === 'DA_THANH_TOAN') return o.trangthaithanhtoan === 'DA_THANH_TOAN';
                                         if (tab.id === 'DA_HUY') return ['HUY', 'DA_HUY'].includes(s);
                                         return false;
                                     }).length})
@@ -396,7 +392,7 @@ export default function ThongTinDonHang() {
                                                     </button>
                                                 )}
                                                 {/* Thanh toán: chỉ khách sỉ, khi GIAO_HANG_THANH_CONG */}
-                                                {isWholesale && order.trangthaidonhang === 'GIAO_HANG_THANH_CONG' && (
+                                                {isWholesale && order.trangthaidonhang === 'GIAO_HANG_THANH_CONG' && order.trangthaithanhtoan !== 'DA_THANH_TOAN' && (
                                                     <button
                                                         onClick={() => handleOpenPayModal(order)}
                                                         className="px-5 py-2 rounded bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors flex items-center gap-1"

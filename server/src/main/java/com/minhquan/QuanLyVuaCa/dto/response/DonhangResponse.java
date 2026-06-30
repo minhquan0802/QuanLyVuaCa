@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.dto.response;
 
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -20,6 +21,7 @@ public class DonhangResponse {
     String sdtKhachHang; // Thêm trường này
     LocalDateTime ngaydat;
     TrangThaiDonHang trangthaidonhang;
+    TrangThaiThanhToanDonHang trangthaithanhtoan;
     BigDecimal tongtien;
 
     List<ChitietDonhangResponse> chiTietDonHangs;

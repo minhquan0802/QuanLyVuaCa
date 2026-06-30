@@ -9,6 +9,7 @@ import com.minhquan.QuanLyVuaCa.entity.Thanhtoan;
 import com.minhquan.QuanLyVuaCa.enums.LoaiThayDoiCongNo;
 import com.minhquan.QuanLyVuaCa.enums.NguonGocCongNo;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
@@ -145,9 +146,8 @@ public class CongNoService {
             t.setGhichu("Khấu trừ từ số dư trả trước");
             thanhtoanRepository.save(t);
 
-            // Nếu số dư đủ cover toàn đơn → đã giao + đã trả đủ = HOAN_TAT
             if (khauTru.compareTo(tongTienDon) >= 0) {
-                donhang.setTrangthaidonhang(TrangThaiDonHang.HOAN_TAT);
+                donhang.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
                 donhangRepository.save(donhang);
             }
         }
@@ -195,8 +195,6 @@ public class CongNoService {
     }
 
     private BigDecimal tongTienDonDangXuLy(Taikhoan khach) {
-        // DA_THANH_TOAN bị loại vì với khách sỉ (trả sau), DA_THANH_TOAN = đã giao + đã trả đủ.
-        // Giữ nó sẽ đếm double với congnohientai (đã tăng khi giao, đã giảm khi trả).
         List<TrangThaiDonHang> dangXuLy = List.of(
                 TrangThaiDonHang.CHO_XAC_NHAN,
                 TrangThaiDonHang.DANG_DONG_HANG,

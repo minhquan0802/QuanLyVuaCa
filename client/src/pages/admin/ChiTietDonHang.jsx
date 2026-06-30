@@ -5,13 +5,11 @@ import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
 const ORDER_STATUS = {
-    CHO_XAC_NHAN:      { label: "Chờ xác nhận",     color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-    DA_THANH_TOAN:     { label: "Đã thanh toán",    color: "bg-teal-50 text-teal-700 border-teal-200" },
-    DANG_DONG_HANG:    { label: "Đang đóng hàng",   color: "bg-blue-50 text-blue-700 border-blue-200" },
-    DANG_VAN_CHUYEN:   { label: "Đang vận chuyển",  color: "bg-purple-50 text-purple-700 border-purple-200" },
-    GIAO_HANG_THANH_CONG: { label: "Giao thành công",  color: "bg-green-50 text-green-700 border-green-200" },
-    HOAN_TAT:          { label: "Hoàn tất",         color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    HUY:               { label: "Đã hủy",           color: "bg-red-50 text-red-700 border-red-200" },
+    CHO_XAC_NHAN:         { label: "Chờ xác nhận",    color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    DANG_DONG_HANG:        { label: "Đang đóng hàng",  color: "bg-blue-50 text-blue-700 border-blue-200" },
+    DANG_VAN_CHUYEN:       { label: "Đang vận chuyển", color: "bg-purple-50 text-purple-700 border-purple-200" },
+    GIAO_HANG_THANH_CONG:  { label: "Giao thành công", color: "bg-green-50 text-green-700 border-green-200" },
+    HUY:                   { label: "Đã hủy",          color: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
@@ -109,9 +107,13 @@ export default function ChiTietDonHang() {
 
                     {/* Thẻ bên phải: Trạng thái & nút hành động nhanh */}
                     <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
                             <span className="text-xs font-bold text-slate-500 uppercase">Trạng thái:</span>
                             <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${statusConfig.color}`}>{statusConfig.label}</span>
+                            {order.trangthaithanhtoan === "DA_THANH_TOAN"
+                                ? <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">Đã thanh toán</span>
+                                : <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-orange-50 text-orange-700 border-orange-200">Chưa thanh toán</span>
+                            }
                         </div>
 
                         {isEditingMode && (

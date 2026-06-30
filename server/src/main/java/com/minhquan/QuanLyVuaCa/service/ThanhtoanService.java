@@ -4,7 +4,7 @@ import com.minhquan.QuanLyVuaCa.dto.response.ThanhtoanItemResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.TinhTrangThanhToanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import com.minhquan.QuanLyVuaCa.entity.Thanhtoan;
-import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
@@ -134,18 +134,9 @@ public class ThanhtoanService {
         BigDecimal daTra = daPaid.stream().map(Thanhtoan::getSotien).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         if (daTra.compareTo(tongTien) >= 0) {
-            // Re-fetch để tránh stale proxy từ lazy-load của Thanhtoan.iddonhang
             donhangRepository.findById(idDonhang).ifPresent(dh -> {
-                TrangThaiDonHang trangThai = dh.getTrangthaidonhang();
-                if (trangThai == TrangThaiDonHang.GIAO_HANG_THANH_CONG) {
-                    // Đã giao + đã trả đủ → HOAN_TAT (không còn nợ dự kiến)
-                    dh.setTrangthaidonhang(TrangThaiDonHang.HOAN_TAT);
-                    donhangRepository.save(dh);
-                } else if (trangThai == TrangThaiDonHang.CHO_XAC_NHAN) {
-                    // Trả ngay lúc đặt (khách lẻ VNPAY tại quầy)
-                    dh.setTrangthaidonhang(TrangThaiDonHang.DA_THANH_TOAN);
-                    donhangRepository.save(dh);
-                }
+                dh.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
+                donhangRepository.save(dh);
             });
         }
     }

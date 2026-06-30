@@ -7,6 +7,7 @@ import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.DonhangRepository;
 import com.minhquan.QuanLyVuaCa.utils.VnPayUtils;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -141,7 +142,8 @@ public class VnPayService {
                         Donhang donhang = donhangRepository.findById(orderId).orElse(null);
 
                         if (donhang != null) {
-                            donhang.setTrangthaidonhang(TrangThaiDonHang.DA_THANH_TOAN);
+                            donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
+                            donhang.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
                             donhangRepository.save(donhang);
 
                             try {

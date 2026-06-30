@@ -149,9 +149,10 @@ export default function TaoDonHang() {
             idthongtinkhachhang: isKhachLe ? null : newOrder.idthongtinkhachhang,
             tenKhachHang: isKhachLe ? newOrder.tenKhachLe : `${selectedSi?.ho} ${selectedSi?.ten}`,
             sdtKhachHang: isKhachLe ? newOrder.sdtKhachLe : selectedSi?.sodienthoai,
-            // Khách lẻ: trả tiền tại chỗ, giao dịch xong ngay -> DA_THANH_TOAN.
+            // Khách lẻ: trả tiền tại chỗ, giao dịch xong ngay -> GIAO_HANG_THANH_CONG + DA_THANH_TOAN.
             // Khách sỉ: thanh toán sau (chuyển khoản), hàng lên xe khách ngay -> DANG_DONG_HANG.
-            trangthaidonhang: isKhachLe ? "DA_THANH_TOAN" : "DANG_DONG_HANG",
+            trangthaidonhang: isKhachLe ? "GIAO_HANG_THANH_CONG" : "DANG_DONG_HANG",
+            trangthaithanhtoan: isKhachLe ? "DA_THANH_TOAN" : "CHUA_THANH_TOAN",
             ghichu: "[POS]",
             chiTietDonHang: newOrder.items.map(item => ({
                 idchitietcaban: item.repoId, iddonvitinh: item.unitId, soluong: item.quantity,
