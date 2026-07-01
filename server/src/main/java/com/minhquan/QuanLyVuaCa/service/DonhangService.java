@@ -219,6 +219,33 @@ public class DonhangService {
     }
 
 
+    // --- 1b. LẤY 1 ĐƠN HÀNG THEO ID ---
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public DonhangResponse getDonhangById(String id) {
+        Donhang donhang = donhangRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
+
+        String tenKhach;
+        String sdtKhach;
+        if (donhang.getIdthongtinkhachhang() != null) {
+            var khachOpt = taikhoanRepository.findById(donhang.getIdthongtinkhachhang());
+            if (khachOpt.isPresent()) {
+                var khach = khachOpt.get();
+                tenKhach = khach.getHo() + " " + khach.getTen();
+                sdtKhach = khach.getSodienthoai();
+            } else {
+                tenKhach = "Khách vãng lai";
+                sdtKhach = "";
+            }
+        } else {
+            tenKhach = (donhang.getTenKhachLe() != null && !donhang.getTenKhachLe().isBlank())
+                    ? donhang.getTenKhachLe() : "Khách vãng lai";
+            sdtKhach = donhang.getSdtKhachLe() != null ? donhang.getSdtKhachLe() : "";
+        }
+
+        return donhangMapper.toDonhangResponse(donhang, tenKhach, sdtKhach);
+    }
+
     // --- 2. LẤY TẤT CẢ ĐƠN HÀNG ---
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public List<DonhangResponse> getAllDonhangs() {

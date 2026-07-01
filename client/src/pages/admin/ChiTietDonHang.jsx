@@ -27,11 +27,10 @@ export default function ChiTietDonHang() {
     // Tải thông tin chung của đơn hàng và danh sách chi tiết cùng lúc
     useEffect(() => {
         Promise.all([
-            api.get("/Donhangs"),
+            api.get(`/Donhangs/${id}`),
             api.get(`/Donhangs/${id}/chitiet`)
-        ]).then(([resOrders, resDetails]) => {
-            const list = resOrders.data?.result || [];
-            const found = list.find(o => o.iddonhang === id);
+        ]).then(([resOrder, resDetails]) => {
+            const found = resOrder.data?.result;
             if (found) setOrder(found);
 
             const rawDetails = resDetails.data?.result || [];

@@ -6,7 +6,7 @@ import { useCart } from "../context/CartContext";
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, role, logout } = useAuth();
+    const { user, logout } = useAuth();
     const { totalItems } = useCart();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -160,7 +160,7 @@ export default function Header() {
                                                 Hồ sơ cá nhân
                                             </button>
 
-                                            {role !== 'ADMIN' && (
+                                            {user?.vaitro === 'CUSTOMER' && (
                                                 <button
                                                     onClick={() => handleNavigation('/my-orders')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
@@ -170,7 +170,7 @@ export default function Header() {
                                                 </button>
                                             )}
 
-                                            {role === 'ADMIN' && (
+                                            {(user?.vaitro === 'ADMIN' || user?.vaitro === 'STAFF') && (
                                                 <button
                                                     onClick={() => handleNavigation('/admin')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"

@@ -35,6 +35,16 @@ public class DonhangController {
                 .build();
     }
 
+    // API 1b: Lấy thông tin 1 đơn hàng theo ID
+    @GetMapping("/{id}")
+    public ApiResponse<DonhangResponse> layMotDonhang(@PathVariable String id) {
+        return ApiResponse.<DonhangResponse>builder()
+                .code(200)
+                .message("OK")
+                .result(donhangService.getDonhangById(id))
+                .build();
+    }
+
     // API 2: Lấy chi tiết 1 đơn hàng (Có tên cá, size) -> Frontend đang gọi cái này
     @GetMapping("/{id}/chitiet")
     public ApiResponse<List<ChitietDonhangResponse>> layChiTiet(@PathVariable String id) {
