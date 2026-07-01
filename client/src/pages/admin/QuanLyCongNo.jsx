@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 function trangThaiCongNo(khach) {
     if (khach.dangBiKhoa) return { label: "Bị khóa", badge: "bg-slate-800 text-white border-slate-800" };
@@ -16,6 +17,8 @@ function trangThaiCongNo(khach) {
 
 export default function QuanLyCongNo() {
     const { showToast } = useToast();
+    const { user } = useAuth();
+    const isAdmin = user?.vaitro === "ADMIN";
 
     const [danhSach, setDanhSach] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -148,12 +151,14 @@ export default function QuanLyCongNo() {
         <AdminLayout title="Quản Lý Công Nợ">
             <div className="flex justify-between items-center mb-6">
                 <p className="text-slate-500 text-sm">Theo dõi công nợ khách sỉ mua hàng trả sau theo hạn mức tín dụng.</p>
+                {isAdmin && (
                 <button
                     onClick={openMoCongNoMoi}
                     className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-sm hover:bg-cyan-700"
                 >
                     + Mở công nợ cho khách mới
                 </button>
+                )}
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -198,9 +203,9 @@ export default function QuanLyCongNo() {
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex items-center justify-center gap-3 flex-wrap">
-                                                    <button onClick={() => openSuaHanMuc(khach)} className="text-cyan-600 font-semibold text-xs hover:underline">Sửa hạn mức</button>
-                                                    <button onClick={() => openDieuChinh(khach)} className="text-slate-600 font-semibold text-xs hover:underline">Điều chỉnh nợ</button>
-                                                    {khach.dangBiKhoa && (
+                                                    {isAdmin && <button onClick={() => openSuaHanMuc(khach)} className="text-cyan-600 font-semibold text-xs hover:underline">Sửa hạn mức</button>}
+                                                    {isAdmin && <button onClick={() => openDieuChinh(khach)} className="text-slate-600 font-semibold text-xs hover:underline">Điều chỉnh nợ</button>}
+                                                    {isAdmin && khach.dangBiKhoa && (
                                                         <button onClick={() => openMoKhoa(khach)} className="text-red-600 font-semibold text-xs hover:underline">Mở khóa</button>
                                                     )}
                                                     <button onClick={() => openLichSu(khach)} className="text-slate-400 font-semibold text-xs hover:underline">Lịch sử</button>

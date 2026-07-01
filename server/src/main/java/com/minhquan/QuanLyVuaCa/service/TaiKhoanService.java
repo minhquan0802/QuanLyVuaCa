@@ -43,6 +43,9 @@ public class TaiKhoanService {
         if (taiKhoanRepository.existsByEmail(request.getEmail()))
             throw new AppExceptions(ErrorCode.USER_EXISTED);
 
+        if ("CUSTOMER".equals(request.getVaitro()) && (request.getDiachi() == null || request.getDiachi().isBlank()))
+            throw new AppExceptions(ErrorCode.ADDRESS_INVALID);
+
         Taikhoan taikhoan = taikhoanMapper.toTaikhoan(request);
         taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
 
@@ -56,7 +59,7 @@ public class TaiKhoanService {
             taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
             taiKhoanRepository.save(taikhoan);
 
-            if ("CUSTOMER".equals(request.getVaitro())) {
+            if ("CUSTOMER".equals(request.getVaitro()) || "STAFF".equals(request.getVaitro())) {
                 String token = UUID.randomUUID().toString();
                 String hoTen = request.getHo() + " " + request.getTen();
                 emailService.saveWelcomeToken(taikhoan.getEmail(), token);

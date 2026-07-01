@@ -288,9 +288,14 @@ public class DonhangService {
         // Tạo list rỗng để chứa kết quả
         List<ChitietDonhangResponse> responseList = new ArrayList<>();
 
-        // Duyệt và map từng phần tử
+        List<TrangThaiDonHang> dangCho = List.of(
+                TrangThaiDonHang.CHO_XAC_NHAN, TrangThaiDonHang.DANG_DONG_HANG);
+
         for (Chitietdonhang ct : details) {
             ChitietDonhangResponse response = donhangMapper.toChitietResponse(ct);
+            BigDecimal kgDonKhac = chitietdonhangRepository.tongKgDangChoKhac(
+                    ct.getIdchitietcaban(), dangCho, idDonhang);
+            response.setTongKgDonKhacDangCho(kgDonKhac);
             responseList.add(response);
         }
 
@@ -549,14 +554,8 @@ public class DonhangService {
         for (Chitietdonhang chitiet : listChiTiet) {
             Chitietcaban sanphamTrongKho = chitiet.getIdchitietcaban();
 
-            // Lấy số lượng khách mua
+            // Lấy số lượng khách mua (đơn vị: con/bao theo đơn đặt)
             BigDecimal soLuongMua = BigDecimal.valueOf(chitiet.getSoluong());
-
-            // Kiểm tra tồn kho
-            if (sanphamTrongKho.getSoluongton().compareTo(soLuongMua) < 0) {
-                throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica() +
-                        " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() + ") không đủ hàng!");
-            }
 
             // Phân bổ trừ theo từng lô (FIFO) để biết lô nào còn lại bao nhiêu
             truLoFifo(sanphamTrongKho, soLuongMua);

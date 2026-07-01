@@ -27,6 +27,7 @@ public interface DonhangMapper {
     @Mapping(source = "iddonvitinh.tendvt", target = "tenDonViTinh")
     @Mapping(source = "khoiluongthucte", target = "soluongkgthucte")
     @Mapping(source = "khoiluongdukien", target = "soluongkgthuctequydoi")
+    @Mapping(source = "idchitietcaban.soluongton", target = "soluongton")
     ChitietDonhangResponse toChitietResponse(Chitietdonhang entity);
     // Hàm phụ trợ để tính toán (viết ngay trong interface Mapper nếu dùng Java 8+)
     default BigDecimal calculateUnitPrice(Chitietdonhang entity) {

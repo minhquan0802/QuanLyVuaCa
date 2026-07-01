@@ -18,7 +18,7 @@ export function ToastProvider({ children }) {
             {children}
             
             {toast.show && (
-                <div className="fixed top-5 right-5 z-9999 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl animate-in fade-in slide-in-from-top-4 duration-300 min-w-[300px] bg-white text-sm max-w-md">
+                <div className="fixed bottom-5 right-5 z-9999 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-300 min-w-[300px] bg-white text-sm max-w-md">
                     {toast.type === "success" ? (
                         <div className="p-1.5 rounded-lg bg-green-50 text-green-600 border border-green-200 shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-5">

@@ -23,4 +23,7 @@ public class ChitietDonhangResponse {
 
    Integer iddonvitinh;
    String tenDonViTinh;
+
+   BigDecimal soluongton;
+   BigDecimal tongKgDonKhacDangCho;
 }

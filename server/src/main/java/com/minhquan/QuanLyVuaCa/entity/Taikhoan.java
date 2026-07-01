@@ -58,11 +58,13 @@ public class Taikhoan {
     @Column(name = "vaitro", length = 50)
     String vaitro;
 
+    @Builder.Default
     @Column(name = "hanmuctindung", precision = 12, scale = 2)
-    BigDecimal hanmuctindung;
+    BigDecimal hanmuctindung = BigDecimal.ZERO;
 
+    @Builder.Default
     @Column(name = "congnohientai", precision = 12, scale = 2)
-    BigDecimal congnohientai;
+    BigDecimal congnohientai = BigDecimal.ZERO;
 
     @Column(name = "ngayvuothanmuc")
     Instant ngayvuothanmuc;

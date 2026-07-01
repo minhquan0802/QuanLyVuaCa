@@ -171,6 +171,50 @@ public class CongNoService {
 
         ghiSoCai(khach, LoaiThayDoiCongNo.GIAM, thanhtoan.getSotien(), congNoMoi,
                 thanhtoan.getIdthanhtoan(), NguonGocCongNo.THANH_TOAN, null, null);
+
+        // Nếu trả thừa (số dư âm), quét ngược các đơn cũ đã giao nhưng chưa thanh toán
+        if (congNoMoi.compareTo(BigDecimal.ZERO) < 0) {
+            apDungSoDuVaoDonCuChuaThanhToan(khach, congNoMoi.negate());
+        }
+    }
+
+    // Áp dụng số dư (credit) vào các đơn đã giao nhưng chưa đánh dấu DA_THANH_TOAN, cũ nhất trước
+    private void apDungSoDuVaoDonCuChuaThanhToan(Taikhoan khach, BigDecimal soDu) {
+        List<Donhang> donChua = donhangRepository
+                .findByIdthongtinkhachhangAndTrangthaidonhangAndTrangthaithanhtoanOrderByNgaydatAsc(
+                        khach.getIdtaikhoan(),
+                        TrangThaiDonHang.GIAO_HANG_THANH_CONG,
+                        TrangThaiThanhToanDonHang.CHUA_THANH_TOAN);
+
+        BigDecimal soduConLai = soDu;
+        for (Donhang don : donChua) {
+            if (soduConLai.compareTo(BigDecimal.ZERO) <= 0) break;
+
+            BigDecimal tongTien = donhangService.tinhTongTienDonHang(don.getIddonhang());
+            BigDecimal daTra = thanhtoanRepository
+                    .findByIddonhangAndTrangthai(don, TrangThaiThanhToan.DA_THANH_TOAN)
+                    .stream().map(Thanhtoan::getSotien).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal conNo = tongTien.subtract(daTra);
+            if (conNo.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+            BigDecimal khauTru = soduConLai.min(conNo);
+
+            Thanhtoan t = new Thanhtoan();
+            t.setIddonhang(don);
+            t.setSotien(khauTru);
+            t.setPhuongthuc("SO_DU");
+            t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
+            t.setNgaythanhtoan(LocalDateTime.now());
+            t.setGhichu("Khấu trừ tự động từ số dư trả trước");
+            thanhtoanRepository.save(t);
+
+            if (khauTru.compareTo(conNo) >= 0) {
+                don.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
+                donhangRepository.save(don);
+            }
+
+            soduConLai = soduConLai.subtract(khauTru);
+        }
     }
 
     // ===== Phase 4: chặn checkout theo nợ dự kiến + khóa đặt hàng =====

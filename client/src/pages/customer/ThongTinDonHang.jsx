@@ -10,13 +10,18 @@ const BANK_ACCOUNT = import.meta.env.VITE_BANK_ACCOUNT || "0123456789";
 const BANK_NAME = import.meta.env.VITE_BANK_NAME || "SHOP VUA CA";
 
 const TABS = [
-    { id: 'ALL', label: 'Tất cả' },
+    { id: 'ALL',         label: 'Tất cả' },
     { id: 'CHO_XAC_NHAN', label: 'Chờ xác nhận' },
     { id: 'DANG_XU_LY', label: 'Đang xử lý' },
-    { id: 'DANG_GIAO', label: 'Đang giao' },
-    { id: 'DA_GIAO', label: 'Đã giao hàng' },      
-    { id: 'DA_THANH_TOAN', label: 'Đã thanh toán' },
-    { id: 'DA_HUY', label: 'Đã hủy' },
+    { id: 'DANG_GIAO',  label: 'Đang giao' },
+    { id: 'DA_GIAO',    label: 'Đã giao hàng' },
+    { id: 'DA_HUY',     label: 'Đã hủy' },
+];
+
+const PAYMENT_FILTERS = [
+    { id: 'ALL',             label: 'Tất cả' },
+    { id: 'DA_THANH_TOAN',   label: 'Đã thanh toán' },
+    { id: 'CHUA_THANH_TOAN', label: 'Chưa thanh toán' },
 ];
 
 export default function ThongTinDonHang() {
@@ -28,6 +33,7 @@ export default function ThongTinDonHang() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('ALL');
+    const [filterPayment, setFilterPayment] = useState('ALL');
 
     // --- STATE CHO MODAL CHI TIẾT ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -173,22 +179,30 @@ export default function ThongTinDonHang() {
         }
     };
 
-    const filteredOrders = useMemo(() => {
-        if (activeTab === 'ALL') return orders;
+    const matchesTab = (order, tabId) => {
+        const s = order.trangthaidonhang;
+        switch (tabId) {
+            case 'ALL':         return true;
+            case 'CHO_XAC_NHAN': return s === 'CHO_XAC_NHAN';
+            case 'DANG_XU_LY':  return ['DANG_DONG_HANG', 'DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(s);
+            case 'DANG_GIAO':   return ['DANG_VAN_CHUYEN', 'DANG_GIAO_HANG'].includes(s);
+            case 'DA_GIAO':     return s === 'GIAO_HANG_THANH_CONG';
+            case 'DA_HUY':      return ['HUY', 'DA_HUY'].includes(s);
+            default: return false;
+        }
+    };
 
-        return orders.filter(order => {
-            const status = order.trangthaidonhang;
-            switch (activeTab) {
-                case 'CHO_XAC_NHAN': return status === 'CHO_XAC_NHAN';
-                case 'DANG_XU_LY': return ['DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(status);
-                case 'DANG_GIAO': return ['DANG_GIAO_HANG', 'DANG_VAN_CHUYEN'].includes(status);
-                case 'DA_GIAO': return status === 'GIAO_HANG_THANH_CONG';
-                case 'DA_THANH_TOAN': return order.trangthaithanhtoan === 'DA_THANH_TOAN';
-                case 'DA_HUY': return ['HUY', 'DA_HUY'].includes(status);
-                default: return false;
-            }
-        });
-    }, [orders, activeTab]);
+    const matchesPayment = (order, payId) => {
+        if (payId === 'ALL') return true;
+        if (payId === 'DA_THANH_TOAN')   return order.trangthaithanhtoan === 'DA_THANH_TOAN';
+        if (payId === 'CHUA_THANH_TOAN') return order.trangthaithanhtoan !== 'DA_THANH_TOAN' && order.trangthaidonhang !== 'HUY';
+        return true;
+    };
+
+    const filteredOrders = useMemo(() =>
+        orders.filter(o => matchesTab(o, activeTab) && matchesPayment(o, filterPayment)),
+        [orders, activeTab, filterPayment]
+    );
 
     const getStatusText = (status) => {
         switch (status) {
@@ -232,30 +246,37 @@ export default function ThongTinDonHang() {
             <main className="flex-grow pb-12">
                 <div className="mx-auto max-w-5xl px-0 md:px-4 pt-4 md:pt-8">
                     
-                    {/* TAB BAR */}
+                    {/* TAB BAR + BỘ LỌC PHỤ */}
                     <div className="bg-white sticky top-[70px] z-10 shadow-sm border-b border-slate-200 mb-4 md:rounded-t-lg overflow-hidden">
-                        <div className="flex overflow-x-auto no-scrollbar">
+                        {/* Tab trạng thái đơn hàng */}
+                        <div className="grid overflow-x-auto no-scrollbar" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
                             {TABS.map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex-1 min-w-[110px] py-4 text-sm font-medium text-center transition-colors whitespace-nowrap border-b-2 
-                                        ${activeTab === tab.id 
-                                            ? "border-blue-600 text-blue-600" 
+                                    className={`px-2 py-4 text-sm font-medium text-center transition-colors whitespace-nowrap border-b-2
+                                        ${activeTab === tab.id
+                                            ? "border-blue-600 text-blue-600"
                                             : "border-transparent text-slate-600 hover:text-blue-500"
                                         }`}
                                 >
-                                    {tab.label} ({orders.filter(o => {
-                                        if (tab.id === 'ALL') return true;
-                                        const s = o.trangthaidonhang;
-                                        if (tab.id === 'CHO_XAC_NHAN') return s === 'CHO_XAC_NHAN';
-                                        if (tab.id === 'DANG_XU_LY') return ['DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(s);
-                                        if (tab.id === 'DANG_GIAO') return ['DANG_GIAO_HANG', 'DANG_VAN_CHUYEN'].includes(s);
-                                        if (tab.id === 'DA_GIAO') return s === 'GIAO_HANG_THANH_CONG';
-                                        if (tab.id === 'DA_THANH_TOAN') return o.trangthaithanhtoan === 'DA_THANH_TOAN';
-                                        if (tab.id === 'DA_HUY') return ['HUY', 'DA_HUY'].includes(s);
-                                        return false;
-                                    }).length})
+                                    {tab.label} ({orders.filter(o => matchesTab(o, tab.id)).length})
+                                </button>
+                            ))}
+                        </div>
+                        {/* Bộ lọc phụ: trạng thái thanh toán */}
+                        <div className="flex gap-2 px-3 py-2 border-t border-slate-100">
+                            {PAYMENT_FILTERS.map(f => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setFilterPayment(f.id)}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                                        filterPayment === f.id
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-400 hover:text-blue-500"
+                                    }`}
+                                >
+                                    {f.label}
                                 </button>
                             ))}
                         </div>
@@ -449,7 +470,9 @@ export default function ThongTinDonHang() {
                                             <thead className="bg-slate-50 border-b border-slate-100 text-slate-500">
                                                 <tr>
                                                     <th className="p-3 font-medium">Sản phẩm</th>
-                                                    <th className="p-3 font-medium text-center">SL</th>
+                                                    <th className="p-3 font-medium text-center">Số lượng</th>
+                                                    <th className="p-3 font-medium text-center">Dự kiến (kg)</th>
+                                                    <th className="p-3 font-medium text-center">Kg thực tế</th>
                                                     <th className="p-3 font-medium text-right">Đơn giá</th>
                                                     <th className="p-3 font-medium text-right">Thành tiền</th>
                                                 </tr>
@@ -461,12 +484,22 @@ export default function ThongTinDonHang() {
                                                             <p className="font-bold text-slate-700">{item.tenLoaiCa}</p>
                                                             <p className="text-xs text-slate-500">{item.tenSize}</p>
                                                         </td>
-                                                        <td className="p-3 text-center">{item.soluong}</td>
-                                                        <td className="p-3 text-right">
-                                                            {item.dongia ? item.dongia.toLocaleString() : 0}đ
+                                                        <td className="p-3 text-center font-bold text-slate-800">
+                                                            {item.soluong} {item.tenDonViTinh || ""}
+                                                        </td>
+                                                        <td className="p-3 text-center text-slate-400">
+                                                            {item.soluongkgthuctequydoi != null ? `${item.soluongkgthuctequydoi} kg` : "—"}
+                                                        </td>
+                                                        <td className="p-3 text-center font-bold text-slate-800">
+                                                            {item.soluongkgthucte != null ? `${item.soluongkgthucte} kg` : <span className="text-slate-400 text-xs">Chưa cân</span>}
+                                                        </td>
+                                                        <td className="p-3 text-right text-slate-400 text-xs">
+                                                            {item.soluongkgthuctequydoi
+                                                                ? Math.round(item.tongtiendukien / item.soluongkgthuctequydoi).toLocaleString()
+                                                                : (item.dongia ?? 0).toLocaleString()}đ/kg
                                                         </td>
                                                         <td className="p-3 text-right font-bold text-slate-700">
-                                                            {item.tongtiendukien ? item.tongtiendukien.toLocaleString() : 0}đ
+                                                            {(item.tongtienthucte ?? item.tongtiendukien ?? 0).toLocaleString()}đ
                                                         </td>
                                                     </tr>
                                                 ))}

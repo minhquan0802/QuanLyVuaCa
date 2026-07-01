@@ -108,10 +108,6 @@ export default function ProductDetail() {
     const handleAddToCart = async () => {
         if (!selectedOption) { showToast("Vui lòng chọn kích thước cá!", "error"); return; }
         if (currentStock <= 0) { showToast("Sản phẩm này hiện đang hết hàng!", "error"); return; }
-        if (totalWeight > currentStock) {
-            showToast(`Kho không đủ hàng! Bạn cần ${totalWeight.toFixed(1)}kg nhưng kho còn ${currentStock}kg.`, "error");
-            return;
-        }
 
         const idchitietcaban = selectedOption.idChitietcaban || selectedOption.chitietcaban?.id;
         if (!idchitietcaban) { showToast("Lỗi dữ liệu sản phẩm!", "error"); return; }

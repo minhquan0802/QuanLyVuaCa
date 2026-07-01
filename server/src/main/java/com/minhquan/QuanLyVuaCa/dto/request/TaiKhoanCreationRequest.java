@@ -37,8 +37,6 @@ public class TaiKhoanCreationRequest {
     @Pattern(regexp = "^0\\d{9}$", message = "PHONE_INVALID")
     String sodienthoai;
 
-    // Địa chỉ không được để trống
-    @NotBlank(message = "ADDRESS_INVALID")
     String diachi;
 
     String vaitro;

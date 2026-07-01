@@ -41,7 +41,7 @@ export default function Login() {
             // Hiện Toast chúc mừng đăng nhập thành công trước khi chuyển trang
             showToast("Đăng nhập thành công", "success");
 
-            navigate(userInfo?.vaitro === "ADMIN" ? '/admin' : '/home');
+            navigate(userInfo?.vaitro === "ADMIN" ? '/admin' : userInfo?.vaitro === "STAFF" ? '/admin/QuanLyDonHang' : '/home');
 
         } catch (err) {
             const status = err.response?.status;

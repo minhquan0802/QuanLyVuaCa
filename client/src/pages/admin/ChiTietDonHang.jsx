@@ -61,9 +61,11 @@ export default function ChiTietDonHang() {
         }));
         try {
             await api.put(`/Donhangs/${id}/cap-nhat-can-nang`, payload);
-            setViewDetails(prev => prev.map(item => ({
-                ...item,
-                soluongkgthucte: parseFloat(item.editWeight) || 0
+            const resDetails = await api.get(`/Donhangs/${id}/chitiet`);
+            const rawDetails = resDetails.data?.result || [];
+            setViewDetails(rawDetails.map(d => ({
+                ...d,
+                editWeight: String(d.soluongkgthucte ?? d.soluongkgthuctequydoi ?? 0)
             })));
             showToast("Đã cập nhật cân nặng thực tế!", "success");
             setIsEdited(false);
@@ -79,6 +81,14 @@ export default function ChiTietDonHang() {
         try {
             await api.put(`/Donhangs/${id}/status`, { trangthaidonhang: newStatus });
             setOrder(prev => ({ ...prev, trangthaidonhang: newStatus }));
+            setIsEdited(false);
+            // Reload chi tiết từ backend để tránh lệch state sau khi đổi trạng thái
+            const resDetails = await api.get(`/Donhangs/${id}/chitiet`);
+            const rawDetails = resDetails.data?.result || [];
+            setViewDetails(rawDetails.map(d => ({
+                ...d,
+                editWeight: String(d.soluongkgthucte ?? d.soluongkgthuctequydoi ?? 0)
+            })));
             showToast("Chuyển trạng thái thành công!", "success");
         } catch {
             showToast("Lỗi thao tác thất bại!", "error");
@@ -152,8 +162,13 @@ export default function ChiTietDonHang() {
                                     <th className="p-3">Size</th>
                                     <th className="p-3 text-center">Số lượng</th>
                                     <th className="p-3 text-center text-slate-400">Dự kiến (Kg)</th>
+                                    {isEditingMode && (
+                                        <th className="p-3 text-center text-emerald-700 bg-emerald-50 border-x border-slate-200">
+                                            Tồn kho
+                                        </th>
+                                    )}
                                     <th className="p-3 text-center bg-yellow-50 text-yellow-800 border-x border-slate-200 w-[140px]">
-                                        {isEditingMode ? "✏️ Gõ Số Kg Thật" : "Kg Thực tế"}
+                                        {isEditingMode ? "✏️ Kg thực tế" : "Kg Thực tế"}
                                     </th>
                                     <th className="p-3 text-right">Đơn giá</th>
                                     <th className="p-3 text-right">Thành tiền</th>
@@ -166,6 +181,33 @@ export default function ChiTietDonHang() {
                                         <td className="p-3 text-slate-500 text-xs">{d.tenSize}</td>
                                         <td className="p-3 text-center font-bold text-slate-800">{d.soluong} {d.tenDonViTinh}</td>
                                         <td className="p-3 text-center text-slate-400 font-medium">{d.soluongkgthuctequydoi} kg</td>
+                                        {isEditingMode && (() => {
+                                            const ton = d.soluongton ?? 0;
+                                            const donKhac = d.tongKgDonKhacDangCho ?? 0;
+                                            // Cộng lại phần kho đã bị trừ khi lưu lần trước cho đơn này
+                                            // (backend hoàn + trừ lại mỗi khi updateThucTe, nên ton hiện tại = stock sau khi trừ)
+                                            const daLuu = parseFloat(d.soluongkgthucte) || 0;
+                                            const tonKhoGoc = ton + daLuu;
+                                            const nhapThucTe = parseFloat(d.editWeight) || 0;
+                                            const nguy = nhapThucTe > 0 && nhapThucTe > tonKhoGoc;
+                                            return (
+                                                <td className={`p-3 text-center border-x border-slate-200 ${nguy ? "bg-red-50" : "bg-emerald-50"}`}>
+                                                    <div className={`font-bold text-sm ${nguy ? "text-red-600" : "text-emerald-700"}`}>
+                                                        {tonKhoGoc} kg
+                                                    </div>
+                                                    {donKhac > 0 && (
+                                                        <div className="text-xs text-orange-500 mt-0.5">
+                                                            Đơn khác giữ: {donKhac} kg
+                                                        </div>
+                                                    )}
+                                                    {nguy && (
+                                                        <div className="text-xs text-red-400 mt-0.5">
+                                                            Thiếu: {(nhapThucTe - tonKhoGoc).toFixed(2)} kg ⚠
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            );
+                                        })()}
                                         <td className={`p-1 text-center border-x border-slate-200 ${isEditingMode ? "bg-yellow-50/50" : ""}`}>
                                             {isEditingMode ? (
                                                 <input 
@@ -179,7 +221,11 @@ export default function ChiTietDonHang() {
                                                 <span className="font-bold text-slate-800">{d.soluongkgthucte} kg</span>
                                             )}
                                         </td>
-                                        <td className="p-3 text-right text-slate-400 text-xs">{formatCurrency(d.dongia)}</td>
+                                        <td className="p-3 text-right text-slate-400 text-xs">
+                                            {d.soluongkgthuctequydoi
+                                                ? formatCurrency(Math.round(d.tongtiendukien / d.soluongkgthuctequydoi)) + "/kg"
+                                                : formatCurrency(d.dongia)}
+                                        </td>
                                         <td className="p-3 text-right font-bold text-slate-800">{formatCurrency(d.tongtienthucte || d.tongtiendukien)}</td>
                                     </tr>
                                 ))}

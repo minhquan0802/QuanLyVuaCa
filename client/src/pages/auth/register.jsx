@@ -197,10 +197,11 @@ export default function Register() {
                         </div>
 
                         <div className="group">
-                            <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Địa chỉ <span className="text-slate-400 font-normal text-xs">(Tùy chọn)</span></label>
+                            <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Địa chỉ</label>
                             <div className="relative">
                                 <input
                                     type="text"
+                                    required
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"

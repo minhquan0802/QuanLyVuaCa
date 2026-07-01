@@ -23,6 +23,7 @@ export default function QuanLyDonHang() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState("ALL");
+    const [filterPayment, setFilterPayment] = useState("ALL");
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -44,14 +45,17 @@ export default function QuanLyDonHang() {
 
     // Lọc danh sách đơn hàng theo Tab được chọn
     const filteredOrders = useMemo(() => {
-        return filterStatus === "ALL" ? orders : orders.filter(o => o.trangthaidonhang === filterStatus);
-    }, [orders, filterStatus]);
+        return orders
+            .filter(o => filterStatus === "ALL" || o.trangthaidonhang === filterStatus)
+            .filter(o => filterPayment === "ALL" || o.trangthaithanhtoan === filterPayment);
+    }, [orders, filterStatus, filterPayment]);
 
     return (
         <AdminLayout title="Quản Lý Đơn Hàng">
             {/* THANH ĐIỀU HƯỚNG BỘ LỌC TABS & NÚT TẠO ĐƠN */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
-                <div className="flex flex-wrap gap-1.5 w-full xl:w-auto">
+                <div className="flex flex-col gap-2 w-full xl:w-auto">
+                <div className="flex flex-wrap gap-1.5">
                     <button
                         onClick={() => setFilterStatus("ALL")}
                         className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors border shadow-2xs ${filterStatus === "ALL" ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-100 hover:bg-slate-50"}`}
@@ -71,6 +75,22 @@ export default function QuanLyDonHang() {
                             </button>
                         );
                     })}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                    {[
+                        { value: "ALL",             label: "Tất cả thanh toán" },
+                        { value: "DA_THANH_TOAN",   label: "Đã thanh toán" },
+                        { value: "CHUA_THANH_TOAN", label: "Chưa thanh toán" },
+                    ].map(({ value, label }) => (
+                        <button
+                            key={value}
+                            onClick={() => setFilterPayment(value)}
+                            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-colors border shadow-2xs ${filterPayment === value ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-100 hover:bg-slate-50"}`}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
                 </div>
                 <button
                     onClick={() => navigate("/admin/QuanLyDonHang/tao-don")}

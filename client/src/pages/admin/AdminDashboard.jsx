@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuth } from "../../context/AuthContext";
 import api from "../../config/axios";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 export default function AdminDashboard() {
+    const { user } = useAuth();
+    if (user?.vaitro === "STAFF") return <Navigate to="/admin/QuanLyDonHang" replace />;
+
     const [timeRange, setTimeRange] = useState("TODAY");
     const [stats, setStats] = useState({
         doanhThu: 0,
