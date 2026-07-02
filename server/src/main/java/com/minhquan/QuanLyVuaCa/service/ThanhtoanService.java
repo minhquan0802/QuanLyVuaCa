@@ -105,6 +105,34 @@ public class ThanhtoanService {
         return thanhtoanRepository.save(t);
     }
 
+    // Ghi nhận thanh toán thủ công (tiền mặt) cho toàn bộ số tiền còn nợ
+    @Transactional
+    public void ghiNhanThanhToanThuCong(String idDonhang) {
+        Donhang dh = donhangRepository.findById(idDonhang)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+
+        BigDecimal tongTien = donhangService.tinhTongTienDonHang(idDonhang);
+
+        List<Thanhtoan> daPaid = thanhtoanRepository.findByIddonhangAndTrangthai(
+                dh, TrangThaiThanhToan.DA_THANH_TOAN);
+        BigDecimal daTra = daPaid.stream().map(Thanhtoan::getSotien).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal conNo = tongTien.subtract(daTra).max(BigDecimal.ZERO);
+
+        if (conNo.compareTo(BigDecimal.ZERO) > 0) {
+            Thanhtoan t = new Thanhtoan();
+            t.setIddonhang(dh);
+            t.setSotien(conNo);
+            t.setPhuongthuc("TIEN_MAT");
+            t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
+            t.setNgaythanhtoan(LocalDateTime.now());
+            thanhtoanRepository.save(t);
+            congNoService.xuLyThanhToanXacNhan(t);
+        }
+
+        dh.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
+        donhangRepository.save(dh);
+    }
+
     @Transactional
     public void huyBienBanVnpay(String idThanhtoan) {
         thanhtoanRepository.findById(idThanhtoan).ifPresent(t -> {

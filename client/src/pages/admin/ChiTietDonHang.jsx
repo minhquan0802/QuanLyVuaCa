@@ -73,6 +73,17 @@ export default function ChiTietDonHang() {
         }
     };
 
+    const handleMarkPayment = async () => {
+        if (!window.confirm("Xác nhận ghi nhận đơn hàng này đã thanh toán tiền mặt?")) return;
+        try {
+            await api.put(`/Thanhtoan/${id}/thanh-toan-thu-cong`);
+            setOrder(prev => ({ ...prev, trangthaithanhtoan: "DA_THANH_TOAN" }));
+            showToast("Đã ghi nhận thanh toán!", "success");
+        } catch {
+            showToast("Ghi nhận thanh toán thất bại!", "error");
+        }
+    };
+
     // Thay đổi trạng thái đơn hàng nhanh
     const handleUpdateStatus = async (newStatus) => {
         if (isEdited && !window.confirm("Bạn chưa lưu cân nặng đã sửa. Tiếp tục đổi trạng thái?")) return;
@@ -143,6 +154,9 @@ export default function ChiTietDonHang() {
                             )}
                             {["CHO_XAC_NHAN", "DANG_DONG_HANG"].includes(order.trangthaidonhang) && (
                                 <button onClick={() => handleUpdateStatus("HUY")} className="px-4 py-1.5 border border-red-200 text-red-600 rounded-lg font-bold text-xs hover:bg-red-50 cursor-pointer">Hủy đơn</button>
+                            )}
+                            {order.trangthaithanhtoan === "CHUA_THANH_TOAN" && (
+                                <button onClick={handleMarkPayment} className="flex-1 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-700 cursor-pointer">Đánh dấu đã thanh toán</button>
                             )}
                         </div>
                     </div>

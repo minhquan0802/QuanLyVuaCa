@@ -8,6 +8,8 @@ const THANHTOAN_STATUS = {
     "DA_THANH_TOAN":   { label: "Đã thanh toán",   badge: "bg-green-50 text-green-700 border-green-200"  },
 };
 
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
+
 function SortTh({ label, sortKey, current, onSort, className = "" }) {
     return (
         <th
@@ -29,6 +31,7 @@ export default function LichSuPhieuNhap() {
     const [sort, setSort] = useState({ key: "ngaynhap", direction: "desc" });
     const [confirmId, setConfirmId] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [expandedId, setExpandedId] = useState(null);
     const pageSize = 10;
 
     const fetchPhieus = () => {
@@ -88,6 +91,8 @@ export default function LichSuPhieuNhap() {
         }
     };
 
+    const toggleExpand = (id) => setExpandedId(prev => prev === id ? null : id);
+
     return (
         <AdminLayout title="Lịch Sử Phiếu Nhập Hàng">
             {/* TOOLBAR */}
@@ -112,73 +117,119 @@ export default function LichSuPhieuNhap() {
             {/* BẢNG */}
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[960px] border-collapse">
+                    <table className="w-full text-left min-w-[1060px] border-collapse">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                             <tr>
+                                <th className="p-4 w-8"></th>
                                 <SortTh label="Ngày nhập"      sortKey="ngaynhap"         current={sort} onSort={requestSort} />
                                 <SortTh label="Nhà cung cấp"   sortKey="tenNhaCungCap"    current={sort} onSort={requestSort} />
                                 <SortTh label="Loại cá"        sortKey="tenLoaiCa"        current={sort} onSort={requestSort} />
                                 <SortTh label="Người tạo"      sortKey="tenNguoiTaoPhieu" current={sort} onSort={requestSort} />
                                 <th className="p-4 text-right">Tổng SL (kg)</th>
+                                <th className="p-4 text-right">Tổng tiền</th>
                                 <SortTh label="Thanh toán" sortKey="trangthaithanhtoan" current={sort} onSort={requestSort} />
                                 <th className="p-4 text-center">Hành động</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan="7" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
+                                <tr><td colSpan="9" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
                             ) : paginated.length > 0 ? (
                                 paginated.map(p => {
                                     const status = THANHTOAN_STATUS[p.trangthaithanhtoan] || { label: p.trangthaithanhtoan, badge: "bg-gray-50 text-gray-600 border-slate-200" };
                                     const isConfirming = confirmId === p.idphieunhap;
+                                    const isExpanded = expandedId === p.idphieunhap;
+                                    const hasDetail = p.listChiTiet && p.listChiTiet.length > 0;
                                     return (
-                                        <tr key={p.idphieunhap} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="p-4 text-slate-500">{p.ngaynhap}</td>
-                                            <td className="p-4 font-bold text-slate-800">{p.tenNhaCungCap}</td>
-                                            <td className="p-4">{p.tenLoaiCa}</td>
-                                            <td className="p-4 text-slate-600">{p.tenNguoiTaoPhieu || "—"}</td>
-                                            <td className="p-4 text-right font-medium">{Number(p.tongsoluong || 0).toLocaleString()}</td>
-                                            <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold border inline-block ${status.badge}`}>
-                                                    {status.label}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                {p.trangthaithanhtoan === "CHUA_THANH_TOAN" ? (
-                                                    isConfirming ? (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <button
-                                                                onClick={() => handleMarkPaid(p.idphieunhap)}
-                                                                disabled={submitting}
-                                                                className="px-3 py-1.5 bg-green-600 text-white font-bold rounded-lg text-xs hover:bg-green-700 disabled:opacity-50 transition-colors"
-                                                            >
-                                                                {submitting ? "..." : "Xác nhận"}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setConfirmId(null)}
-                                                                disabled={submitting}
-                                                                className="px-3 py-1.5 border border-slate-200 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-50 transition-colors"
-                                                            >
-                                                                Hủy
-                                                            </button>
-                                                        </div>
-                                                    ) : (
+                                        <React.Fragment key={p.idphieunhap}>
+                                            <tr className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="p-4 text-center">
+                                                    {hasDetail && (
                                                         <button
-                                                            onClick={() => setConfirmId(p.idphieunhap)}
-                                                            className="px-3.5 py-1.5 bg-orange-50 text-orange-600 border border-orange-200 font-bold rounded-lg text-xs hover:bg-orange-100 transition-colors"
+                                                            onClick={() => toggleExpand(p.idphieunhap)}
+                                                            className="text-slate-400 hover:text-slate-700 transition-colors"
+                                                            title={isExpanded ? "Thu gọn" : "Xem chi tiết sizes"}
                                                         >
-                                                            Đánh dấu đã TT
+                                                            {isExpanded ? "▾" : "▸"}
                                                         </button>
-                                                    )
-                                                ) : (
-                                                    <span className="text-xs text-slate-400">—</span>
-                                                )}
-                                            </td>
-                                        </tr>
+                                                    )}
+                                                </td>
+                                                <td className="p-4 text-slate-500">{p.ngaynhap}</td>
+                                                <td className="p-4 font-bold text-slate-800">{p.tenNhaCungCap}</td>
+                                                <td className="p-4">{p.tenLoaiCa}</td>
+                                                <td className="p-4 text-slate-600">{p.tenNguoiTaoPhieu || "—"}</td>
+                                                <td className="p-4 text-right font-medium">{Number(p.tongsoluong || 0).toLocaleString()}</td>
+                                                <td className="p-4 text-right font-bold text-cyan-700">{formatCurrency(p.tongtien)}</td>
+                                                <td className="p-4">
+                                                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold border inline-block ${status.badge}`}>
+                                                        {status.label}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    {p.trangthaithanhtoan === "CHUA_THANH_TOAN" ? (
+                                                        isConfirming ? (
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleMarkPaid(p.idphieunhap)}
+                                                                    disabled={submitting}
+                                                                    className="px-3 py-1.5 bg-green-600 text-white font-bold rounded-lg text-xs hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                                                >
+                                                                    {submitting ? "..." : "Xác nhận"}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setConfirmId(null)}
+                                                                    disabled={submitting}
+                                                                    className="px-3 py-1.5 border border-slate-200 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-50 transition-colors"
+                                                                >
+                                                                    Hủy
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setConfirmId(p.idphieunhap)}
+                                                                className="px-3.5 py-1.5 bg-orange-50 text-orange-600 border border-orange-200 font-bold rounded-lg text-xs hover:bg-orange-100 transition-colors"
+                                                            >
+                                                                Đánh dấu đã TT
+                                                            </button>
+                                                        )
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400">—</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+
+                                            {/* EXPANDED: Chi tiết sizes */}
+                                            {isExpanded && hasDetail && (
+                                                <tr className="bg-cyan-50/40">
+                                                    <td colSpan="9" className="px-8 py-3">
+                                                        <table className="w-full text-xs border-collapse">
+                                                            <thead>
+                                                                <tr className="text-slate-500 uppercase font-bold border-b border-slate-200">
+                                                                    <th className="py-1.5 text-left">Size</th>
+                                                                    <th className="py-1.5 text-right">Số lượng (kg)</th>
+                                                                    <th className="py-1.5 text-right">Giá nhập/kg</th>
+                                                                    <th className="py-1.5 text-right">Thành tiền</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100">
+                                                                {p.listChiTiet.map((ct, idx) => (
+                                                                    <tr key={idx} className="text-slate-700">
+                                                                        <td className="py-1.5 font-semibold">{ct.tenSize}</td>
+                                                                        <td className="py-1.5 text-right">{Number(ct.soluongnhap || 0).toLocaleString()}</td>
+                                                                        <td className="py-1.5 text-right">{formatCurrency(ct.gianhap)}</td>
+                                                                        <td className="py-1.5 text-right font-bold text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
                                     );
                                 })
                             ) : (
-                                <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Chưa có phiếu nhập nào.</td></tr>
+                                <tr><td colSpan="9" className="p-8 text-center text-slate-400 italic">Chưa có phiếu nhập nào.</td></tr>
                             )}
                         </tbody>
                     </table>

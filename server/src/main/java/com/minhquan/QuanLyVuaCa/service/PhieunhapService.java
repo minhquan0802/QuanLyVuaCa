@@ -2,6 +2,7 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietPhieunhapRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.PhieunhapRequest;
+import com.minhquan.QuanLyVuaCa.dto.response.ChiTietPhieunhapInResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.PhieunhapResponse;
 import com.minhquan.QuanLyVuaCa.entity.*;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
@@ -47,7 +48,35 @@ public class PhieunhapService {
     public List<PhieunhapResponse> getDanhSach() {
         return phieunhapRepository.findAll(Sort.by(Sort.Direction.DESC, "ngaynhap"))
                 .stream()
-                .map(phieunhapMapper::toResponse)
+                .map(phieunhap -> {
+                    PhieunhapResponse resp = phieunhapMapper.toResponse(phieunhap);
+
+                    List<Chitietphieunhap> chiTiets = chitietphieunhapRepository.findByIdphieunhap(phieunhap);
+
+                    List<ChiTietPhieunhapInResponse> listChiTiet = chiTiets.stream()
+                            .map(d -> {
+                                String tenSize = (d.getIdchitietcaban() != null && d.getIdchitietcaban().getIdsizeca() != null)
+                                        ? d.getIdchitietcaban().getIdsizeca().getSizeca()
+                                        : "?";
+                                BigDecimal sl = d.getSoluongnhap() != null ? d.getSoluongnhap() : BigDecimal.ZERO;
+                                BigDecimal gia = d.getGianhap() != null ? d.getGianhap() : BigDecimal.ZERO;
+                                return ChiTietPhieunhapInResponse.builder()
+                                        .tenSize(tenSize)
+                                        .soluongnhap(sl)
+                                        .gianhap(gia)
+                                        .thanhtien(sl.multiply(gia))
+                                        .build();
+                            })
+                            .toList();
+
+                    BigDecimal tongtien = listChiTiet.stream()
+                            .map(ChiTietPhieunhapInResponse::getThanhtien)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    resp.setTongtien(tongtien);
+                    resp.setListChiTiet(listChiTiet);
+                    return resp;
+                })
                 .toList();
     }
 
