@@ -29,6 +29,7 @@ import ThemBangGia from '../pages/admin/ThemBangGia';
 import TaoDonHang from '../pages/admin/TaoDonHang';
 import ChiTietDonHang from '../pages/admin/ChiTietDonHang';
 import NhapHang from '../pages/admin/NhapHang';
+import LichSuPhieuNhap from '../pages/admin/LichSuPhieuNhap';
 import QuanLyThanhLy from '../pages/admin/QuanLyThanhLy';
 import TaoPhieuThanhLy from '../pages/admin/TaoPhieuThanhLy';
 import QuanLyCongNo from '../pages/admin/QuanLyCongNo';
@@ -88,6 +89,7 @@ export default function AppRoutes() {
                 <Route path='/admin/QuanLyBangGia/them' element={<ThemBangGia />} />
                 <Route path='/admin/QuanLyKho' element={<QuanLyKho />} />
                 <Route path='/admin/QuanLyKho/nhap-hang' element={<NhapHang />} />
+                <Route path='/admin/LichSuPhieuNhap' element={<LichSuPhieuNhap />} />
                 <Route path='/admin/QuanLyThanhLy' element={<QuanLyThanhLy />} />
                 <Route path='/admin/QuanLyThanhLy/tao-phieu' element={<TaoPhieuThanhLy />} />
                 <Route path='/admin/QuanLyCongNo' element={<QuanLyCongNo />} />
