@@ -197,17 +197,21 @@ export default function ChiTietDonHang() {
                                         {isEditingMode && (() => {
                                             const ton = d.soluongton ?? 0;
                                             const donKhac = d.tongKgDonKhacDangCho ?? 0;
-                                            // Cộng lại phần kho đã bị trừ khi lưu lần trước cho đơn này
-                                            // (backend hoàn + trừ lại mỗi khi updateThucTe, nên ton hiện tại = stock sau khi trừ)
                                             const daLuu = parseFloat(d.soluongkgthucte) || 0;
+                                            // tonKhoGoc = tồn kho thực + phần đã cân của đơn này (max có thể nhập)
                                             const tonKhoGoc = ton + daLuu;
                                             const nhapThucTe = parseFloat(d.editWeight) || 0;
                                             const nguy = nhapThucTe > 0 && nhapThucTe > tonKhoGoc;
                                             return (
                                                 <td className={`p-3 text-center border-x border-slate-200 ${nguy ? "bg-red-50" : "bg-emerald-50"}`}>
                                                     <div className={`font-bold text-sm ${nguy ? "text-red-600" : "text-emerald-700"}`}>
-                                                        {tonKhoGoc} kg
+                                                        {ton} kg
                                                     </div>
+                                                    {daLuu > 0 && (
+                                                        <div className="text-xs text-cyan-600 mt-0.5">
+                                                            +{daLuu} kg đã cân
+                                                        </div>
+                                                    )}
                                                     {donKhac > 0 && (
                                                         <div className="text-xs text-orange-500 mt-0.5">
                                                             Đơn khác giữ: {donKhac} kg
