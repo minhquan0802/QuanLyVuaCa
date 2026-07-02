@@ -177,7 +177,7 @@ export default function ChiTietDonHang() {
                                     <th className="p-3 text-center text-slate-400">Dự kiến (Kg)</th>
                                     {isEditingMode && (
                                         <th className="p-3 text-center text-emerald-700 bg-emerald-50 border-x border-slate-200">
-                                            Tồn kho
+                                            Tối đa (Kg)
                                         </th>
                                     )}
                                     <th className="p-3 text-center bg-yellow-50 text-yellow-800 border-x border-slate-200 w-[140px]">
@@ -198,20 +198,15 @@ export default function ChiTietDonHang() {
                                             const ton = d.soluongton ?? 0;
                                             const donKhac = d.tongKgDonKhacDangCho ?? 0;
                                             const daLuu = parseFloat(d.soluongkgthucte) || 0;
-                                            // tonKhoGoc = tồn kho thực + phần đã cân của đơn này (max có thể nhập)
+                                            // tonKhoGoc = tồn kho thực + phần đã cân của đơn này (BE restore trước khi trừ mới)
                                             const tonKhoGoc = ton + daLuu;
                                             const nhapThucTe = parseFloat(d.editWeight) || 0;
                                             const nguy = nhapThucTe > 0 && nhapThucTe > tonKhoGoc;
                                             return (
                                                 <td className={`p-3 text-center border-x border-slate-200 ${nguy ? "bg-red-50" : "bg-emerald-50"}`}>
                                                     <div className={`font-bold text-sm ${nguy ? "text-red-600" : "text-emerald-700"}`}>
-                                                        {ton} kg
+                                                        {tonKhoGoc} kg
                                                     </div>
-                                                    {daLuu > 0 && (
-                                                        <div className="text-xs text-cyan-600 mt-0.5">
-                                                            +{daLuu} kg đã cân
-                                                        </div>
-                                                    )}
                                                     {donKhac > 0 && (
                                                         <div className="text-xs text-orange-500 mt-0.5">
                                                             Đơn khác giữ: {donKhac} kg
