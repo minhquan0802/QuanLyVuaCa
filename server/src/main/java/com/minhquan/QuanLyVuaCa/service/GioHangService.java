@@ -9,7 +9,7 @@ import com.minhquan.QuanLyVuaCa.enums.TrangThaiGioHang;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.*;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

@@ -9,7 +9,7 @@ import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.BanggiaMapper;
 import com.minhquan.QuanLyVuaCa.repository.BanggiaRepository;
 import com.minhquan.QuanLyVuaCa.repository.ChitietcabanRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,6 +30,7 @@ public class BanggiaService {
     BanggiaMapper banggiaMapper;
 
     // Lấy danh sách
+    @Transactional(readOnly = true)
     public List<BanggiaResponse> getAll() {
         return banggiaRepository.findAll().stream()
                 .map(this::enrichStatus)

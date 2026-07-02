@@ -10,7 +10,7 @@ import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.DonhangRepository;
 import com.minhquan.QuanLyVuaCa.repository.ThanhtoanRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

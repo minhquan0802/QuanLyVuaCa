@@ -15,6 +15,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -31,6 +32,7 @@ public class ChitietCabanService {
     ChitietCabanMapper chitietCabanMapper;
 
     // Chỉ trả về các size chưa bị xóa mềm
+    @Transactional(readOnly = true)
     public List<ChitietCabanResponse> getAll() {
         return chitietcabanRepository.findAllByDeletedFalse().stream()
                 .map(chitietCabanMapper::toResponse)

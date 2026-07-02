@@ -14,7 +14,7 @@ import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.DonhangMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -220,6 +220,7 @@ public class DonhangService {
 
 
     // --- 1b. LẤY 1 ĐƠN HÀNG THEO ID ---
+    @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public DonhangResponse getDonhangById(String id) {
         Donhang donhang = donhangRepository.findById(id)
@@ -247,6 +248,7 @@ public class DonhangService {
     }
 
     // --- 2. LẤY TẤT CẢ ĐƠN HÀNG ---
+    @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public List<DonhangResponse> getAllDonhangs() {
 
@@ -303,6 +305,7 @@ public class DonhangService {
     }
 
     // --- 3. LẤY CHI TIẾT ĐƠN HÀNG ---
+    @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public List<ChitietDonhangResponse> getChiTietDonHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
@@ -514,6 +517,7 @@ public class DonhangService {
 //
 //        return responseList;
 //    }
+    @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public List<DonhangResponse> getMyOrders() {
         // 1. Lấy User hiện tại
