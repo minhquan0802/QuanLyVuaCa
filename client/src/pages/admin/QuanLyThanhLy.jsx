@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
@@ -19,18 +19,26 @@ export default function QuanLyThanhLy() {
     const navigate = useNavigate();
     const { showToast } = useToast();
 
+    // --- STATE GIAO DIỆN & DỮ LIỆU ---
     const [tab, setTab] = useState("lo"); // "lo" | "phieu"
-
     const [phieus, setPhieus] = useState([]);
     const [loadingPhieus, setLoadingPhieus] = useState(true);
-
     const [lots, setLots] = useState([]);
     const [loadingLots, setLoadingLots] = useState(true);
 
+    // --- STATE TÌM KIẾM, SẮP XẾP & PHÂN TRANG ---
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+    
+    const [sortLot, setSortLot] = useState({ key: "ngaynhap", direction: "desc" });
+    const [sortPhieu, setSortPhieu] = useState({ key: "ngaythanhly", direction: "desc" });
+
+    // --- STATE MODAL THANH LÝ ---
     const [selectedLot, setSelectedLot] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [form, setForm] = useState({
-        kieu: "toanbo", // "toanbo" | "motphan"
+        kieu: "toanbo",
         soluongthanhly: 0,
         dongia: 0,
         lydothanhly: "",
@@ -38,6 +46,7 @@ export default function QuanLyThanhLy() {
         ghichu: "",
     });
 
+    // --- GỌI API ---
     const fetchPhieus = () => {
         setLoadingPhieus(true);
         api.get("/Phieuthanhlys")
@@ -59,17 +68,99 @@ export default function QuanLyThanhLy() {
         fetchLots();
     }, []);
 
-    const tinhTongSoLuong = (listChiTiet) =>
-        (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.soluongthanhly), 0);
+    // Reset về trang 1 mỗi khi đổi tab hoặc gõ tìm kiếm
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tab, searchTerm]);
 
-    const tinhTongTien = (listChiTiet) =>
-        (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.thanhtien), 0);
-
+    // --- CÁC HÀM TIỆN ÍCH CHO PHIẾU ---
+    const tinhTongSoLuong = (listChiTiet) => (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.soluongthanhly), 0);
+    const tinhTongTien = (listChiTiet) => (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.thanhtien), 0);
     const tenSanPham = (listChiTiet) => {
         const ten = [...new Set((listChiTiet || []).map(ct => `${ct.tenLoaiCa} (${ct.tenSize})`))];
         return ten.join(", ");
     };
 
+    // --- XỬ LÝ DỮ LIỆU: TÌM KIẾM, SẮP XẾP, PHÂN TRANG CHO LÔ HÀNG ---
+    const processedLots = useMemo(() => {
+        let filtered = lots;
+        if (searchTerm.trim() !== "") {
+            const search = searchTerm.toLowerCase();
+            filtered = lots.filter(l => 
+                (l.tenLoaiCa || "").toLowerCase().includes(search) || 
+                (l.tenSize || "").toLowerCase().includes(search)
+            );
+        }
+
+        return [...filtered].sort((a, b) => {
+            const valA = a[sortLot.key];
+            const valB = b[sortLot.key];
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return sortLot.direction === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            }
+            if (valA < valB) return sortLot.direction === "asc" ? -1 : 1;
+            if (valA > valB) return sortLot.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+    }, [lots, searchTerm, sortLot]);
+
+    const paginatedLots = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return processedLots.slice(start, start + pageSize);
+    }, [processedLots, currentPage]);
+
+    const totalLotPages = Math.ceil(processedLots.length / pageSize);
+
+    // --- XỬ LÝ DỮ LIỆU: TÌM KIẾM, SẮP XẾP, PHÂN TRANG CHO PHIẾU ĐÃ LẬP ---
+    const processedPhieus = useMemo(() => {
+        let filtered = phieus;
+        if (searchTerm.trim() !== "") {
+            const search = searchTerm.toLowerCase();
+            filtered = phieus.filter(p => 
+                (p.tenNguoiTaoPhieu || "").toLowerCase().includes(search) ||
+                (p.lydothanhly || "").toLowerCase().includes(search)
+            );
+        }
+
+        return [...filtered].sort((a, b) => {
+            const valA = a[sortPhieu.key];
+            const valB = b[sortPhieu.key];
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return sortPhieu.direction === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            }
+            if (valA < valB) return sortPhieu.direction === "asc" ? -1 : 1;
+            if (valA > valB) return sortPhieu.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+    }, [phieus, searchTerm, sortPhieu]);
+
+    const paginatedPhieus = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return processedPhieus.slice(start, start + pageSize);
+    }, [processedPhieus, currentPage]);
+
+    const totalPhieuPages = Math.ceil(processedPhieus.length / pageSize);
+
+    // Lấy thông số phân trang của Tab hiện tại
+    const currentTotalPages = tab === "lo" ? totalLotPages : totalPhieuPages;
+    const currentTotalRecords = tab === "lo" ? processedLots.length : processedPhieus.length;
+
+    // --- CÁC HÀM SỰ KIỆN SẮP XẾP ---
+    const requestSortLot = (key) => {
+        let direction = "asc";
+        if (sortLot.key === key && sortLot.direction === "asc") direction = "desc";
+        setSortLot({ key, direction });
+        setCurrentPage(1);
+    };
+
+    const requestSortPhieu = (key) => {
+        let direction = "asc";
+        if (sortPhieu.key === key && sortPhieu.direction === "asc") direction = "desc";
+        setSortPhieu({ key, direction });
+        setCurrentPage(1);
+    };
+
+    // --- CÁC HÀM XỬ LÝ MODAL ---
     const openThanhLyModal = (lot) => {
         setSelectedLot(lot);
         setForm({
@@ -131,16 +222,31 @@ export default function QuanLyThanhLy() {
 
     return (
         <AdminLayout title="Quản Lý Thanh Lý">
-            <div className="flex justify-between items-center mb-6">
-                <p className="text-slate-500 text-sm">Theo dõi các phiếu thanh lý do hao hụt (cá chết, hao hụt lúc nhập, sự cố...).</p>
+            {/* TOOLBAR */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="relative w-full sm:max-w-md flex items-center">
+                    <div className="absolute left-3.5 text-slate-400 flex items-center justify-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.604 10.604Z" />
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder={`Tìm kiếm ${tab === 'lo' ? 'lô hàng (tên cá, size)' : 'phiếu (người tạo, lý do)'}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white"
+                    />
+                </div>
                 <button
                     onClick={() => navigate("/admin/QuanLyThanhLy/tao-phieu")}
-                    className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-sm hover:bg-cyan-700"
+                    className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-sm hover:bg-cyan-700 shadow-md transition-all active:scale-95 w-full sm:w-auto"
                 >
                     Lập phiếu nhiều lô
                 </button>
             </div>
 
+            {/* TABS */}
             <div className="inline-flex bg-slate-100 rounded-xl p-1 mb-5">
                 <button
                     onClick={() => setTab("lo")}
@@ -156,17 +262,30 @@ export default function QuanLyThanhLy() {
                 </button>
             </div>
 
-            {tab === "lo" ? (
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            {/* KHUNG HIỂN THỊ BẢNG */}
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+                
+                {tab === "lo" ? (
+                    // --- BẢNG LÔ HÀNG ---
                     <div className="overflow-x-auto">
                         <table className="w-full text-left min-w-[900px] border-collapse">
                             <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                                 <tr>
-                                    <th className="p-4">Loại cá</th>
-                                    <th className="p-4">Size</th>
-                                    <th className="p-4">Ngày nhập</th>
-                                    <th className="p-4 text-right">SL nhập (kg)</th>
-                                    <th className="p-4 text-right">Còn lại (kg)</th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("tenLoaiCa")}>
+                                        Loại cá {sortLot.key === "tenLoaiCa" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("tenSize")}>
+                                        Size {sortLot.key === "tenSize" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("ngaynhap")}>
+                                        Ngày nhập {sortLot.key === "ngaynhap" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 text-right cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("soluongnhap")}>
+                                        SL nhập (kg) {sortLot.key === "soluongnhap" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 text-right cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("soluongconlai")}>
+                                        Còn lại (kg) {sortLot.key === "soluongconlai" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
                                     <th className="p-4">Trạng thái</th>
                                     <th className="p-4 text-center">Hành động</th>
                                 </tr>
@@ -174,8 +293,8 @@ export default function QuanLyThanhLy() {
                             <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
                                 {loadingLots ? (
                                     <tr><td colSpan="7" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
-                                ) : lots.length > 0 ? (
-                                    lots.map((lot) => {
+                                ) : paginatedLots.length > 0 ? (
+                                    paginatedLots.map((lot) => {
                                         const statusConfig = LO_TRANGTHAI[lot.trangthaica] || { label: lot.trangthaica, badge: "bg-gray-50 text-gray-600 border-slate-200" };
                                         return (
                                             <tr key={lot.idchitietphieunhap} className="hover:bg-slate-50/50 transition-colors">
@@ -201,22 +320,27 @@ export default function QuanLyThanhLy() {
                                         );
                                     })
                                 ) : (
-                                    <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Không có lô hàng nào còn tồn.</td></tr>
+                                    <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Không có lô hàng nào hiển thị.</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                </div>
-            ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                ) : (
+                    // --- BẢNG PHIẾU THANH LÝ ---
                     <div className="overflow-x-auto">
                         <table className="w-full text-left min-w-[900px] border-collapse">
                             <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                                 <tr>
-                                    <th className="p-4">Ngày thanh lý</th>
-                                    <th className="p-4">Người tạo</th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortPhieu("ngaythanhly")}>
+                                        Ngày thanh lý {sortPhieu.key === "ngaythanhly" && (sortPhieu.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortPhieu("tenNguoiTaoPhieu")}>
+                                        Người tạo {sortPhieu.key === "tenNguoiTaoPhieu" && (sortPhieu.direction === "asc" ? "↑" : "↓")}
+                                    </th>
                                     <th className="p-4">Sản phẩm</th>
-                                    <th className="p-4">Lý do</th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortPhieu("lydothanhly")}>
+                                        Lý do {sortPhieu.key === "lydothanhly" && (sortPhieu.direction === "asc" ? "↑" : "↓")}
+                                    </th>
                                     <th className="p-4 text-right">Tổng SL (kg)</th>
                                     <th className="p-4 text-right">Tổng tiền</th>
                                     <th className="p-4">Trạng thái</th>
@@ -225,8 +349,8 @@ export default function QuanLyThanhLy() {
                             <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
                                 {loadingPhieus ? (
                                     <tr><td colSpan="7" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
-                                ) : phieus.length > 0 ? (
-                                    phieus.map((item) => {
+                                ) : paginatedPhieus.length > 0 ? (
+                                    paginatedPhieus.map((item) => {
                                         const statusConfig = THANHLY_STATUS[item.trangthai] || { label: item.trangthai, badge: "bg-gray-50 text-gray-600 border-slate-200" };
                                         return (
                                             <tr key={item.idphieuthanhly} className="hover:bg-slate-50/50 transition-colors">
@@ -245,14 +369,53 @@ export default function QuanLyThanhLy() {
                                         );
                                     })
                                 ) : (
-                                    <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Chưa có phiếu thanh lý nào.</td></tr>
+                                    <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Chưa có phiếu thanh lý nào hiển thị.</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                </div>
-            )}
+                )}
 
+                {/* --- COMPONENT ĐIỀU HƯỚNG PHÂN TRANG CHUNG --- */}
+                {currentTotalRecords > 0 && (
+                    <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50">
+                        
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setCurrentPage(prev => prev - 1)} 
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Trước
+                            </button>
+                            
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: currentTotalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+                                            currentPage === page ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200"
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                onClick={() => setCurrentPage(prev => prev + 1)} 
+                                disabled={currentPage === currentTotalPages}
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Sau
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* --- MODAL THANH LÝ NHANH --- */}
             {selectedLot && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
