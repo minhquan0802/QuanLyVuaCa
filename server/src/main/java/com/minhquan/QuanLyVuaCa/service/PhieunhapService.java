@@ -15,6 +15,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,15 +37,36 @@ public class PhieunhapService {
     NhacungcapRepository nhacungcapRepository;
     LoaicaRepository loaicaRepository;
     SizecaRepository sizecaRepository;
+    TaiKhoanRepository taiKhoanRepository;
 
     PhieunhapMapper phieunhapMapper;
     ChitietphieunhapMapper chitietphieunhapMapper;
     BanggiaRepository banggiaRepository;
 
+    @Transactional(readOnly = true)
+    public List<PhieunhapResponse> getDanhSach() {
+        return phieunhapRepository.findAll(Sort.by(Sort.Direction.DESC, "ngaynhap"))
+                .stream()
+                .map(phieunhapMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public void capNhatThanhToan(String id) {
+        Phieunhap phieunhap = phieunhapRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.PHIEUNHAP_NOT_EXISTED));
+        phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.DA_THANH_TOAN);
+        phieunhapRepository.save(phieunhap);
+    }
+
     @Transactional
     public PhieunhapResponse nhapHang(PhieunhapRequest request) {
         // --- 1. TẠO PHIẾU NHẬP ---
         Phieunhap phieunhap = phieunhapMapper.toEntity(request);
+
+        // Lấy user đang đăng nhập để ghi nhận người tạo phiếu
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        taiKhoanRepository.findByEmail(email).ifPresent(phieunhap::setIdnguoitaophieu);
 
         // Tìm và Set Nhà cung cấp
         Nhacungcap ncc = nhacungcapRepository.findById(request.getIdncc())

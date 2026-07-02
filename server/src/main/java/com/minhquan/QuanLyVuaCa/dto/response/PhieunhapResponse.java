@@ -14,6 +14,7 @@ public class PhieunhapResponse {
     String idphieunhap;
     String tenNhaCungCap;
     String tenLoaiCa;
+    String tenNguoiTaoPhieu;
     LocalDate ngaynhap;
     BigDecimal tongsoluong;
     String trangthaithanhtoan;

@@ -19,5 +19,6 @@ public interface PhieunhapMapper {
     // Map Response: Chấm (.) qua tên biến object
     @Mapping(source = "idncc.tenncc", target = "tenNhaCungCap")
     @Mapping(source = "idloaica.tenloaica", target = "tenLoaiCa")
+    @Mapping(target = "tenNguoiTaoPhieu", expression = "java(entity.getIdnguoitaophieu() != null ? entity.getIdnguoitaophieu().getHo() + \" \" + entity.getIdnguoitaophieu().getTen() : null)")
     PhieunhapResponse toResponse(Phieunhap entity);
 }

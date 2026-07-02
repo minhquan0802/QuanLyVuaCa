@@ -74,7 +74,8 @@ public enum ErrorCode {
     CHITIET_GIOHANG_NOT_EXISTED(1054, "San pham khong ton tai trong gio hang", HttpStatus.NOT_FOUND),
     NHACUNGCAP_NOT_EXISTED(1055, "Nha cung cap khong ton tai", HttpStatus.NOT_FOUND),
     THANHTOAN_NOT_EXISTED(1056, "Ban ghi thanh toan khong ton tai", HttpStatus.NOT_FOUND),
-    TOKEN_CREATION_FAILED(1057, "Khong the tao token xac thuc", HttpStatus.INTERNAL_SERVER_ERROR);
+    TOKEN_CREATION_FAILED(1057, "Khong the tao token xac thuc", HttpStatus.INTERNAL_SERVER_ERROR),
+    PHIEUNHAP_NOT_EXISTED(1058, "Phieu nhap hang khong ton tai", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;
