@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
@@ -23,6 +23,10 @@ export default function QuanLyCongNo() {
     const [danhSach, setDanhSach] = useState([]);
     const [loading, setLoading] = useState(true);
     const [khachChuaMoCongNo, setKhachChuaMoCongNo] = useState([]);
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     const [hanMucModal, setHanMucModal] = useState(null); // { idtaikhoan, ten, hanmuctindung, laMoMoi }
     const [hanMucInput, setHanMucInput] = useState("");
@@ -147,17 +151,51 @@ export default function QuanLyCongNo() {
 
     const LOAI_LABEL = { TANG: "Tăng nợ", GIAM: "Giảm nợ", DIEU_CHINH: "Điều chỉnh" };
 
+    // Lọc + phân trang danh sách công nợ
+    const processedDanhSach = useMemo(() => {
+        if (!searchTerm.trim()) return danhSach;
+        const s = searchTerm.toLowerCase();
+        return danhSach.filter(k =>
+            (`${k.ho} ${k.ten}`).toLowerCase().includes(s) ||
+            (k.email || "").toLowerCase().includes(s) ||
+            (k.sodienthoai || "").includes(s)
+        );
+    }, [danhSach, searchTerm]);
+
+    const totalPages = Math.ceil(processedDanhSach.length / pageSize);
+
+    const paginatedDanhSach = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return processedDanhSach.slice(start, start + pageSize);
+    }, [processedDanhSach, currentPage]);
+
+    // Reset trang khi tìm kiếm
+    useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+
     return (
         <AdminLayout title="Quản Lý Công Nợ">
-            <div className="flex justify-between items-center mb-6">
-                <p className="text-slate-500 text-sm">Theo dõi công nợ khách sỉ mua hàng trả sau theo hạn mức tín dụng.</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="relative w-full sm:max-w-md">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.604 10.604Z" />
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Tìm theo tên khách, email, số điện thoại..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white"
+                    />
+                </div>
                 {isAdmin && (
-                <button
-                    onClick={openMoCongNoMoi}
-                    className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-sm hover:bg-cyan-700"
-                >
-                    + Mở công nợ cho khách mới
-                </button>
+                    <button
+                        onClick={openMoCongNoMoi}
+                        className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-sm hover:bg-cyan-700 shadow-md w-full sm:w-auto"
+                    >
+                        + Mở công nợ cho khách mới
+                    </button>
                 )}
             </div>
 
@@ -177,8 +215,8 @@ export default function QuanLyCongNo() {
                         <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
                             {loading ? (
                                 <tr><td colSpan="6" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
-                            ) : danhSach.length > 0 ? (
-                                danhSach.map((khach) => {
+                            ) : paginatedDanhSach.length > 0 ? (
+                                paginatedDanhSach.map((khach) => {
                                     const trangThai = trangThaiCongNo(khach);
                                     const congno = Number(khach.congnohientai || 0);
                                     return (
@@ -220,6 +258,37 @@ export default function QuanLyCongNo() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* PHÂN TRANG */}
+                {!loading && processedDanhSach.length > pageSize && (
+                    <div className="p-4 border-t border-slate-200 flex items-center gap-2 bg-slate-50/50">
+                        <button
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Trước
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+                                    currentPage === page ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200"
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Sau
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* MODAL: Mở mới / Sửa hạn mức */}
