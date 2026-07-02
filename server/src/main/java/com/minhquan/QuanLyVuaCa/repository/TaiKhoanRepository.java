@@ -19,6 +19,7 @@ public interface TaiKhoanRepository extends JpaRepository<Taikhoan, String> {
     List<Taikhoan> findByTrangthaitk(TrangThaiTaiKhoan trangthaitk);
     List<Taikhoan> findByVaitro(String vaitro);
     List<Taikhoan> findByHanmuctindungIsNotNull();
+    List<Taikhoan> findByVaitroAndHanmuctindungIsNotNull(String vaitro);
 
     // Khoá row đến hết transaction — dùng khi tăng/giảm congnohientai để tránh lost update
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -313,7 +313,7 @@ public class CongNoService {
     // ===== Phase 5: dashboard admin =====
 
     public List<CongNoKhachResponse> layDanhSachKhachCoCongNo() {
-        return taiKhoanRepository.findByHanmuctindungIsNotNull().stream()
+        return taiKhoanRepository.findByVaitroAndHanmuctindungIsNotNull("CUSTOMER").stream()
                 .map(khach -> CongNoKhachResponse.builder()
                         .idtaikhoan(khach.getIdtaikhoan())
                         .ho(khach.getHo())

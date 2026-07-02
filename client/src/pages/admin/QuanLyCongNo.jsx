@@ -8,7 +8,7 @@ function trangThaiCongNo(khach) {
     if (khach.dangBiKhoa) return { label: "Bị khóa", badge: "bg-slate-800 text-white border-slate-800" };
     const congno = Number(khach.congnohientai || 0);
     const hanmuc = Number(khach.hanmuctindung || 0);
-    if (hanmuc <= 0) return { label: "Bình thường", badge: "bg-slate-50 text-slate-500 border-slate-200" };
+    if (hanmuc <= 0) return { label: "Chưa cấp hạn mức", badge: "bg-slate-100 text-slate-500 border-slate-300" };
     const phanTram = (congno / hanmuc) * 100;
     if (phanTram >= 100) return { label: "Nguy hiểm", badge: "bg-red-50 text-red-700 border-red-200" };
     if (phanTram >= 80) return { label: "Cảnh báo", badge: "bg-yellow-50 text-yellow-700 border-yellow-200" };
