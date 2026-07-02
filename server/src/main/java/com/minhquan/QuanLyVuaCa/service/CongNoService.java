@@ -397,6 +397,7 @@ public class CongNoService {
                 "Mở khóa thủ công: " + ghichu, layTaiKhoanHienTai());
     }
 
+    @Transactional(readOnly = true)
     public List<LichSuCongNoResponse> layLichSu(String idtaikhoan) {
         Taikhoan khach = taiKhoanRepository.findById(idtaikhoan)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
