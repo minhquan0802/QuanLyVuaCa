@@ -117,7 +117,20 @@ export default function NhapHang() {
         if (finalLe > 0 && finalLe <= Number(currentDetail.gianhap)) { showToast(`Giá Bán Lẻ phải lớn hơn Giá Nhập!`, "error"); return; }
         if (finalSi > 0 && finalSi <= Number(currentDetail.gianhap)) { showToast(`Giá Bán Sỉ phải lớn hơn Giá Nhập!`, "error"); return; }
 
-        setAddedDetails(prev => [...prev, { ...currentDetail, giabanledukien: finalLe, giabansidukien: finalSi, idTemp: Date.now() }]);
+        const existing = addedDetails.find(d => Number(d.idsizeca) === Number(currentDetail.idsizeca));
+        if (existing) {
+            if (parseFloat(existing.gianhap) !== parseFloat(currentDetail.gianhap)) {
+                showToast(`Size này đã có giá nhập ${Number(existing.gianhap).toLocaleString()}đ. Không thể nhập cùng size với giá khác trong 1 phiếu!`, "error");
+                return;
+            }
+            setAddedDetails(prev => prev.map(d =>
+                Number(d.idsizeca) === Number(currentDetail.idsizeca)
+                    ? { ...d, soluongnhap: Number(d.soluongnhap) + Number(currentDetail.soluongnhap) }
+                    : d
+            ));
+        } else {
+            setAddedDetails(prev => [...prev, { ...currentDetail, giabanledukien: finalLe, giabansidukien: finalSi, idTemp: Date.now() }]);
+        }
         setCurrentDetail(prev => ({ ...prev, idsizeca: "", sizeName: "", giabanledukien: 0, giabansidukien: 0 }));
     };
 
