@@ -27,6 +27,7 @@ public enum ErrorCode {
     ACCOUNT_LOCKED(1028, "Tai khoan da bi khoa", HttpStatus.FORBIDDEN),
     UNAUTHENTICATED(1006, "Ban chua dang nhap", HttpStatus.UNAUTHORIZED),
     LOAICA_NOT_EXISTED(1011, "Loai ca khong ton tai", HttpStatus.NOT_FOUND),
+    LOAICA_CON_TON_KHO(1060, "Loai ca van con ton kho, khong the ngung ban", HttpStatus.CONFLICT),
     DATA_EXISTED(1012, "Da ton tai data", HttpStatus.CONFLICT),
     PAYLOAD_TOO_LARGE(1013, "Dung luong file vuot qua gioi han cho phep", HttpStatus.PAYLOAD_TOO_LARGE),
     ACCESS_DENIED(1014, "Khong co quyen truy cap tai nguyen", HttpStatus.FORBIDDEN),

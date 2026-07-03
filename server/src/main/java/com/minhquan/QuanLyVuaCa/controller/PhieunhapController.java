@@ -7,6 +7,7 @@ import com.minhquan.QuanLyVuaCa.service.PhieunhapService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class PhieunhapController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<PhieunhapResponse> nhapHang(@RequestBody PhieunhapRequest request) {
         return ApiResponse.<PhieunhapResponse>builder()
                 .code(200)
@@ -38,6 +40,7 @@ public class PhieunhapController {
     }
 
     @PatchMapping("/{id}/thanh-toan")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> capNhatThanhToan(@PathVariable String id) {
         phieunhapService.capNhatThanhToan(id);
         return ApiResponse.<Void>builder()

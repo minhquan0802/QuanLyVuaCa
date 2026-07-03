@@ -43,6 +43,17 @@ export default function TaoDonHang() {
         }).catch(() => showToast("Không thể tải dữ liệu!", "error"));
     }, []);
 
+    // Tồn kho khả dụng của size đang chọn = tồn kho thực - phần đã đưa vào giỏ nháp cho cùng size (mọi ĐVT)
+    const currentStock = useMemo(() => {
+        if (!currentItem.repoId) return null;
+        const fish = fishes.find(f => Number(f.id) === Number(currentItem.repoId));
+        const baseStock = fish?.soluongton ?? 0;
+        const reserved = newOrder.items
+            .filter(i => Number(i.repoId) === Number(currentItem.repoId))
+            .reduce((s, i) => s + i.estimatedKg, 0);
+        return parseFloat((baseStock - reserved).toFixed(2));
+    }, [fishes, newOrder.items, currentItem.repoId]);
+
     // Lọc danh sách loại cá duy nhất từ kho
     const fishTypes = useMemo(() => {
         return fishes.reduce((acc, item) => {
@@ -126,14 +137,28 @@ export default function TaoDonHang() {
         const fish = fishTypes.find(f => f.id == currentItem.fishId);
         const size = sizes.find(s => s.idsizeca == currentItem.sizeId);
 
-        const newItem = {
-            id: Date.now(), repoId: currentItem.repoId, unitId: currentItem.unitId, unitName: currentItem.unitName,
-            fishName: fish?.tenloaica, sizeName: size?.sizeca, quantity: currentItem.quantity,
-            estimatedKg: currentItem.estimatedKg, pricePerKg: currentItem.pricePerKg,
-            total: currentItem.estimatedKg * currentItem.pricePerKg,
-        };
-        setNewOrder(prev => ({ ...prev, items: [...prev.items, newItem] }));
-        setCurrentItem(prev => ({ ...prev, quantity: 1, estimatedKg: 0 }));
+        const existing = newOrder.items.find(i => Number(i.repoId) === Number(currentItem.repoId) && Number(i.unitId) === Number(currentItem.unitId));
+
+        if (existing) {
+            setNewOrder(prev => ({
+                ...prev,
+                items: prev.items.map(i => i.id === existing.id ? {
+                    ...i,
+                    quantity: i.quantity + currentItem.quantity,
+                    estimatedKg: parseFloat((i.estimatedKg + currentItem.estimatedKg).toFixed(2)),
+                    total: i.total + currentItem.estimatedKg * currentItem.pricePerKg,
+                } : i),
+            }));
+        } else {
+            const newItem = {
+                id: Date.now(), repoId: currentItem.repoId, unitId: currentItem.unitId, unitName: currentItem.unitName,
+                fishName: fish?.tenloaica, sizeName: size?.sizeca, quantity: currentItem.quantity,
+                estimatedKg: currentItem.estimatedKg, pricePerKg: currentItem.pricePerKg,
+                total: currentItem.estimatedKg * currentItem.pricePerKg,
+            };
+            setNewOrder(prev => ({ ...prev, items: [...prev.items, newItem] }));
+        }
+        setCurrentItem(prev => ({ ...prev, quantity: 1, estimatedKg: prev.factor > 0 ? prev.factor : 0 }));
     };
 
     const handleRemoveItem = (id) => setNewOrder(prev => ({ ...prev, items: prev.items.filter(i => i.id !== id) }));
@@ -257,6 +282,12 @@ export default function TaoDonHang() {
                             </div>
                         </div>
 
+                        {currentStock !== null && (
+                            <div className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border ${currentStock <= 0 ? "bg-red-50 text-red-600 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
+                                Tồn kho khả dụng: {currentStock} kg
+                            </div>
+                        )}
+
                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3">
                             <div>
                                 <label className="text-xs font-bold text-slate-500 block mb-1">Đơn vị tính</label>
@@ -273,6 +304,9 @@ export default function TaoDonHang() {
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 block mb-1">Cân nặng (Kg)</label>
                                     <input type="number" disabled={currentItem.factor > 0} className="w-full p-2 border border-slate-200 rounded-lg text-center font-bold bg-white disabled:bg-slate-100" value={currentItem.estimatedKg} onChange={(e) => setCurrentItem({ ...currentItem, estimatedKg: parseFloat(e.target.value) || 0 })} />
+                                    {currentStock !== null && currentItem.estimatedKg > currentStock && (
+                                        <div className="text-[11px] text-red-500 font-bold mt-1">Vượt tồn kho ⚠ (còn {currentStock} kg)</div>
+                                    )}
                                 </div>
                             </div>
                             <div>

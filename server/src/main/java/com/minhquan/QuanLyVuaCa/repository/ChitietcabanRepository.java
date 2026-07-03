@@ -14,4 +14,6 @@ public interface ChitietcabanRepository extends JpaRepository<Chitietcaban, Inte
     boolean existsByIdloaicaAndIdsizeca(Loaica idloaica, Sizeca idsizeca);
     Optional<Chitietcaban> findByIdloaicaAndIdsizeca(Loaica idloaica, Sizeca idsizeca);
     List<Chitietcaban> findAllByDeletedFalse();
+    List<Chitietcaban> findByIdloaica(Loaica idloaica);
+    boolean existsByIdloaicaAndSoluongtonGreaterThan(Loaica idloaica, java.math.BigDecimal soluongton);
 }

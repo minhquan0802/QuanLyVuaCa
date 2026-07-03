@@ -27,4 +27,6 @@ public class Loaica {
     @Column(name = "hinhanhurl")
     private String hinhanhurl;
 
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
 }

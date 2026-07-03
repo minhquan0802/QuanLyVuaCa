@@ -35,6 +35,10 @@ export default function ThongTinDonHang() {
     const [activeTab, setActiveTab] = useState('ALL');
     const [filterPayment, setFilterPayment] = useState('ALL');
 
+    // --- PHÂN TRANG (giống cấu trúc bên Quản lý đơn hàng admin) ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 7;
+
     // --- STATE CHO MODAL CHI TIẾT ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -204,6 +208,17 @@ export default function ThongTinDonHang() {
         [orders, activeTab, filterPayment]
     );
 
+    // Reset về trang 1 khi đổi tab/bộ lọc
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, filterPayment]);
+
+    const totalPages = Math.ceil(filteredOrders.length / pageSize);
+    const paginatedOrders = useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        return filteredOrders.slice(startIndex, startIndex + pageSize);
+    }, [filteredOrders, currentPage]);
+
     const getStatusText = (status) => {
         switch (status) {
             case "CHO_XAC_NHAN": return "Chờ xác nhận";
@@ -297,7 +312,7 @@ export default function ThongTinDonHang() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredOrders.map((order) => {
+                            {paginatedOrders.map((order) => {
                                 // [3] Lấy sản phẩm đầu tiên để hiển thị Preview
                                 // Kiểm tra cấu trúc trả về từ Backend. 
                                 // Giả sử Backend trả về listChitietdonhang hoặc chiTietDonHangs
@@ -436,6 +451,44 @@ export default function ThongTinDonHang() {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {/* PHÂN TRANG */}
+                    {!loading && filteredOrders.length > 0 && (
+                        <div className="p-4 mt-4 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 md:rounded-lg shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => prev - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Trước
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${currentPage === page
+                                                    ? "bg-blue-600 text-white shadow-sm"
+                                                    : "text-slate-600 hover:bg-slate-100"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => prev + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Sau
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

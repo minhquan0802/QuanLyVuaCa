@@ -5,11 +5,16 @@ import com.cloudinary.utils.ObjectUtils;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaCeationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.LoaicaResponse;
+import com.minhquan.QuanLyVuaCa.entity.Banggia;
+import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.LoaicaMapper;
+import com.minhquan.QuanLyVuaCa.repository.BanggiaRepository;
+import com.minhquan.QuanLyVuaCa.repository.ChitietcabanRepository;
 import com.minhquan.QuanLyVuaCa.repository.LoaicaRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -31,6 +36,8 @@ import java.util.Objects;
 public class LoaicaService {
     LoaicaRepository loaicaRepository;
     LoaicaMapper mapper;
+    ChitietcabanRepository chitietcabanRepository;
+    BanggiaRepository banggiaRepository;
 //    final String UPLOAD_DIR = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
     Cloudinary cloudinary; // inject thay vì UPLOAD_DIR
 
@@ -82,13 +89,44 @@ public class LoaicaService {
         return mapper.toLoaicaResponse(updated);
     }
 
+    @Transactional
     public void xoaLoaica(Integer id) {
         Loaica loaica = loaicaRepository.findById(id)
-                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
 
-        deleteFile(loaica.getHinhanhurl());
+        // Kiểm tra còn tồn kho không
+        if (chitietcabanRepository.existsByIdloaicaAndSoluongtonGreaterThan(loaica, java.math.BigDecimal.ZERO)) {
+            throw new AppExceptions(ErrorCode.LOAICA_CON_TON_KHO);
+        }
 
-        loaicaRepository.deleteById(id);
+        // Lấy tất cả chitietcaban của loại cá này
+        List<Chitietcaban> danhSachKho = chitietcabanRepository.findByIdloaica(loaica);
+
+        // Đóng tất cả bảng giá đang hoạt động
+        List<Banggia> banggiaConHan = banggiaRepository.findByChitietcabanInAndNgayketthucIsNull(danhSachKho);
+        banggiaConHan.forEach(bg -> bg.setNgayketthuc(java.time.LocalDate.now()));
+        banggiaRepository.saveAll(banggiaConHan);
+
+        // Soft delete toàn bộ chitietcaban
+        danhSachKho.forEach(ctcb -> ctcb.setDeleted(true));
+        chitietcabanRepository.saveAll(danhSachKho);
+
+        // Đánh dấu loại cá đã ngừng bán
+        loaica.setDeleted(true);
+        loaicaRepository.save(loaica);
+    }
+
+    @Transactional
+    public void khoiPhucLoaica(Integer id) {
+        Loaica loaica = loaicaRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
+
+        List<Chitietcaban> danhSachKho = chitietcabanRepository.findByIdloaica(loaica);
+        danhSachKho.forEach(ctcb -> ctcb.setDeleted(false));
+        chitietcabanRepository.saveAll(danhSachKho);
+
+        loaica.setDeleted(false);
+        loaicaRepository.save(loaica);
     }
 
     private String slugify(String input) {

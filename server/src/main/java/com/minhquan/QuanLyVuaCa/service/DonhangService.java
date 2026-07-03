@@ -391,6 +391,7 @@ public class DonhangService {
     }
 
     // --- 5. CẬP NHẬT TRẠNG THÁI (admin/staff) ---
+    @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public DonhangResponse updateStatus(String id, TrangThaiDonHang newStatus) {
         Donhang donhang = donhangRepository.findById(id)
@@ -422,6 +423,22 @@ public class DonhangService {
             }
         }
 
+        // Đơn bị hủy sau khi đã lỡ trừ kho (rời CHO_XAC_NHAN rồi mới hủy, vd đang "Đang đóng hàng")
+        // -> hoàn lại kho + lô đúng bằng số đã trừ, tránh mất hàng vĩnh viễn khỏi kho.
+        if (newStatus == TrangThaiDonHang.HUY
+                && oldStatus != TrangThaiDonHang.CHO_XAC_NHAN
+                && oldStatus != TrangThaiDonHang.HUY) {
+            for (Chitietdonhang ctdh : chitietdonhangRepository.findByIddonhang(savedDonhang)) {
+                Chitietcaban kho = ctdh.getIdchitietcaban();
+                BigDecimal luongHoanTra = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
+                if (luongHoanTra.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+                hoanTraLoFifo(kho, luongHoanTra);
+                kho.setSoluongton(kho.getSoluongton().add(luongHoanTra));
+                chitietcabanRepository.save(kho);
+            }
+        }
+
         // Admin có thể set thẳng GIAO_HANG_THANH_CONG ở đây, không chỉ qua xacNhanNhanHang() của khách
         if (newStatus == TrangThaiDonHang.GIAO_HANG_THANH_CONG && oldStatus != TrangThaiDonHang.GIAO_HANG_THANH_CONG) {
             congNoService.xuLyDonGiaoThanhCong(savedDonhang, tinhTongTienDonHang(savedDonhang.getIddonhang()));
@@ -432,6 +449,7 @@ public class DonhangService {
 
 
     // Hàm tính tổng tiền (Có fallback tính lại nếu DB lưu thiếu)
+    @Transactional(readOnly = true)
     public BigDecimal tinhTongTienDonHang(String idDonHang) {
         Donhang donhang = donhangRepository.findById(idDonHang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + idDonHang));
@@ -585,14 +603,17 @@ public class DonhangService {
         for (Chitietdonhang chitiet : listChiTiet) {
             Chitietcaban sanphamTrongKho = chitiet.getIdchitietcaban();
 
-            // Lấy số lượng khách mua (đơn vị: con/bao theo đơn đặt)
-            BigDecimal soLuongMua = BigDecimal.valueOf(chitiet.getSoluong());
+            // Lấy số kg đã quy đổi (không dùng soluong thô — đó là số Con/Bao/Kg theo đơn đặt,
+            // không phải kg thực; trước đây trừ nhầm bằng soluong thô gây lệch kho khi ĐVT khác Kg).
+            BigDecimal soLuongCanTru = chitiet.getKhoiluongthucte() != null
+                    ? chitiet.getKhoiluongthucte() : chitiet.getKhoiluongdukien();
+            if (soLuongCanTru == null || soLuongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             // Phân bổ trừ theo từng lô (FIFO) để biết lô nào còn lại bao nhiêu
-            truLoFifo(sanphamTrongKho, soLuongMua);
+            truLoFifo(sanphamTrongKho, soLuongCanTru);
 
             // Trừ và Lưu tồn kho tổng
-            sanphamTrongKho.setSoluongton(sanphamTrongKho.getSoluongton().subtract(soLuongMua));
+            sanphamTrongKho.setSoluongton(sanphamTrongKho.getSoluongton().subtract(soLuongCanTru));
             chitietcabanRepository.save(sanphamTrongKho);
         }
     }

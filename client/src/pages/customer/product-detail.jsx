@@ -133,7 +133,13 @@ export default function ProductDetail() {
         );
     }
 
-    if (!product) return null;
+    if (!product || product.deleted) return (
+        <div className="bg-slate-50 min-h-screen flex flex-col items-center justify-center gap-4 text-slate-500">
+            <span className="material-symbols-outlined text-5xl text-slate-300">remove_shopping_cart</span>
+            <p className="text-lg font-bold text-slate-600">Sản phẩm này không còn kinh doanh</p>
+            <a href="/home" className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors">Quay lại trang chủ</a>
+        </div>
+    );
 
     const imageUrl = getImageUrl(product.hinhanhurl);
 

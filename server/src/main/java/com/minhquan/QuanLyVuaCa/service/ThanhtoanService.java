@@ -32,6 +32,7 @@ public class ThanhtoanService {
     DonhangService donhangService;
     CongNoService congNoService;
 
+    @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public TinhTrangThanhToanResponse getTinhTrang(String idDonhang) {
         Donhang dh = donhangRepository.findById(idDonhang)

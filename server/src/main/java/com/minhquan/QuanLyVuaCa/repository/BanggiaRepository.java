@@ -17,6 +17,7 @@ public interface BanggiaRepository extends JpaRepository<Banggia, Integer> {
     Optional<Banggia> findByChitietcabanAndNgayketthucIsNull(Chitietcaban chitietcaban);
 
     List<Banggia> findByChitietcaban(Chitietcaban chitietcaban);
+    List<Banggia> findByChitietcabanInAndNgayketthucIsNull(List<Chitietcaban> chitietcabans);
 
     // Tìm giá đang hoạt động (là dòng có idchitietcaban khớp VÀ chưa có ngày kết thúc)
     @Query("SELECT b FROM Banggia b WHERE b.chitietcaban.id = :khoId AND b.ngayketthuc IS NULL")

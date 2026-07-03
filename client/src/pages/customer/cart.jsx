@@ -108,10 +108,10 @@ export default function Cart() {
                                                 </div>
                                             </div>
 
-                                            {/* Đơn giá */}
+                                            {/* Đơn giá (quy về giá/kg) */}
                                             <div className="hidden md:block col-span-2 text-right text-sm text-slate-500">
-                                                <div className="font-medium text-slate-700">{Number(item.thanhTien / item.soluong).toLocaleString("vi-VN")}đ</div>
-                                                <div className="text-xs text-slate-400">/{item.tenDonViTinh}</div>
+                                                <div className="font-medium text-slate-700">{Number(item.giaBan).toLocaleString("vi-VN")}đ</div>
+                                                <div className="text-xs text-slate-400">/kg</div>
                                             </div>
 
                                             {/* Thành tiền + Xóa */}

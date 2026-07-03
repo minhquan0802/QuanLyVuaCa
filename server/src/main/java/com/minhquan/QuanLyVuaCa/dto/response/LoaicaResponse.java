@@ -13,4 +13,5 @@ public class LoaicaResponse {
     String tenloaica;
     String mieuta;
     String hinhanhurl;
+    Boolean deleted;
 }

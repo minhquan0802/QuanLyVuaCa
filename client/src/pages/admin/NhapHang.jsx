@@ -3,16 +3,22 @@ import { useNavigate, useLocation } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function NhapHang() {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
+    const { user } = useAuth();
+    const isAdmin = user?.vaitro === "ADMIN";
 
     const [inventory, setInventory] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
-    const [priceList, setPriceList] = useState([]); // Lưu danh sách giá bán hiện hành
+    const [priceList, setPriceList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showAddNcc, setShowAddNcc] = useState(false);
+    const [nccForm, setNccForm] = useState({ tenncc: "", sodienthoai: "" });
+    const [savingNcc, setSavingNcc] = useState(false);
 
     const [importForm, setImportForm] = useState({
         idloaica: location.state?.initialLoaicaId || "",
@@ -66,6 +72,18 @@ export default function NhapHang() {
             }
         }
     }, [priceList, location.state]);
+
+    // Tự động điền Loại cá + Size khi được điều hướng chỉ kèm "id" (idchitietcaban) mà chưa biết
+    // trước idLoaiCa/idSizeCa — ví dụ từ nút "Nhập hàng ngay" khi báo thiếu tồn kho ở màn xử lý đơn.
+    useEffect(() => {
+        if (inventory.length > 0 && location.state?.id && !location.state?.initialLoaicaId) {
+            const invItem = inventory.find(i => Number(i.id) === Number(location.state.id));
+            if (invItem) {
+                setImportForm(prev => ({ ...prev, idloaica: String(invItem.idLoaiCa) }));
+                setCurrentDetail(prev => ({ ...prev, idsizeca: String(invItem.idSizeCa), sizeName: invItem.tenSize }));
+            }
+        }
+    }, [inventory, location.state]);
 
     // Gom loại cá duy nhất từ kho hàng
     const fishTypes = inventory.reduce((acc, item) => {
@@ -135,6 +153,21 @@ export default function NhapHang() {
     };
 
     const handleRemoveDetail = (idTemp) => setAddedDetails(prev => prev.filter(item => item.idTemp !== idTemp));
+
+    const handleAddNcc = async () => {
+        if (!nccForm.tenncc.trim()) { showToast("Vui lòng nhập tên nhà cung cấp!", "error"); return; }
+        setSavingNcc(true);
+        try {
+            const res = await api.post("/Nhacungcaps", nccForm);
+            const newNcc = res.data.result;
+            setSuppliers(prev => [...prev, newNcc]);
+            setImportForm(prev => ({ ...prev, idncc: String(newNcc.id) }));
+            setNccForm({ tenncc: "", sodienthoai: "" });
+            setShowAddNcc(false);
+            showToast("Đã thêm nhà cung cấp mới!", "success");
+        } catch { showToast("Thêm nhà cung cấp thất bại!", "error"); }
+        finally { setSavingNcc(false); }
+    };
     const calculateTotalImportMoney = () => addedDetails.reduce((sum, item) => sum + (item.soluongnhap * item.gianhap), 0);
     const calculateTotalWeight = () => addedDetails.reduce((sum, item) => sum + Number(item.soluongnhap), 0);
 
@@ -180,10 +213,33 @@ export default function NhapHang() {
 
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nhà cung cấp</label>
-                        <select className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none" value={importForm.idncc} onChange={e => setImportForm({ ...importForm, idncc: e.target.value })}>
-                            <option value="">-- Chọn NCC --</option>
-                            {suppliers.map(s => <option key={s.idncc || s.id} value={s.idncc || s.id}>{s.tenncc}</option>)}
-                        </select>
+                        <div className="flex gap-2">
+                            <select className="flex-1 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none" value={importForm.idncc} onChange={e => setImportForm({ ...importForm, idncc: e.target.value })}>
+                                <option value="">-- Chọn NCC --</option>
+                                {suppliers.map(s => <option key={s.idncc || s.id} value={s.idncc || s.id}>{s.tenncc}</option>)}
+                            </select>
+                            <button onClick={() => setShowAddNcc(v => !v)} className="px-3 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 text-lg font-bold flex-shrink-0" title="Thêm nhà cung cấp mới">+</button>
+                        </div>
+                        {showAddNcc && (
+                            <div className="mt-2 p-3 border border-cyan-200 bg-cyan-50/50 rounded-xl space-y-2">
+                                <input
+                                    type="text" placeholder="Tên nhà cung cấp *"
+                                    className="w-full p-2 border border-slate-200 rounded-lg text-sm outline-none"
+                                    value={nccForm.tenncc} onChange={e => setNccForm(f => ({ ...f, tenncc: e.target.value }))}
+                                />
+                                <input
+                                    type="text" placeholder="Số điện thoại"
+                                    className="w-full p-2 border border-slate-200 rounded-lg text-sm outline-none"
+                                    value={nccForm.sodienthoai} onChange={e => setNccForm(f => ({ ...f, sodienthoai: e.target.value }))}
+                                />
+                                <div className="flex gap-2 justify-end">
+                                    <button onClick={() => setShowAddNcc(false)} className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Hủy</button>
+                                    <button onClick={handleAddNcc} disabled={savingNcc} className="px-3 py-1.5 text-xs bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50">
+                                        {savingNcc ? "Đang lưu..." : "Lưu NCC"}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -194,18 +250,20 @@ export default function NhapHang() {
                         </select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className={isAdmin ? "grid grid-cols-2 gap-4" : ""}>
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Ngày nhập</label>
                             <input type="date" className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none" value={importForm.ngaynhap} onChange={e => setImportForm({ ...importForm, ngaynhap: e.target.value })} />
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Thanh toán</label>
-                            <select className={`w-full p-2.5 border rounded-xl text-sm font-bold outline-none ${importForm.trangthaithanhtoan === "DA_THANH_TOAN" ? "text-green-600 bg-green-50 border-green-200" : "text-orange-600 bg-orange-50 border-orange-200"}`} value={importForm.trangthaithanhtoan} onChange={e => setImportForm({ ...importForm, trangthaithanhtoan: e.target.value })}>
-                                <option value="CHUA_THANH_TOAN">Chưa TT</option>
-                                <option value="DA_THANH_TOAN">Đã xong</option>
-                            </select>
-                        </div>
+                        {isAdmin && (
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Thanh toán</label>
+                                <select className={`w-full p-2.5 border rounded-xl text-sm font-bold outline-none ${importForm.trangthaithanhtoan === "DA_THANH_TOAN" ? "text-green-600 bg-green-50 border-green-200" : "text-orange-600 bg-orange-50 border-orange-200"}`} value={importForm.trangthaithanhtoan} onChange={e => setImportForm({ ...importForm, trangthaithanhtoan: e.target.value })}>
+                                    <option value="CHUA_THANH_TOAN">Chưa TT</option>
+                                    <option value="DA_THANH_TOAN">Đã xong</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     <div>

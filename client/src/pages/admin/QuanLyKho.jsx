@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
 
@@ -13,6 +14,8 @@ const THANHTOAN_STATUS = {
 
 export default function QuanLyKho() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isAdmin = user?.vaitro === "ADMIN";
     const { showToast } = useToast();
 
     const [tab, setTab] = useState("kho"); // "kho" | "nhap"
@@ -282,7 +285,7 @@ export default function QuanLyKho() {
                                                         </span>
                                                     </td>
                                                     <td className="p-4 text-center">
-                                                        {p.trangthaithanhtoan === "CHUA_THANH_TOAN" ? (
+                                                        {isAdmin && p.trangthaithanhtoan === "CHUA_THANH_TOAN" ? (
                                                             isConfirming ? (
                                                                 <div className="flex items-center justify-center gap-2">
                                                                     <button

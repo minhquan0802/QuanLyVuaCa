@@ -71,3 +71,5 @@ CREATE TABLE lichsucongno (
 );
 CREATE INDEX idx_lichsucongno_idtaikhoan ON lichsucongno(idtaikhoan);
 CREATE INDEX idx_lichsucongno_ngaytao ON lichsucongno(ngaytao DESC);
+
+ALTER TABLE loaica ADD COLUMN deleted BIT NOT NULL DEFAULT 0;

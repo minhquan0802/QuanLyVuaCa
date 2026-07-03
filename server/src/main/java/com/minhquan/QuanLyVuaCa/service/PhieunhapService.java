@@ -110,10 +110,12 @@ public class PhieunhapService {
         // Set mặc định ngày nhập
         if (phieunhap.getNgaynhap() == null) phieunhap.setNgaynhap(LocalDate.now());
 
-        // Xử lý Enum Trạng thái thanh toán
-        if (request.getTrangthaithanhtoan() != null) {
+        // Xử lý Enum Trạng thái thanh toán — chỉ ADMIN mới được đặt DA_THANH_TOAN lúc tạo
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (isAdmin && request.getTrangthaithanhtoan() != null) {
             try {
-                // Request gửi String theo format "CHUA_THANH_TOAN" hoặc "DA_THANH_TOAN"
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.valueOf(request.getTrangthaithanhtoan()));
             } catch (IllegalArgumentException e) {
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.CHUA_THANH_TOAN);

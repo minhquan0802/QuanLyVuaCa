@@ -1,0 +1,161 @@
+2.3	PHÂN TÍCH YÊU CẦU:
+Website Quản lý vựa cá và đặt hàng là một hệ thống quản lý trực tuyến nhằm tối ưu hóa quy trình vận hành và kinh doanh tại vựa thủy sản (chuyên cung cấp cá diêu hồng, cá trắm, cá chép, cá lóc, cá rô). Hệ thống được xây dựng dành cho ba đối tượng chính: admin cá (người quản trị), nhân viên vựa cá và khách hàng sử dụng. Tùy theo từng đối tượng cụ thể sẽ có những chức năng cụ thể tương ứng như khách hàng tự đặt hàng trực tuyến, theo dõi trạng thái đơn hàng (chưa/đã xác nhận, đang đóng hàng, đang vận chuyển); nhân viên xem số liệu (đơn hàng) để tiến hành đặt hàng (nhập hàng mới); admin theo dõi tổng doanh thu theo ngày và quản lý mức độ hao hụt... Ngoài ra, ở trong trang web, admin cá (người quản trị) có thể thực hiện các nghiệp vụ như tạo đơn hàng thủ công cho khách, quản lý nhập hàng, quản lý sản phẩm, và xem các báo cáo thống kê chi tiết về hoạt động kinh doanh. Và đăng nhập, phân quyền: Mỗi vai trò (admin, nhân viên, khách hàng) sẽ có trang quản lý riêng và quyền truy cập khác nhau.
+2.3.1	Các quy trình, nghiệp vụ:
+2.3.1.1	Admin:
+Admin (Admin cá) là người trực tiếp quản lý đến các chức năng cốt lõi của website, cụ thể là quản lý các đối tượng như: sản phẩm (các loại cá), đơn hàng, hàng tồn kho, tài khoản khách hàng, tài khoản nhân viên. Ngoài ra admin có thể tạo đơn hàng thủ công (vì chủ yếu khách hàng hiện tại không có chuyên môn về công nghệ), xem thống kê tổng doanh thu (theo ngày, tuần, tháng) và lập báo cáo mất mát, hao hụt.
+1.1	Quản lý sản phẩm (cá)
+-	Admin quản lý danh mục các loại cá kinh doanh trong hệ thống.
+-	Thông tin sản phẩm bao gồm: mã cá, tên loại cá, hình ảnh url và miêu tả loại cá
+-	Admin có quyền thêm, sửa, xóa sản phẩm thủy sản khi phát sinh loại cá mới hoặc ngừng kinh doanh.
+-	Mỗi sản phẩm (cá) có thể được chia thành nhiều loại (size), ví dụ: Cá diêu hồng loại 1 (to, đẹp), cá diêu hồng loại 2 (nhỏ hơn).
+-	Bảng size cá được thiết kế như sau:
+o	id size cá
+o	Tên size cá
+-	1 loại cá có thể có nhiều size cá và 1 size cá có thể thuộc nhiều loại cá.
+-	Các loại cá này được định nghĩa trong phần chi tiết cá bán gồm các trường sau:
+o	id chi tiết cá bán
+o	id size cá
+o	id loại cá
+o	Số lượng tồn
+-	Đối với mỗi size cá sẽ có số kg quy đổi tương ứng để tính tiền hàng sau này và sẽ được định nghĩa trong bảng quy đổi như sau:
+o	id quy đổi
+o	id chi tiết cá bán
+o	Số kg tương ứng
+-	Khi cá được bán ra, hệ thống tự động trừ số lượng tồn kho trong Chi tiết cá bán
+1.2 Quản lý nhập sản phẩm
+-	Khi nhà cung cấp giao hàng, admin sẽ tạo phiếu nhập để ghi nhận thông tin nhập hàng.
+-	Mỗi phiếu nhập ứng với một loại cá cụ thể, có thể gồm nhiều lô (phân loại theo size), có nghĩa mỗi lần nhập chỉ có thể nhập 1 loại cá nhưng có thể nhập nhiều size cho loại cá đó. Thông tin phiếu nhập bao gồm:
+o	Mã phiếu nhập
+o	Ngày nhập
+o	Mã nhà cung cấp
+o	Mã cá (loại cá nhập)	
+o	Tổng số lượng nhập (kg)
+o	Tổng tiền
+o	Ghi chú
+o	Trạng thái thanh toán (Chưa thanh toán / Đã thanh toán)
+-	Sau khi lập phiếu nhập, admin sẽ tiến hành lập chi tiết phiếu nhập (thêm các lô cá) cho loại cá đó theo từng size, chi tiết phiếu nhập bao gồm:
+o	Mã lô
+o	Mã phiếu nhập
+o	Mã chi tiết cá bán (bao gồm loại cá, size cá)
+o	Số lượng nhập (kg)
+o	Giá nhập
+o	Giá bán lẻ tại thời điểm nhập
+o	Giá bán sỉ tại thời điểm nhập
+o	Ngày thanh lý
+o	Trạng thái (Còn hàng / Hết hàng / Thanh lý)
+-	Mỗi lô cá chỉ có thời hạn tối đa 2 ngày kể từ ngày nhập, sau đó hệ thống sẽ thông báo để nhân viên hoặc admin lập phiếu thanh lý (tiêu hủy hoặc bán giá rẻ tùy tình trạng), hệ thống không được phép tự động tạo phiếu thanh lý.
+-	Admin có thể theo dõi được:
+o	Lịch sử các lần nhập hàng theo ngày hoặc nhà cung cấp.
+o	Tình trạng thanh toán phiếu nhập (đã trả tiền hay chưa).
+o	Số lượng tồn còn lại của từng lô cá nhập.
+1.3 Quản lý nhà cung cấp
+-	Admin có thể thêm mới hoặc chỉnh sửa thông tin nhà cung cấp khi có thay đổi về nguồn hàng.
+-	Thông tin nhà cung cấp bao gồm: 
+o	Mã nhà cung cấp, tên nhà cung cấp
+o	Số điện thoại
+o	Địa chỉ
+o	Ghi chú (ví dụ: chuyên cung cấp cá diêu hồng loại 1, thanh toán 1 lần/tuần, v.v.).
+-	Khi nhập hàng, admin sẽ chọn nhà cung cấp tương ứng để liên kết phiếu nhập và theo dõi lịch sử giao dịch.
+-	Hệ thống cho phép tìm kiếm nhanh nhà cung cấp, thống kê số lần nhập và tổng giá trị hàng hóa đã mua từ mỗi nhà cung cấp.
+1.4 Quản lý bảng giá
+-	Admin có thể thiết lập và điều chỉnh giá bán cho từng mặt hàng đang kinh doanh (chi tiết theo loại cá và kích thước) để phục vụ cho hoạt động bán hàng.
+-	Thông tin bảng giá bao gồm:
+o	Mã bảng giá
+o	Mã chi tiết cá bán
+o	Giá bán sỉ
+o	Giá bán lẻ
+o	Ngày bắt đầu
+o	Ngày kết thúc
+-	Hệ thống quản lý giá theo phiên bản thời gian: Khi người dùng thiết lập mức giá mới cho một sản phẩm, hệ thống sẽ tự động cập nhật ngày kết thúc cho mức giá cũ (đóng lại mức giá cũ) để đảm bảo tại một thời điểm chỉ có một giá bán duy nhất có hiệu lực.
+-	Giá bán có thể được cập nhật thủ công tại chức năng quản lý giá hoặc được cập nhật trực tiếp ngay khi lập phiếu nhập hàng (dựa trên giá nhập đầu vào).
+1.5 Quản lý đơn hàng
+-	Admin có thể xem tất cả các đơn hàng (bao gồm đơn do khách tự đặt trên website và đơn thủ công do admin tạo).
+-	Thông tin đơn hàng bao gồm: 
+o	Mã đơn hàng
+o	Thông tin khách hàng
+o	Ngày đặt
+o	Trạng thái đơn hàng (Chờ xác nhận, đang đóng hàng, đang vận chuyển, giao hàng thành công, đã thanh toán, hủy)
+-	Trạng thái đơn hàng được cập nhật theo các giai đoạn tùy vào loại khách hàng:
+o	Đối với khách sỉ:
+Chưa xác nhận → Đã xác nhận → Đang đóng hàng → Đang vận chuyển → Đã hoàn tất / Đã hủy →  Đã thanh toán
+o	Đối với khách lẻ:
+Chưa xác nhận→ Đã xác nhận/Đã hủy →  Đã thanh toán
+-	Sau khi có đơn hàng của khách (đặt trực tiếp hoặc qua hệ thống), nhân viên sẽ tiến hành đóng hàng và lập chi tiết đơn hàng.
+-	Chi tiết đơn hàng được tạo dựa trên đơn hàng, nhưng sẽ ghi lại số lượng thực tế đã xuất (vì có thể khác so với đơn đã đặt).
+-	Đối với cá bán theo con (ví dụ: cá trắm), hệ thống cho phép ghi lại số lượng con và tổng khối lượng (kg) thực tế sau khi cân.
+-	Thông tin chi tiết đơn hàng bao gồm:
+o	Mã chi tiết đơn hàng
+o	Mã đơn hàng
+o	Mã chi tiết cá bán (chứa loại cá và size cá)
+o	Mã đơn vị tính
+o	Số lượng
+o	Khối lượng dự kiến
+o	Khối lượng thực tế
+o	Tổng tiền dự kiến
+o	Tổng tiền thực tế
+-	Sau khi xác nhận đơn hàng và lập chi tiết đơn hàng, hệ thống sẽ chuyển sang trạng thái “Đang đóng hàng”.
+-	Sau khi chuyển sang trạng thái “Đang vận chuyển” thì sẽ sang các thao tác sau:
+o	Tự động giảm tồn kho tương ứng trong bảng chi tiết cá bán
+o	Cập nhật trạng thái đơn hàng thành “Hoàn tất” hoặc đã thanh toán
+-	Admin có quyền xác nhận đơn hàng, cập nhật trạng thái, hoặc hủy đơn khi cần thiết.
+-	Khi đang giao hàng hoặc giao hàng thành công thì không được hoàn trả lại.
+1.6 Quản lý tồn kho và hao hụt
+-	Hệ thống tự động tính toán tồn kho dựa trên dữ liệu nhập, bán, hao hụt và thanh lý của từng sản phẩm.
+-	Admin có thể lập báo cáo hao hụt (ví dụ: cá chết, cá bị thất thoát, cá kém chất lượng) để hệ thống tự trừ số lượng tương ứng trong kho và ghi nhận chi phí hao hụt.
+-	Mỗi lô cá sau 2 ngày (nếu còn hàng) sẽ được lập phiếu thanh lý, gồm: 
+o	Mã phiếu thanh lý
+o	Mã lô
+o	Ngày thanh lý
+o	Số lượng thanh lý
+o	Lý do
+o	Trạng thái (đã tiêu hủy / đã bán thanh lý)
+o	Ghi chú.
+-	Đối với các hao hụt ngoài ý muốn như cúp điện, cá chết hàng loạt sẽ đưa vào phiếu thanh lý để giải quyết số cá đó.
+-	Các phiếu thanh lý này giúp admin theo dõi hàng hóa tồn lâu, đảm bảo vòng quay sản phẩm hợp lý và giảm thiểu thất thoát.
+1.7 Quản lý tài khoản
+-	Tài khoản khách hàng: Admin có thể xem danh sách khách hàng, lịch sử mua hàng, hoặc khóa/mở tài khoản.
+-	Tài khoản nhân viên: Admin tạo tài khoản cho nhân viên và phân quyền chức năng (ví dụ: nhân viên A chỉ xem kho, nhân viên B được xử lý đơn hàng).
+1.8 Thống kê và báo cáo
+-	Hệ thống cung cấp các thống kê trực quan giúp admin theo dõi hoạt động kinh doanh theo ngày, tuần, tháng hoặc năm.
+-	Các thông tin thống kê bao gồm:
+o	Tổng doanh thu trong từng khoảng thời gian.
+o	Tổng số lượng đơn hàng (đơn thành công, đơn đã hủy, đơn đang vận chuyển).
+o	Báo cáo hao hụt: sản lượng và giá trị mất mát.
+o	Báo cáo nhập hàng: tổng số lượng và giá trị nhập theo từng nhà cung cấp.
+-	Mỗi buổi tối hệ thống sẽ tổng hợp lại hoạt động kinh doanh trong ngày bằng các sơ đồ trực quan (ví dụ như biểu đồ gồm 3 cột nhập/xuất/tồn).
+-	Các số liệu này giúp admin đưa ra quyết định nhập hàng, điều chỉnh giá bán và tối ưu lợi nhuận.
+2.3.1.2	Khách hàng sử dụng:
+Khách hàng là đối tượng trực tiếp sử dụng trang web, có nhu cầu sử dụng các chức năng như: đăng ký/đăng nhập, xem sản phẩm, tạo đơn đặt hàng, theo dõi trạng thái đơn hàng, và xem lại lịch sử mua hàng.
+1.1 Xem và tìm kiếm sản phẩm
+-	Khách hàng có thể xem danh sách các loại cá (cá diêu hồng, cá trắm...) đang được bán tại vựa, kèm theo giá cả, hình ảnh và mô tả.
+-	Hệ thống cung cấp chức năng tìm kiếm (theo tên cá) và lọc (theo giá, theo loại) để khách hàng dễ dàng tìm được sản phẩm mong muốn.
+1.2 Đặt hàng trực tuyến (Giỏ hàng)
+-	Khách hàng chọn sản phẩm, nhập số lượng bao (ví dụ: 10 bao cá diêu hồng (mỗi 1 bao tương ứng với 10kg cá), …) và thêm vào giỏ hàng.
+-	Sau khi kiểm tra giỏ hàng, khách hàng tiến hành "Đặt hàng", điền các thông tin bắt buộc: Tên người nhận, Số điện thoại, Địa chỉ giao hàng, và Ghi chú (nếu có).
+-	Sau khi xác nhận, đơn hàng được tạo và chuyển vào hệ thống chờ admin xác nhận.
+1.3 Theo dõi trạng thái đơn hàng
+-	Đây là chức năng quan trọng nhất đối với khách hàng. Sau khi đặt hàng, khách hàng có thể vào mục "Đơn hàng của tôi" để xem trạng thái đơn hàng của mình.
+-	Các trạng thái được cập nhật theo thời gian thực (khi admin thay đổi):
+o	Chưa xác nhận: Đơn hàng vừa được tạo, chờ admin xác nhận.
+o	Đã xác nhận: Admin đã xác nhận đơn.
+o	Đang đóng hàng: Nhân viên đang chuẩn bị cá.
+o	Đang vận chuyển: Đơn hàng đã được giao cho đơn vị vận chuyển (hoặc nhân viên của vựa đang đi giao).
+o	Đã hoàn tất: Khách hàng đã nhận được hàng.
+o	Đã hủy: Đơn hàng bị hủy (do khách hàng hoặc admin).
+1.4 Quản lý thông tin cá nhân
+-	Mỗi khách hàng có một tài khoản (đăng ký bằng email hoặc SĐT) và mật khẩu.
+-	Khách hàng có thể tự thay đổi thông tin cá nhân của mình như: mật khẩu, địa chỉ giao hàng mặc định, số điện thoại.
+-	Khách hàng có thể xem lại lịch sử tất cả các đơn hàng đã đặt trước đó.
+ 
+2.3.1.3	Nhân viên:
+Nhân viên là đối tượng hỗ trợ admin trong vận hành website và xử lý nghiệp vụ tại vựa, sử dụng trang web để xem các số liệu để đóng hàng, xử lý đơn hàng. Tùy vào quyền được cấp, nhân viên có thể thực hiện các chức năng liên quan đến nhập hàng, xử lý đơn hàng và quản lý tồn kho.
+1.1 Xem số liệu và đặt hàng (Nhập hàng)
+-	Nhân viên được phân quyền sẽ truy cập vào mục thống kê tồn kho (chức năng này tương tự của admin nhưng có thể bị giới hạn quyền sửa đổi như giá bán ra).
+-	Khi có hàng mới nhập, nhân viên có thể ghi nhận thông tin lô cá hoặc tạo phiếu nhập nếu được admin ủy quyền.
+1.2 Hỗ trợ xử lý đơn hàng
+-	Tùy thuộc vào phân quyền của admin, nhân viên có thể được giao nhiệm vụ hỗ trợ xử lý đơn hàng của khách.
+-	Hệ thống sẽ hiển thị các đơn hàng mới (trạng thái ‘Đã xác nhận’). Nhân viên sẽ dựa vào đó để chuẩn bị hàng hóa (cân cá, đóng bao đi).
+-	Sau khi chuẩn bị xong, nhân viên cập nhật trạng thái đơn hàng trên hệ thống (ví dụ: chuyển từ ‘Đã xác nhận’ sang ‘Đang đóng hàng’ hoặc ‘Đang vận chuyển’).
+1.3 Hỗ trợ quản lý kho
+-	Nhân viên có thể chịu trách nhiệm báo cáo số lượng hao hụt phát sinh trong ca làm việc để admin nhập liệu vào hệ thống.
+-	Việc này đảm bảo số liệu tồn kho trên website luôn chính xác với thực tế.

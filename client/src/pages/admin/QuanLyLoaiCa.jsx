@@ -101,6 +101,26 @@ export default function QuanLyLoaiCa() {
         navigate(`/admin/QuanLyLoaiCa/kich-co/${fish.id}`);
     };
 
+    const handleNgungBan = async (item) => {
+        if (!window.confirm(`Ngừng bán "${item.tenloaica}"? Bảng giá sẽ hết hiệu lực ngay.`)) return;
+        try {
+            await api.delete(`/Loaicas/${item.id}`);
+            setCategories(prev => prev.map(c => c.id === item.id ? { ...c, deleted: true } : c));
+            showToast("Đã ngừng bán loại cá!", "success");
+        } catch (err) {
+            const msg = err.response?.data?.message;
+            showToast(msg?.includes("ton kho") ? "Loại cá này còn tồn kho, không thể ngừng bán!" : "Thao tác thất bại!", "error");
+        }
+    };
+
+    const handleMoLai = async (item) => {
+        try {
+            await api.patch(`/Loaicas/${item.id}/khoi-phuc`);
+            setCategories(prev => prev.map(c => c.id === item.id ? { ...c, deleted: false } : c));
+            showToast("Đã mở lại loại cá!", "success");
+        } catch { showToast("Thao tác thất bại!", "error"); }
+    };
+
     return (
         <AdminLayout title="Quản Lý Loại Cá & Kích Thước">
             {/* TOOLBAR */}
@@ -157,7 +177,7 @@ export default function QuanLyLoaiCa() {
                                 <tr><td colSpan="5" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
                             ) : paginatedCategories.length > 0 ? (
                                 paginatedCategories.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <tr key={item.id} className={`transition-colors ${item.deleted ? "bg-slate-50 opacity-60" : "hover:bg-slate-50/50"}`}>
                                         <td className="p-4 text-center font-mono text-slate-400">#{item.id}</td>
                                         <td className="p-4">
                                             <div className="size-12 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 shadow-2xs">
@@ -169,15 +189,31 @@ export default function QuanLyLoaiCa() {
                                                 />
                                             </div>
                                         </td>
-                                        <td className="p-4 font-bold text-cyan-950">{item.tenloaica}</td>
+                                        <td className="p-4 font-bold text-cyan-950">
+                                            {item.tenloaica}
+                                            {item.deleted && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-200 text-slate-500 font-normal">Ngừng bán</span>}
+                                        </td>
                                         <td className="p-4 text-slate-500 max-w-xs truncate">{item.mieuta || "---"}</td>
-                                        <td className="p-4 flex items-center justify-center gap-3">
-                                            <button onClick={() => handleOpenSize(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer" title="Cấu hình kích thước">
-                                                Kích cỡ
-                                            </button>
-                                            <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer" title="Chỉnh sửa loại cá">
-                                                Sửa
-                                            </button>
+                                        <td className="p-4 flex items-center justify-center gap-2 flex-wrap">
+                                            {!item.deleted && (
+                                                <button onClick={() => handleOpenSize(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">
+                                                    Kích cỡ
+                                                </button>
+                                            )}
+                                            {!item.deleted && (
+                                                <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer">
+                                                    Sửa
+                                                </button>
+                                            )}
+                                            {!item.deleted ? (
+                                                <button onClick={() => handleNgungBan(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold hover:bg-red-100 border border-red-200 transition-colors text-xs cursor-pointer">
+                                                    Ngừng bán
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => handleMoLai(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer">
+                                                    Mở lại
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

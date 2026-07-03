@@ -100,8 +100,24 @@ export default function ChiTietDonHang() {
                 editWeight: String(d.soluongkgthucte ?? d.soluongkgthuctequydoi ?? 0)
             })));
             showToast("Chuyển trạng thái thành công!", "success");
-        } catch {
-            showToast("Lỗi thao tác thất bại!", "error");
+        } catch (error) {
+            const message = error?.response?.data?.message || "Lỗi thao tác thất bại!";
+
+            // Code 1027 = INVENTORY_NOT_ENOUGH, message dạng "Sản phẩm {tên} không đủ hàng! (...)"
+            // -> gợi ý nhập hàng ngay cho đúng sản phẩm đó thay vì bắt admin tự đi tìm.
+            if (error?.response?.data?.code === 1027) {
+                const match = message.match(/Sản phẩm (.+?) không đủ hàng/);
+                const item = match ? viewDetails.find(d => d.tenLoaiCa === match[1]) : null;
+                if (item) {
+                    showToast(message, "error", {
+                        label: "Nhập hàng ngay",
+                        onClick: () => navigate("/admin/QuanLyKho/nhap-hang", { state: { id: item.idchitietcaban } }),
+                    });
+                    return;
+                }
+            }
+
+            showToast(message, "error");
         }
     };
 
@@ -196,13 +212,19 @@ export default function ChiTietDonHang() {
                                         <td className="p-3 text-center text-slate-400 font-medium">{d.soluongkgthuctequydoi} kg</td>
                                         {isEditingMode && (() => {
                                             const ton = d.soluongton ?? 0;
+                                            // Kho hiện tại đã bị trừ sẵn phần kg thực tế cũ của chính đơn này (lúc chuyển
+                                            // "Đang đóng hàng") -> muốn biết tối đa có thể nhập bao nhiêu mà không thiếu
+                                            // hàng thật, phải cộng lại phần đó vào (giống hệt cách updateThucTeDonHang
+                                            // hoàn lại trước khi trừ số mới ở backend).
+                                            const daTruDonNay = d.soluongkgthucte ?? 0;
+                                            const tonKhaDung = ton + daTruDonNay;
                                             const donKhac = d.tongKgDonKhacDangCho ?? 0;
                                             const nhapThucTe = parseFloat(d.editWeight) || 0;
-                                            const nguy = nhapThucTe > 0 && nhapThucTe > ton;
+                                            const nguy = nhapThucTe > 0 && nhapThucTe > tonKhaDung;
                                             return (
                                                 <td className={`p-3 text-center border-x border-slate-200 ${nguy ? "bg-red-50" : "bg-emerald-50"}`}>
                                                     <div className={`font-bold text-sm ${nguy ? "text-red-600" : "text-emerald-700"}`}>
-                                                        {ton} kg
+                                                        {tonKhaDung} kg
                                                     </div>
                                                     {donKhac > 0 && (
                                                         <div className="text-xs text-orange-500 mt-0.5">
@@ -211,7 +233,7 @@ export default function ChiTietDonHang() {
                                                     )}
                                                     {nguy && (
                                                         <div className="text-xs text-red-400 mt-0.5">
-                                                            Thiếu: {(nhapThucTe - ton).toFixed(2)} kg ⚠
+                                                            Thiếu: {(nhapThucTe - tonKhaDung).toFixed(2)} kg ⚠
                                                         </div>
                                                     )}
                                                 </td>

@@ -81,10 +81,8 @@ export default function ProductList({ searchTerm }) {
     // [2] Logic lọc danh sách sản phẩm dựa trên searchTerm
     const filteredList = productList.filter((product) => {
         const item = product.result || product;
-        // Nếu không có từ khóa, trả về true (lấy hết)
+        if (item.deleted) return false;
         if (!searchTerm) return true;
-        
-        // Kiểm tra tên sản phẩm có chứa từ khóa không (không phân biệt hoa thường)
         const name = item.tenloaica ? item.tenloaica.toLowerCase() : "";
         return name.includes(searchTerm.toLowerCase());
     });

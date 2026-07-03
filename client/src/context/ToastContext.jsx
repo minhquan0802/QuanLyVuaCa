@@ -3,14 +3,15 @@ import React, { createContext, useState, useContext, useCallback } from "react";
 const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
-    const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const [toast, setToast] = useState({ show: false, message: "", type: "success", action: null });
 
-    const showToast = useCallback((message, type = "success") => {
-        setToast({ show: true, message, type });
-        
+    // action (tùy chọn): { label, onClick } - hiện thêm 1 nút bấm trong toast, tự đóng toast khi bấm
+    const showToast = useCallback((message, type = "success", action = null) => {
+        setToast({ show: true, message, type, action });
+
         setTimeout(() => {
             setToast((prev) => ({ ...prev, show: false }));
-        }, 3000);
+        }, action ? 8000 : 3000);
     }, []);
 
     return (
@@ -36,6 +37,18 @@ export function ToastProvider({ children }) {
                     <div className="flex-1 font-medium text-slate-800 leading-relaxed break-words">
                         {toast.message}
                     </div>
+
+                    {toast.action && (
+                        <button
+                            onClick={() => {
+                                toast.action.onClick();
+                                setToast((prev) => ({ ...prev, show: false }));
+                            }}
+                            className="shrink-0 px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-700 transition-colors"
+                        >
+                            {toast.action.label}
+                        </button>
+                    )}
                 </div>
             )}
         </ToastContext.Provider>
