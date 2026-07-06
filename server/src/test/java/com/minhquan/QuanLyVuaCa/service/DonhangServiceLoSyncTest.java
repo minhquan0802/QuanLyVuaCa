@@ -51,6 +51,7 @@ class DonhangServiceLoSyncTest {
     @Mock CongNoService congNoService;
     @Mock QuydoiRepository quydoiRepository;
     @Mock BanggiaRepository banggiaRepository;
+    @Mock ThongBaoService thongBaoService;
 
     DonhangService donhangService;
 
@@ -58,7 +59,7 @@ class DonhangServiceLoSyncTest {
     void setUp() {
         donhangService = new DonhangService(donhangRepository, chitietdonhangRepository, chitietcabanRepository,
                 chitietphieunhapRepository, donvitinhRepository, taikhoanRepository, donhangMapper, congNoService,
-                quydoiRepository, banggiaRepository);
+                quydoiRepository, banggiaRepository, thongBaoService);
     }
 
     @AfterEach
@@ -163,7 +164,7 @@ class DonhangServiceLoSyncTest {
 
             DonhangRequestCreation request = requestCoSan()
                     .ghichu("[POS]")
-                    .trangthaidonhang(TrangThaiDonHang.DA_THANH_TOAN)
+                    .trangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG)
                     .build();
             mockChuoiTinhToan(kho, new Chitietdonhang(), request);
 
@@ -310,7 +311,7 @@ class DonhangServiceLoSyncTest {
                     eq(kho), eq(BigDecimal.ZERO)))
                     .thenReturn(List.of(loCu, loMoi));
 
-            donhangService.updateStatus("dh-1", TrangThaiDonHang.DA_THANH_TOAN);
+            donhangService.updateStatus("dh-1", TrangThaiDonHang.DANG_DONG_HANG);
 
             assertEquals(BigDecimal.ZERO, loCu.getSoluongconlai());
             assertEquals(BigDecimal.valueOf(15), loMoi.getSoluongconlai());
@@ -332,15 +333,15 @@ class DonhangServiceLoSyncTest {
 
         @Test
         void chuyenTiepKhongTuChoXacNhan_khongTruTrung() {
-            // Đơn đã rời CHO_XAC_NHAN từ trước (ví dụ VNPAY tự chuyển DA_THANH_TOAN qua callback riêng)
+            // Đơn đã rời CHO_XAC_NHAN từ trước (ví dụ VNPAY tự chuyển DANG_DONG_HANG qua callback riêng)
             // -> chuyển tiếp tiếp theo không được trừ kho/lô lần nữa.
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
-            donhang.setTrangthaidonhang(TrangThaiDonHang.DA_THANH_TOAN);
+            donhang.setTrangthaidonhang(TrangThaiDonHang.DANG_DONG_HANG);
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
             when(donhangRepository.save(donhang)).thenReturn(donhang);
 
-            donhangService.updateStatus("dh-1", TrangThaiDonHang.DANG_DONG_HANG);
+            donhangService.updateStatus("dh-1", TrangThaiDonHang.DANG_VAN_CHUYEN);
 
             verifyNoInteractions(chitietdonhangRepository, chitietphieunhapRepository, chitietcabanRepository);
         }

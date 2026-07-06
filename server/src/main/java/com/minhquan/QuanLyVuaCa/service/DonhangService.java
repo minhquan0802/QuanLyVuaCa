@@ -48,6 +48,7 @@ public class DonhangService {
 
     QuydoiRepository quydoiRepository;
     BanggiaRepository banggiaRepository;
+    ThongBaoService thongBaoService;
 
     @Transactional
     public DonhangResponse createDonhang(DonhangRequestCreation request) {
@@ -404,6 +405,8 @@ public class DonhangService {
         // Đơn rời CHO_XAC_NHAN qua đường admin xác nhận (COD/thanh toán sau) -> trừ kho/lô lúc này
         // (đơn VNPAY không đi qua đây để rời CHO_XAC_NHAN — callback thanh toán tự trừ trực tiếp
         // qua truSoluongTon(), không trừ trùng).
+        List<String> canhBaoGiaoThieu = new ArrayList<>();
+
         if (oldStatus == TrangThaiDonHang.CHO_XAC_NHAN
                 && newStatus != TrangThaiDonHang.CHO_XAC_NHAN
                 && newStatus != TrangThaiDonHang.HUY) {
@@ -412,15 +415,37 @@ public class DonhangService {
                 BigDecimal luongCanTru = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
                 if (luongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
 
+                // Kho không đủ: không chặn đơn nữa, giao thiếu cho khách - giảm khối lượng/tiền thực tế
+                // xuống đúng số tồn kho hiện có rồi trừ sạch phần tồn đó.
                 if (kho.getSoluongton().compareTo(luongCanTru) < 0) {
-                    throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + kho.getIdloaica().getTenloaica()
-                            + " không đủ hàng! (Tồn: " + kho.getSoluongton() + ", Cần: " + luongCanTru + ")");
+                    BigDecimal luongThucGiao = kho.getSoluongton();
+
+                    canhBaoGiaoThieu.add(String.format("%s (%s): chỉ giao được %skg (đặt %skg)",
+                            kho.getIdloaica().getTenloaica(), kho.getIdsizeca().getSizeca(), luongThucGiao, luongCanTru));
+
+                    BigDecimal donGia = BigDecimal.ZERO;
+                    if (ctdh.getKhoiluongdukien() != null && ctdh.getKhoiluongdukien().compareTo(BigDecimal.ZERO) > 0) {
+                        donGia = ctdh.getTongtiendukien().divide(ctdh.getKhoiluongdukien(), 2, RoundingMode.HALF_UP);
+                    }
+                    ctdh.setKhoiluongthucte(luongThucGiao);
+                    ctdh.setTongtienthucte(luongThucGiao.multiply(donGia));
+                    chitietdonhangRepository.save(ctdh);
+
+                    luongCanTru = luongThucGiao;
                 }
 
-                truLoFifo(kho, luongCanTru);
-                kho.setSoluongton(kho.getSoluongton().subtract(luongCanTru));
-                chitietcabanRepository.save(kho);
+                if (luongCanTru.compareTo(BigDecimal.ZERO) > 0) {
+                    truLoFifo(kho, luongCanTru);
+                    kho.setSoluongton(kho.getSoluongton().subtract(luongCanTru));
+                    chitietcabanRepository.save(kho);
+                }
             }
+        }
+
+        if (!canhBaoGiaoThieu.isEmpty() && savedDonhang.getIdthongtinkhachhang() != null) {
+            String noidung = "Đơn hàng của bạn không đủ hàng để giao đủ số lượng đã đặt: "
+                    + String.join("; ", canhBaoGiaoThieu) + ". Chúng tôi đã điều chỉnh lại số lượng và tiền thực tế.";
+            thongBaoService.guiChoTaiKhoan(savedDonhang.getIdthongtinkhachhang(), noidung, "GIAO_THIEU_HANG", "/my-orders");
         }
 
         // Đơn bị hủy sau khi đã lỡ trừ kho (rời CHO_XAC_NHAN rồi mới hủy, vd đang "Đang đóng hàng")
@@ -444,7 +469,9 @@ public class DonhangService {
             congNoService.xuLyDonGiaoThanhCong(savedDonhang, tinhTongTienDonHang(savedDonhang.getIddonhang()));
         }
 
-        return donhangMapper.toDonhangResponse(savedDonhang, null, null);
+        DonhangResponse response = donhangMapper.toDonhangResponse(savedDonhang, null, null);
+        response.setCanhBaoGiaoThieu(canhBaoGiaoThieu);
+        return response;
     }
 
 

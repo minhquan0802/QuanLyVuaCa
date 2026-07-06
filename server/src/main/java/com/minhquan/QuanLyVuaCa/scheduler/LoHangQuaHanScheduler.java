@@ -22,6 +22,8 @@ public class LoHangQuaHanScheduler {
     private final ChitietphieunhapRepository chitietphieunhapRepository;
     private final ThongBaoService thongBaoService;
 
+    // "0 * * * * ?" nghĩa là giây thứ 0 của mỗi phút, mỗi giờ, mỗi ngày
+//    @Scheduled(cron = "0 * * * * ?")
     @Scheduled(cron = "0 0 2 * * ?")
     @Transactional
     public void canhBaoLoHangQuaHan() {
@@ -39,7 +41,9 @@ public class LoHangQuaHanScheduler {
                     tenSanPham, lo.getIdphieunhap().getNgaynhap(), lo.getSoluongconlai(), SO_NGAY_QUA_HAN
             );
 
-            thongBaoService.guiChoVaiTro("ADMIN", noidung, "LO_QUA_HAN", "/admin/QuanLyThanhLy");
+            // Trỏ thẳng vào trang thanh lý của đúng lô này (không phải trang danh sách chung)
+            String link = "/admin/QuanLyThanhLy/thanh-ly/" + lo.getIdchitietphieunhap();
+            thongBaoService.guiChoVaiTro("ADMIN", noidung, "LO_QUA_HAN", link);
         }
     }
 }
