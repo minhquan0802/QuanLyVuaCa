@@ -129,6 +129,15 @@ export default function Header() {
                                                         Theo dõi đơn hàng
                                                     </button>
 
+                                                    {(user?.vaitro === 'ADMIN' || user?.vaitro === 'STAFF') && (
+                                                        <button
+                                                            onClick={() => handleNavigation('/admin')}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
+                                                        >
+                                                            <span className="material-symbols-outlined text-lg">dashboard</span>
+                                                            Trang quản trị
+                                                        </button>
+                                                    )}
 
                                                     <div className="border-t border-gray-100 my-1"></div>
 

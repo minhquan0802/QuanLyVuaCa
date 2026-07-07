@@ -2,10 +2,19 @@
 
 import ProductList from "../../components/product-list"
 import { useState } from "react" // [1] Import useState
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Home() {
     // [2] Khởi tạo state lưu từ khóa tìm kiếm
     const [searchTerm, setSearchTerm] = useState("");
+
+    // Admin/Staff vào "/" hoặc "/home" thì đưa thẳng qua trang quản trị
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (user?.vaitro === "ADMIN" || user?.vaitro === "STAFF") {
+        return <Navigate to="/admin" replace />;
+    }
 
     return (
         <div className="bg-slate-50 font-body">
