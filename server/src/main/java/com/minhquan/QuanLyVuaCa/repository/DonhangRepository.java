@@ -6,6 +6,7 @@ import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -22,4 +23,8 @@ public interface DonhangRepository extends JpaRepository<Donhang, String> {
             String idthongtinkhachhang,
             TrangThaiDonHang trangthaidonhang,
             TrangThaiThanhToanDonHang trangthaithanhtoan);
+
+    // 4. Đếm số đơn theo trạng thái trong khoảng thời gian — dùng cho Dashboard thống kê
+    long countByTrangthaidonhangAndNgaydatBetween(
+            TrangThaiDonHang trangthaidonhang, LocalDateTime tuNgay, LocalDateTime denNgay);
 }

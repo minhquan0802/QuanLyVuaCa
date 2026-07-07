@@ -2,8 +2,11 @@ package com.minhquan.QuanLyVuaCa.repository;
 
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Chitietphieunhap;
+import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.entity.Phieunhap;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -30,4 +33,26 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
 
     // Tất cả chi tiết của một phiếu nhập — dùng để tính tổng tiền và hiển thị chi tiết size
     List<Chitietphieunhap> findByIdphieunhap(Phieunhap idphieunhap);
+
+    // --- Dùng cho Dashboard thống kê ---
+
+    // Tổng kg đã nhập của 1 loại cá trong khoảng thời gian
+    @Query("""
+        SELECT COALESCE(SUM(ct.soluongnhap), 0)
+        FROM Chitietphieunhap ct
+        WHERE ct.idchitietcaban.idloaica = :loaica
+          AND ct.idphieunhap.ngaynhap BETWEEN :tuNgay AND :denNgay
+    """)
+    BigDecimal tongSoLuongNhapTheoLoaiCa(@Param("loaica") Loaica loaica,
+                                         @Param("tuNgay") LocalDate tuNgay,
+                                         @Param("denNgay") LocalDate denNgay);
+
+    // Tổng tiền nhập hàng (số lượng x giá nhập) trong khoảng thời gian, không phân biệt loại cá
+    @Query("""
+        SELECT COALESCE(SUM(ct.soluongnhap * ct.gianhap), 0)
+        FROM Chitietphieunhap ct
+        WHERE ct.idphieunhap.ngaynhap BETWEEN :tuNgay AND :denNgay
+    """)
+    BigDecimal tongTienNhapTrongKhoang(@Param("tuNgay") LocalDate tuNgay,
+                                       @Param("denNgay") LocalDate denNgay);
 }

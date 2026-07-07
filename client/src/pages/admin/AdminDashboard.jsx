@@ -1,55 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { useAuth } from "../../context/AuthContext";
+import api from "../../config/axios";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { 
-    DollarSign, CheckCircle2, ShoppingCart, Receipt, 
-    PackagePlus, AlertCircle, TableProperties, BarChart2, Table 
-} from "lucide-react"; 
+import {
+    DollarSign, CheckCircle2, ShoppingCart, Receipt,
+    PackagePlus, AlertCircle, TableProperties, BarChart2, Table
+} from "lucide-react";
 
 export default function SalesDashboard() {
-    const { user } = useAuth() || {}; 
+    const { user } = useAuth() || {};
     const [timeRange, setTimeRange] = useState("THIS_MONTH");
     const [viewMode, setViewMode] = useState("TABLE"); // "TABLE" hoặc "CHART"
 
-    // --- MOCK DATA: CHỈ SỐ TÀI CHÍNH & BÁN HÀNG ---
-    const stats = { 
-        tongDoanhThu: 1450500000, 
-        chiPhiNhapHang: 980000000,
-        chiPhiPhatSinh: 45500000, 
-        donHoanThanh: 342 
-    };
+    // --- CHỈ SỐ TÀI CHÍNH & BÁN HÀNG ---
+    const [stats, setStats] = useState({ tongDoanhThu: 0, chiPhiNhapHang: 0, chiPhiPhatSinh: 0, donHoanThanh: 0 });
 
-    // --- MOCK DATA: KHỐI LƯỢNG NHẬP - BÁN - HAO HỤT ---
-    const fishVolumeData = [
-        { name: 'Cá Tra', nhap: 5500, ban: 5000, haohut: 120 },
-        { name: 'Cá Hồi', nhap: 1000, ban: 850, haohut: 15 },
-        { name: 'Cá Basa', nhap: 4500, ban: 4200, haohut: 90 },
-        { name: 'Cá Tầm', nhap: 700, ban: 600, haohut: 10 },
-        { name: 'Cá Diêu Hồng', nhap: 2500, ban: 2100, haohut: 80 },
-        { name: 'Cá Lóc', nhap: 1800, ban: 1500, haohut: 50 },
-        { name: 'Cá Chép', nhap: 1500, ban: 1200, haohut: 40 },
-        { name: 'Cá Trắm', nhap: 1300, ban: 1100, haohut: 35 },
-        { name: 'Cá Trê', nhap: 1000, ban: 900, haohut: 25 },
-        { name: 'Cá Mè', nhap: 800, ban: 700, haohut: 20 },
-    ];
+    // --- KHỐI LƯỢNG NHẬP - BÁN - HAO HỤT THEO LOẠI CÁ ---
+    const [fishVolumeData, setFishVolumeData] = useState([]);
+
+    // --- GỢI Ý NHẬP HÀNG ---
+    const [restockSuggestions, setRestockSuggestions] = useState([]);
+
+    // KPI và bảng luân chuyển phụ thuộc khoảng thời gian đang chọn, tải lại mỗi khi đổi
+    useEffect(() => {
+        api.get(`/Thongke/tong-quan?range=${timeRange}`)
+            .then(res => setStats(res.data.result))
+            .catch(() => {});
+
+        api.get(`/Thongke/luan-chuyen-hang-hoa?range=${timeRange}`)
+            .then(res => setFishVolumeData(res.data.result || []))
+            .catch(() => {});
+    }, [timeRange]);
+
+    // Gợi ý nhập hàng luôn tính theo 30 ngày gần nhất, không phụ thuộc timeRange, chỉ cần tải 1 lần
+    useEffect(() => {
+        api.get("/Thongke/de-xuat-nhap-hang")
+            .then(res => setRestockSuggestions(res.data.result || []))
+            .catch(() => {});
+    }, []);
 
     // Xử lý dữ liệu: Tự động tính Tồn kho cho cả Bảng và Biểu đồ
     const processedFishData = fishVolumeData.map(item => ({
         ...item,
         tonKho: item.nhap - item.ban - item.haohut
     })).sort((a, b) => b.ban - a.ban); // Ưu tiên xếp theo loại cá bán chạy nhất
-
-    // --- MOCK DATA: GỢI Ý NHẬP HÀNG ---
-    const restockSuggestions = [
-        { id: 'SP02', name: 'Cá Hồi', tonKho: 135, tocDoBan: 45, deXuatNhap: 300, mucDo: 'GAP', giaDapUng: 87000000 },
-        { id: 'SP04', name: 'Cá Tầm', tonKho: 90, tocDoBan: 35, deXuatNhap: 150, mucDo: 'GAP', giaDapUng: 37500000 },
-        { id: 'SP01', name: 'Cá Tra', tonKho: 380, tocDoBan: 200, deXuatNhap: 1000, mucDo: 'VUA', giaDapUng: 45000000 },
-        { id: 'SP06', name: 'Cá Lóc', tonKho: 250, tocDoBan: 80, deXuatNhap: 300, mucDo: 'VUA', giaDapUng: 15000000 },
-    ];
 
     const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
