@@ -27,7 +27,7 @@ export default function Register() {
         if (e) e.preventDefault();
         setError("");
 
-        if (!fullName || !email || !password || !confirmPassword) {
+        if (!fullName || !email || !phoneNumber || !address || !password || !confirmPassword) {
             const msg = "Vui lòng điền đầy đủ các thông tin bắt buộc (*).";
             setError(msg);
             showToast(msg, "error");
@@ -53,8 +53,8 @@ export default function Register() {
                 ten: ten,
                 email: email,
                 matkhau: password,
-                sodienthoai: phoneNumber || null,
-                diachi: address || null,
+                sodienthoai: phoneNumber,
+                diachi: address,
                 vaitro: "CUSTOMER"
             };
 
@@ -162,6 +162,7 @@ export default function Register() {
                             <div className="relative">
                                 <input
                                     type="text"
+                                    required
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"
@@ -175,6 +176,7 @@ export default function Register() {
                             <div className="relative">
                                 <input
                                     type="email"
+                                    required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"
@@ -184,10 +186,11 @@ export default function Register() {
                         </div>
 
                         <div className="group">
-                            <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Số điện thoại <span className="text-slate-400 font-normal text-xs">(Tùy chọn)</span></label>
+                            <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Số điện thoại <span className="text-red-500">*</span></label>
                             <div className="relative">
                                 <input
                                     type="tel"
+                                    required
                                     value={phoneNumber}
                                     onChange={(e) => setPhoneNumber(e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"
@@ -197,7 +200,7 @@ export default function Register() {
                         </div>
 
                         <div className="group">
-                            <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Địa chỉ</label>
+                            <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Địa chỉ <span className="text-red-500">*</span></label>
                             <div className="relative">
                                 <input
                                     type="text"
@@ -215,6 +218,7 @@ export default function Register() {
                             <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}
+                                    required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full h-12 pl-4 pr-12 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"
@@ -237,6 +241,7 @@ export default function Register() {
                             <div className="relative">
                                 <input
                                     type={showConfirmPassword ? "text" : "password"}
+                                    required
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     className="w-full h-12 pl-4 pr-12 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"
