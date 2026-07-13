@@ -52,27 +52,27 @@ public class AuthenticationController {
                 .build();
     }
 
-    @PostMapping("/introspect")
-    public ApiResponse<IntrospectResponse> kiemTraToken(@CookieValue(value = "token", required = false) String token,
-                                                        @CookieValue(value = "refreshToken", required = false) String refreshToken) {
-        var tokenRequest = IntrospectRequest.builder().token(token).build();
-        var tokenResult = service.introspect(tokenRequest);
-
-        if (tokenResult.isValid()) {
-            return ApiResponse.<IntrospectResponse>builder()
-                    .result(tokenResult)
-                    .build();
-        }
-
-        var refreshTokenRequest = IntrospectRequest.builder().token(refreshToken).build();
-        var refreshTokenResult = service.introspect(refreshTokenRequest);
-
-        return ApiResponse.<IntrospectResponse>builder()
-                .result(IntrospectResponse.builder()
-                        .valid(refreshTokenResult.isValid())
-                        .build())
-                .build();
-    }
+//    @PostMapping("/introspect")
+//    public ApiResponse<IntrospectResponse> kiemTraToken(@CookieValue(value = "token", required = false) String token,
+//                                                        @CookieValue(value = "refreshToken", required = false) String refreshToken) {
+//        var tokenRequest = IntrospectRequest.builder().token(token).build();
+//        var tokenResult = service.introspect(tokenRequest);
+//
+//        if (tokenResult.isValid()) {
+//            return ApiResponse.<IntrospectResponse>builder()
+//                    .result(tokenResult)
+//                    .build();
+//        }
+//
+//        var refreshTokenRequest = IntrospectRequest.builder().token(refreshToken).build();
+//        var refreshTokenResult = service.introspect(refreshTokenRequest);
+//
+//        return ApiResponse.<IntrospectResponse>builder()
+//                .result(IntrospectResponse.builder()
+//                        .valid(refreshTokenResult.isValid())
+//                        .build())
+//                .build();
+//    }
 
     @PostMapping("/logout")
     public ApiResponse<Void> logout(@CookieValue(value = "token", required = false) String token,
