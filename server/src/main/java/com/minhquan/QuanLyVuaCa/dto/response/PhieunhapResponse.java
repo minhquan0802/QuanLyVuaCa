@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -14,8 +15,11 @@ public class PhieunhapResponse {
     String idphieunhap;
     String tenNhaCungCap;
     String tenLoaiCa;
+    String tenNguoiTaoPhieu;
     LocalDate ngaynhap;
     BigDecimal tongsoluong;
+    BigDecimal tongtien;
     String trangthaithanhtoan;
     String ghichu;
+    List<ChiTietPhieunhapInResponse> listChiTiet;
 }

@@ -8,11 +8,21 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @ControllerAdvice
 @Slf4j
 public class XulyException {
+
+    // Kết nối SSE (/ThongBao/subscribe) hết hạn timeout là bình thường (client tự reconnect).
+    // AsyncRequestTimeoutException kế thừa RuntimeException nên nếu không chặn riêng ở đây, nó sẽ
+    // rơi vào handler RuntimeException bên dưới và cố ghi JSON vào response — nhưng response đã bị
+    // khóa Content-Type ở text/event-stream từ trước, gây thêm HttpMessageNotWritableException chồng lên.
+    @ExceptionHandler(value = AsyncRequestTimeoutException.class)
+    void xulyAsyncTimeout(AsyncRequestTimeoutException exception) {
+        log.debug("Ket noi bat dong bo (SSE) het han - tu dong dong, client se tu ket noi lai.");
+    }
 
     // SỬA LẠI HÀM NÀY
     @ExceptionHandler(value = RuntimeException.class)
@@ -47,11 +57,12 @@ public class XulyException {
     @ExceptionHandler(value = AppExceptions.class)
     ResponseEntity<ApiResponse> xulyAppexception (AppExceptions exception)
     {
+        log.warn("AppException: {}", exception.getMessage());
         ErrorCode errorCode=exception.getErrorCode();
         return ResponseEntity.status(errorCode.getStatus()).body(
                 ApiResponse.builder()
                         .code(errorCode.getCode())
-                        .message(errorCode.getMessage())
+                        .message(exception.getMessage())
                         .build()
         );
     }

@@ -10,13 +10,18 @@ const BANK_ACCOUNT = import.meta.env.VITE_BANK_ACCOUNT || "0123456789";
 const BANK_NAME = import.meta.env.VITE_BANK_NAME || "SHOP VUA CA";
 
 const TABS = [
-    { id: 'ALL', label: 'Tất cả' },
+    { id: 'ALL',         label: 'Tất cả' },
     { id: 'CHO_XAC_NHAN', label: 'Chờ xác nhận' },
     { id: 'DANG_XU_LY', label: 'Đang xử lý' },
-    { id: 'DANG_GIAO', label: 'Đang giao' },
-    { id: 'DA_GIAO', label: 'Đã giao hàng' },      
-    { id: 'DA_THANH_TOAN', label: 'Đã thanh toán' },
-    { id: 'DA_HUY', label: 'Đã hủy' },
+    { id: 'DANG_GIAO',  label: 'Đang giao' },
+    { id: 'DA_GIAO',    label: 'Đã giao hàng' },
+    { id: 'DA_HUY',     label: 'Đã hủy' },
+];
+
+const PAYMENT_FILTERS = [
+    { id: 'ALL',             label: 'Tất cả' },
+    { id: 'DA_THANH_TOAN',   label: 'Đã thanh toán' },
+    { id: 'CHUA_THANH_TOAN', label: 'Chưa thanh toán' },
 ];
 
 export default function ThongTinDonHang() {
@@ -28,6 +33,11 @@ export default function ThongTinDonHang() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('ALL');
+    const [filterPayment, setFilterPayment] = useState('ALL');
+
+    // --- PHÂN TRANG (giống cấu trúc bên Quản lý đơn hàng admin) ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 7;
 
     // --- STATE CHO MODAL CHI TIẾT ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,9 +126,13 @@ export default function ThongTinDonHang() {
         }
     };
 
+    const VNPAY_MIN = 10000;
+
     const getSoTienThanhToan = () => {
         if (!tinhTrang) return 0;
-        if (payType === 'full') return Number(tinhTrang.conNo);
+        const conNo = Number(tinhTrang.conNo);
+        if (conNo <= 0) return 0; // đã thanh toán đủ, không cho thanh toán thêm
+        if (payType === 'full') return Math.max(VNPAY_MIN, conNo);
         return Number(partialAmount) || 0;
     };
 
@@ -127,33 +141,28 @@ export default function ThongTinDonHang() {
         return `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACCOUNT}-compact2.png?amount=${amount}&addInfo=${info}&accountName=${encodeURIComponent(BANK_NAME)}`;
     };
 
+    const getMinPartial = () => Math.max(VNPAY_MIN, Math.ceil(Number(tinhTrang?.conNo || 0) * 0.1));
+
     const handleConfirmPay = async () => {
         const soTien = getSoTienThanhToan();
         if (soTien <= 0) { alert("Số tiền không hợp lệ"); return; }
+        if (payType === 'partial' && soTien < getMinPartial()) {
+            alert(`Số tiền tối thiểu là 10% số còn nợ: ${getMinPartial().toLocaleString()}đ`);
+            return;
+        }
 
         setPayLoading(true);
         try {
-            if (payMethod === 'vnpay') {
-                const { data } = await api.post("/payment/create-payment", {
-                    orderId: payOrder.iddonhang,
-                    bankCode: "NCB",
-                    language: "vn",
-                    soTienThanhToan: soTien
-                });
-                if (data.paymentUrl) {
-                    window.location.href = data.paymentUrl;
-                } else {
-                    alert("Lỗi tạo link VNPAY");
-                }
+            const { data } = await api.post("/payment/create-payment", {
+                orderId: payOrder.iddonhang,
+                bankCode: "NCB",
+                language: "vn",
+                soTienThanhToan: soTien
+            });
+            if (data.paymentUrl) {
+                window.location.href = data.paymentUrl;
             } else {
-                // Chuyển khoản: ghi nhận chờ admin xác nhận
-                await api.post("/Thanhtoan/chuyen-khoan", {
-                    iddonhang: payOrder.iddonhang,
-                    sotien: soTien,
-                    ghichu: `Chuyển khoản qua VietQR`
-                });
-                alert("Đã ghi nhận! Vui lòng chuyển khoản và chờ admin xác nhận.");
-                setIsPayModalOpen(false);
+                alert("Lỗi tạo link VNPAY");
             }
         } catch (e) {
             alert("Lỗi: " + (e.response?.data?.message || e.message));
@@ -174,22 +183,41 @@ export default function ThongTinDonHang() {
         }
     };
 
-    const filteredOrders = useMemo(() => {
-        if (activeTab === 'ALL') return orders;
+    const matchesTab = (order, tabId) => {
+        const s = order.trangthaidonhang;
+        switch (tabId) {
+            case 'ALL':         return true;
+            case 'CHO_XAC_NHAN': return s === 'CHO_XAC_NHAN';
+            case 'DANG_XU_LY':  return ['DANG_DONG_HANG', 'DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(s);
+            case 'DANG_GIAO':   return ['DANG_VAN_CHUYEN', 'DANG_GIAO_HANG'].includes(s);
+            case 'DA_GIAO':     return s === 'GIAO_HANG_THANH_CONG';
+            case 'DA_HUY':      return ['HUY', 'DA_HUY'].includes(s);
+            default: return false;
+        }
+    };
 
-        return orders.filter(order => {
-            const status = order.trangthaidonhang;
-            switch (activeTab) {
-                case 'CHO_XAC_NHAN': return status === 'CHO_XAC_NHAN';
-                case 'DANG_XU_LY': return ['DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(status);
-                case 'DANG_GIAO': return ['DANG_GIAO_HANG', 'DANG_VAN_CHUYEN'].includes(status);
-                case 'DA_GIAO': return status === 'GIAO_HANG_THANH_CONG';
-                case 'DA_THANH_TOAN': return ['DA_THANH_TOAN', 'HOAN_TAT'].includes(status);
-                case 'DA_HUY': return ['HUY', 'DA_HUY'].includes(status);
-                default: return false;
-            }
-        });
-    }, [orders, activeTab]);
+    const matchesPayment = (order, payId) => {
+        if (payId === 'ALL') return true;
+        if (payId === 'DA_THANH_TOAN')   return order.trangthaithanhtoan === 'DA_THANH_TOAN';
+        if (payId === 'CHUA_THANH_TOAN') return order.trangthaithanhtoan !== 'DA_THANH_TOAN' && order.trangthaidonhang !== 'HUY';
+        return true;
+    };
+
+    const filteredOrders = useMemo(() =>
+        orders.filter(o => matchesTab(o, activeTab) && matchesPayment(o, filterPayment)),
+        [orders, activeTab, filterPayment]
+    );
+
+    // Reset về trang 1 khi đổi tab/bộ lọc
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, filterPayment]);
+
+    const totalPages = Math.ceil(filteredOrders.length / pageSize);
+    const paginatedOrders = useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        return filteredOrders.slice(startIndex, startIndex + pageSize);
+    }, [filteredOrders, currentPage]);
 
     const getStatusText = (status) => {
         switch (status) {
@@ -198,9 +226,7 @@ export default function ThongTinDonHang() {
             case "DANG_CHUAN_BI_HANG": return "Đang đóng gói";
             case "DANG_GIAO_HANG": 
             case "DANG_VAN_CHUYEN": return "Đang giao hàng";
-            case "GIAO_HANG_THANH_CONG": return "Giao thành công"; 
-            case "DA_THANH_TOAN": return "Đã thanh toán";       
-            case "HOAN_TAT": return "Hoàn tất";
+            case "GIAO_HANG_THANH_CONG": return "Giao thành công";
             case "HUY": return "Đã hủy";
             default: return status;
         }
@@ -210,12 +236,10 @@ export default function ThongTinDonHang() {
         switch (status) {
             case "CHO_XAC_NHAN": return "bg-orange-100 text-orange-600";
             case "DA_XAC_NHAN":
-            case "DANG_CHUAN_BI_HANG": return "bg-cyan-100 text-cyan-600";
+            case "DANG_CHUAN_BI_HANG": return "bg-blue-100 text-blue-600";
             case "DANG_GIAO_HANG": 
             case "DANG_VAN_CHUYEN": return "bg-cyan-100 text-cyan-600";
-            case "GIAO_HANG_THANH_CONG": return "bg-teal-100 text-teal-700"; 
-            case "DA_THANH_TOAN": 
-            case "HOAN_TAT": return "bg-green-100 text-green-700";           
+            case "GIAO_HANG_THANH_CONG": return "bg-teal-100 text-teal-700";
             case "DA_HUY":
             case "HUY": return "bg-red-100 text-red-600";
             default: return "bg-gray-100 text-gray-600";
@@ -237,30 +261,37 @@ export default function ThongTinDonHang() {
             <main className="flex-grow pb-12">
                 <div className="mx-auto max-w-5xl px-0 md:px-4 pt-4 md:pt-8">
                     
-                    {/* TAB BAR */}
+                    {/* TAB BAR + BỘ LỌC PHỤ */}
                     <div className="bg-white sticky top-[70px] z-10 shadow-sm border-b border-slate-200 mb-4 md:rounded-t-lg overflow-hidden">
-                        <div className="flex overflow-x-auto no-scrollbar">
+                        {/* Tab trạng thái đơn hàng */}
+                        <div className="grid overflow-x-auto no-scrollbar" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
                             {TABS.map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex-1 min-w-[110px] py-4 text-sm font-medium text-center transition-colors whitespace-nowrap border-b-2 
+                                    className={`px-2 py-4 text-sm font-medium text-center transition-colors whitespace-nowrap border-b-2
                                         ${activeTab === tab.id
-                                            ? "border-cyan-600 text-cyan-600"
-                                            : "border-transparent text-slate-600 hover:text-cyan-500"
+                                            ? "border-blue-600 text-blue-600"
+                                            : "border-transparent text-slate-600 hover:text-blue-500"
                                         }`}
                                 >
-                                    {tab.label} ({orders.filter(o => {
-                                        if (tab.id === 'ALL') return true;
-                                        const s = o.trangthaidonhang;
-                                        if (tab.id === 'CHO_XAC_NHAN') return s === 'CHO_XAC_NHAN';
-                                        if (tab.id === 'DANG_XU_LY') return ['DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(s);
-                                        if (tab.id === 'DANG_GIAO') return ['DANG_GIAO_HANG', 'DANG_VAN_CHUYEN'].includes(s);
-                                        if (tab.id === 'DA_GIAO') return s === 'GIAO_HANG_THANH_CONG';
-                                        if (tab.id === 'DA_THANH_TOAN') return ['DA_THANH_TOAN', 'HOAN_TAT'].includes(s);
-                                        if (tab.id === 'DA_HUY') return ['HUY', 'DA_HUY'].includes(s);
-                                        return false;
-                                    }).length})
+                                    {tab.label} ({orders.filter(o => matchesTab(o, tab.id)).length})
+                                </button>
+                            ))}
+                        </div>
+                        {/* Bộ lọc phụ: trạng thái thanh toán */}
+                        <div className="flex gap-2 px-3 py-2 border-t border-slate-100">
+                            {PAYMENT_FILTERS.map(f => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setFilterPayment(f.id)}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                                        filterPayment === f.id
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-400 hover:text-blue-500"
+                                    }`}
+                                >
+                                    {f.label}
                                 </button>
                             ))}
                         </div>
@@ -269,7 +300,7 @@ export default function ThongTinDonHang() {
                     {/* DANH SÁCH ĐƠN HÀNG */}
                     {loading ? (
                         <div className="text-center py-12">
-                            <div className="animate-spin size-8 border-4 border-cyan-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <div className="animate-spin size-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                             Đang tải đơn hàng...
                         </div>
                     ) : filteredOrders.length === 0 ? (
@@ -281,7 +312,7 @@ export default function ThongTinDonHang() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredOrders.map((order) => {
+                            {paginatedOrders.map((order) => {
                                 // [3] Lấy sản phẩm đầu tiên để hiển thị Preview
                                 // Kiểm tra cấu trúc trả về từ Backend. 
                                 // Giả sử Backend trả về listChitietdonhang hoặc chiTietDonHangs
@@ -296,7 +327,7 @@ export default function ThongTinDonHang() {
                                         <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold text-slate-800">Minh Quân Fresh</span>
-                                                <button className="px-2 py-0.5 bg-cyan-600 text-white text-[10px] rounded font-bold">Mall</button>
+                                                <button className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded font-bold">Mall</button>
                                             </div>
                                             <div className="flex items-center gap-2 text-sm">
                                                 <span className={`font-medium uppercase truncate px-2 py-0.5 rounded text-xs ${getStatusStyle(order.trangthaidonhang)}`}>
@@ -340,7 +371,7 @@ export default function ThongTinDonHang() {
                                                         
                                                         {/* Badge "Xem thêm" nếu có nhiều món */}
                                                         {otherItemsCount > 0 && (
-                                                            <div className="mt-1 text-xs text-cyan-600 font-medium">
+                                                            <div className="mt-1 text-xs text-blue-600 font-medium">
                                                                 Xem thêm {otherItemsCount} sản phẩm khác...
                                                             </div>
                                                         )}
@@ -372,7 +403,7 @@ export default function ThongTinDonHang() {
                                         <div className="border-t border-slate-100 pt-4 mt-4">
                                             <div className="flex justify-end items-center gap-2 mb-4">
                                                 <span className="text-sm text-slate-600">Thành tiền:</span>
-                                                <span className="text-lg font-bold text-cyan-600">
+                                                <span className="text-lg font-bold text-blue-600">
                                                     {order.tongtien ? order.tongtien.toLocaleString() : 0}₫
                                                 </span>
                                             </div>
@@ -397,7 +428,7 @@ export default function ThongTinDonHang() {
                                                     </button>
                                                 )}
                                                 {/* Thanh toán: chỉ khách sỉ, khi GIAO_HANG_THANH_CONG */}
-                                                {isWholesale && order.trangthaidonhang === 'GIAO_HANG_THANH_CONG' && (
+                                                {isWholesale && order.trangthaidonhang === 'GIAO_HANG_THANH_CONG' && order.trangthaithanhtoan !== 'DA_THANH_TOAN' && (
                                                     <button
                                                         onClick={() => handleOpenPayModal(order)}
                                                         className="px-5 py-2 rounded bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors flex items-center gap-1"
@@ -406,7 +437,7 @@ export default function ThongTinDonHang() {
                                                         Thanh toán
                                                     </button>
                                                 )}
-                                                <button className="px-5 py-2 rounded bg-cyan-600 text-white text-sm font-medium hover:bg-cyan-700 transition-colors">
+                                                <button className="px-5 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
                                                     Mua lại
                                                 </button>
                                                 <button
@@ -420,6 +451,44 @@ export default function ThongTinDonHang() {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {/* PHÂN TRANG */}
+                    {!loading && filteredOrders.length > 0 && (
+                        <div className="p-4 mt-4 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 md:rounded-lg shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => prev - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Trước
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${currentPage === page
+                                                    ? "bg-blue-600 text-white shadow-sm"
+                                                    : "text-slate-600 hover:bg-slate-100"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => prev + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Sau
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -454,7 +523,9 @@ export default function ThongTinDonHang() {
                                             <thead className="bg-slate-50 border-b border-slate-100 text-slate-500">
                                                 <tr>
                                                     <th className="p-3 font-medium">Sản phẩm</th>
-                                                    <th className="p-3 font-medium text-center">SL</th>
+                                                    <th className="p-3 font-medium text-center">Số lượng</th>
+                                                    <th className="p-3 font-medium text-center">Dự kiến (kg)</th>
+                                                    <th className="p-3 font-medium text-center">Kg thực tế</th>
                                                     <th className="p-3 font-medium text-right">Đơn giá</th>
                                                     <th className="p-3 font-medium text-right">Thành tiền</th>
                                                 </tr>
@@ -466,12 +537,22 @@ export default function ThongTinDonHang() {
                                                             <p className="font-bold text-slate-700">{item.tenLoaiCa}</p>
                                                             <p className="text-xs text-slate-500">{item.tenSize}</p>
                                                         </td>
-                                                        <td className="p-3 text-center">{item.soluong}</td>
-                                                        <td className="p-3 text-right">
-                                                            {item.dongia ? item.dongia.toLocaleString() : 0}đ
+                                                        <td className="p-3 text-center font-bold text-slate-800">
+                                                            {item.soluong} {item.tenDonViTinh || ""}
+                                                        </td>
+                                                        <td className="p-3 text-center text-slate-400">
+                                                            {item.soluongkgthuctequydoi != null ? `${item.soluongkgthuctequydoi} kg` : "—"}
+                                                        </td>
+                                                        <td className="p-3 text-center font-bold text-slate-800">
+                                                            {item.soluongkgthucte != null ? `${item.soluongkgthucte} kg` : <span className="text-slate-400 text-xs">Chưa cân</span>}
+                                                        </td>
+                                                        <td className="p-3 text-right text-slate-400 text-xs">
+                                                            {item.soluongkgthuctequydoi
+                                                                ? Math.round(item.tongtiendukien / item.soluongkgthuctequydoi).toLocaleString()
+                                                                : (item.dongia ?? 0).toLocaleString()}đ/kg
                                                         </td>
                                                         <td className="p-3 text-right font-bold text-slate-700">
-                                                            {item.tongtiendukien ? item.tongtiendukien.toLocaleString() : 0}đ
+                                                            {(item.tongtienthucte ?? item.tongtiendukien ?? 0).toLocaleString()}đ
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -481,7 +562,7 @@ export default function ThongTinDonHang() {
 
                                     <div className="flex justify-between items-center pt-4 border-t border-dashed border-slate-200">
                                         <span className="font-bold text-slate-600">Tổng thanh toán:</span>
-                                        <span className="font-display text-2xl font-bold text-cyan-600">
+                                        <span className="font-display text-2xl font-bold text-blue-600">
                                             {selectedOrder.tongtien ? selectedOrder.tongtien.toLocaleString() : 0}đ
                                         </span>
                                     </div>
@@ -545,7 +626,13 @@ export default function ThongTinDonHang() {
                                         <input type="radio" name="payType" checked={payType === 'full'} onChange={() => setPayType('full')} className="text-orange-500" />
                                         <div>
                                             <p className="text-sm font-bold text-slate-700">Trả hết</p>
-                                            <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString() : 0}đ</p>
+                                            {tinhTrang && Number(tinhTrang.conNo) <= 0 ? (
+                                                <p className="text-xs text-green-600">Đã thanh toán đầy đủ</p>
+                                            ) : tinhTrang && Number(tinhTrang.conNo) < VNPAY_MIN ? (
+                                                <p className="text-xs text-orange-600">{VNPAY_MIN.toLocaleString()}đ <span className="text-slate-400">(tối thiểu VNPAY)</span></p>
+                                            ) : (
+                                                <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString() : 0}đ</p>
+                                            )}
                                         </div>
                                     </label>
                                     <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payType === 'partial' ? 'border-orange-500 bg-orange-50' : 'border-slate-200'}`}>
@@ -556,64 +643,55 @@ export default function ThongTinDonHang() {
                                         </div>
                                     </label>
                                 </div>
+                                {tinhTrang && Number(tinhTrang.conNo) > 0 && Number(tinhTrang.conNo) < VNPAY_MIN && payType === 'full' && (
+                                    <p className="text-xs text-amber-600 mt-2">
+                                        Số nợ còn lại dưới 10,000đ — VNPAY yêu cầu tối thiểu 10,000đ. Phần dư sẽ được ghi nhận làm tín dụng cho đơn tiếp theo.
+                                    </p>
+                                )}
                                 {payType === 'partial' && (
-                                    <input
-                                        type="number"
-                                        value={partialAmount}
-                                        onChange={e => setPartialAmount(e.target.value)}
-                                        className="mt-3 w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-                                        placeholder="Nhập số tiền muốn trả (VNĐ)"
-                                        min={1000}
-                                        max={tinhTrang?.conNo}
-                                    />
+                                    <div className="mt-3">
+                                        <input
+                                            type="number"
+                                            value={partialAmount}
+                                            onChange={e => setPartialAmount(e.target.value)}
+                                            className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-400 text-sm"
+                                            placeholder="Nhập số tiền muốn trả (VNĐ)"
+                                            min={getMinPartial()}
+                                        />
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            Tối thiểu: <span className="font-semibold text-orange-500">{getMinPartial().toLocaleString()}đ</span>
+                                            {getMinPartial() === VNPAY_MIN && <span className="text-slate-400"> (giới hạn tối thiểu VNPAY)</span>}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Chọn phương thức */}
+                            {/* Phương thức thanh toán — chỉ VNPAY */}
                             <div>
                                 <p className="text-sm font-bold text-slate-600 mb-2">Phương thức thanh toán</p>
                                 <div className="flex gap-3">
-                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'vnpay' ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200'}`}>
-                                        <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="text-cyan-500" />
+                                    <label className="flex-1 flex items-center gap-2 p-3 rounded-xl border border-blue-500 bg-blue-50 cursor-pointer">
+                                        <input type="radio" name="payMethod" checked readOnly className="text-blue-500" />
                                         <div className="flex items-center gap-2">
                                             <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png" alt="VNPAY" className="h-6 object-contain" />
                                             <span className="text-sm font-bold text-slate-700">VNPAY</span>
                                         </div>
                                     </label>
-                                    <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${payMethod === 'bank' ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200'}`}>
-                                        <input type="radio" name="payMethod" checked={payMethod === 'bank'} onChange={() => setPayMethod('bank')} className="text-cyan-500" />
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-700">Chuyển khoản</p>
-                                            <p className="text-xs text-slate-400">Quét QR ngân hàng</p>
-                                        </div>
-                                    </label>
                                 </div>
                             </div>
-
-                            {/* QR chuyển khoản */}
-                            {payMethod === 'bank' && getSoTienThanhToan() > 0 && (
-                                <div className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl">
-                                    <p className="text-xs text-slate-500">Quét mã để chuyển khoản</p>
-                                    <img
-                                        src={getVietQrUrl(getSoTienThanhToan())}
-                                        alt="VietQR"
-                                        className="w-48 h-48 object-contain rounded-lg"
-                                    />
-                                    <p className="text-xs font-bold text-slate-600">{BANK_ID} - {BANK_ACCOUNT}</p>
-                                    <p className="text-sm font-bold text-orange-600">{getSoTienThanhToan().toLocaleString()}đ</p>
-                                </div>
-                            )}
 
                             {/* Lịch sử thanh toán */}
                             {tinhTrang?.lichSuThanhToan?.length > 0 && (
                                 <div>
                                     <p className="text-sm font-bold text-slate-600 mb-2">Lịch sử thanh toán</p>
                                     <div className="space-y-2">
-                                        {tinhTrang.lichSuThanhToan.map(item => (
+                                        {tinhTrang.lichSuThanhToan.filter(item => !(item.phuongthuc === 'VNPAY' && item.trangthai === 'CHO_XAC_NHAN')).map(item => (
                                             <div key={item.idthanhtoan} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
                                                 <div>
                                                     <span className="font-medium">{Number(item.sotien).toLocaleString()}đ</span>
-                                                    <span className="text-slate-400 ml-2 text-xs">({item.phuongthuc})</span>
+                                                    <span className="text-slate-400 ml-2 text-xs">
+                                                        ({item.phuongthuc === 'SO_DU' ? 'Số dư trả trước' : item.phuongthuc})
+                                                    </span>
                                                 </div>
                                                 <span className={`text-xs px-2 py-0.5 rounded font-bold ${item.trangthai === 'DA_THANH_TOAN' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                                                     {item.trangthai === 'DA_THANH_TOAN' ? 'Đã xác nhận' : 'Chờ xác nhận'}
@@ -630,13 +708,19 @@ export default function ThongTinDonHang() {
                             <button onClick={() => setIsPayModalOpen(false)} className="px-5 py-2 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
                                 Đóng
                             </button>
-                            <button
-                                onClick={handleConfirmPay}
-                                disabled={payLoading || getSoTienThanhToan() <= 0}
-                                className={`px-5 py-2 rounded-xl text-white font-bold transition-all ${payLoading || getSoTienThanhToan() <= 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
-                            >
-                                {payLoading ? 'Đang xử lý...' : payMethod === 'vnpay' ? 'Thanh toán VNPAY' : 'Xác nhận đã chuyển khoản'}
-                            </button>
+                            {tinhTrang && Number(tinhTrang.conNo) <= 0 ? (
+                                <div className="px-5 py-2 rounded-xl bg-green-100 text-green-700 font-bold text-sm flex items-center gap-1">
+                                    Đơn hàng đã thanh toán đầy đủ
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleConfirmPay}
+                                    disabled={payLoading || getSoTienThanhToan() <= 0}
+                                    className={`px-5 py-2 rounded-xl text-white font-bold transition-all ${payLoading || getSoTienThanhToan() <= 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
+                                >
+                                    {payLoading ? 'Đang xử lý...' : 'Thanh toán VNPAY'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

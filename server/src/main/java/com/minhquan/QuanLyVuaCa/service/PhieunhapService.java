@@ -2,10 +2,13 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietPhieunhapRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.PhieunhapRequest;
+import com.minhquan.QuanLyVuaCa.dto.response.ChiTietPhieunhapInResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.PhieunhapResponse;
 import com.minhquan.QuanLyVuaCa.entity.*;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.ChitietphieunhapMapper;
 import com.minhquan.QuanLyVuaCa.mapper.PhieunhapMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
@@ -13,6 +16,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,33 +38,84 @@ public class PhieunhapService {
     NhacungcapRepository nhacungcapRepository;
     LoaicaRepository loaicaRepository;
     SizecaRepository sizecaRepository;
+    TaiKhoanRepository taiKhoanRepository;
 
     PhieunhapMapper phieunhapMapper;
     ChitietphieunhapMapper chitietphieunhapMapper;
     BanggiaRepository banggiaRepository;
+
+    @Transactional(readOnly = true)
+    public List<PhieunhapResponse> getDanhSach() {
+        return phieunhapRepository.findAll(Sort.by(Sort.Direction.DESC, "ngaynhap"))
+                .stream()
+                .map(phieunhap -> {
+                    PhieunhapResponse resp = phieunhapMapper.toResponse(phieunhap);
+
+                    List<Chitietphieunhap> chiTiets = chitietphieunhapRepository.findByIdphieunhap(phieunhap);
+
+                    List<ChiTietPhieunhapInResponse> listChiTiet = chiTiets.stream()
+                            .map(d -> {
+                                String tenSize = (d.getIdchitietcaban() != null && d.getIdchitietcaban().getIdsizeca() != null)
+                                        ? d.getIdchitietcaban().getIdsizeca().getSizeca()
+                                        : "?";
+                                BigDecimal sl = d.getSoluongnhap() != null ? d.getSoluongnhap() : BigDecimal.ZERO;
+                                BigDecimal gia = d.getGianhap() != null ? d.getGianhap() : BigDecimal.ZERO;
+                                return ChiTietPhieunhapInResponse.builder()
+                                        .tenSize(tenSize)
+                                        .soluongnhap(sl)
+                                        .gianhap(gia)
+                                        .thanhtien(sl.multiply(gia))
+                                        .build();
+                            })
+                            .toList();
+
+                    BigDecimal tongtien = listChiTiet.stream()
+                            .map(ChiTietPhieunhapInResponse::getThanhtien)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    resp.setTongtien(tongtien);
+                    resp.setListChiTiet(listChiTiet);
+                    return resp;
+                })
+                .toList();
+    }
+
+    @Transactional
+    public void capNhatThanhToan(String id) {
+        Phieunhap phieunhap = phieunhapRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.PHIEUNHAP_NOT_EXISTED));
+        phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.DA_THANH_TOAN);
+        phieunhapRepository.save(phieunhap);
+    }
 
     @Transactional
     public PhieunhapResponse nhapHang(PhieunhapRequest request) {
         // --- 1. TẠO PHIẾU NHẬP ---
         Phieunhap phieunhap = phieunhapMapper.toEntity(request);
 
+        // Lấy user đang đăng nhập để ghi nhận người tạo phiếu
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        taiKhoanRepository.findByEmail(email).ifPresent(phieunhap::setIdnguoitaophieu);
+
         // Tìm và Set Nhà cung cấp
         Nhacungcap ncc = nhacungcapRepository.findById(request.getIdncc())
-                .orElseThrow(() -> new RuntimeException("Nhà cung cấp không tồn tại"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.NHACUNGCAP_NOT_EXISTED));
         phieunhap.setIdncc(ncc);
 
         // Tìm và Set Loại cá
         Loaica loaica = loaicaRepository.findById(request.getIdloaica())
-                .orElseThrow(() -> new RuntimeException("Loại cá không tồn tại"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
         phieunhap.setIdloaica(loaica);
 
         // Set mặc định ngày nhập
         if (phieunhap.getNgaynhap() == null) phieunhap.setNgaynhap(LocalDate.now());
 
-        // Xử lý Enum Trạng thái thanh toán
-        if (request.getTrangthaithanhtoan() != null) {
+        // Xử lý Enum Trạng thái thanh toán — chỉ ADMIN mới được đặt DA_THANH_TOAN lúc tạo
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (isAdmin && request.getTrangthaithanhtoan() != null) {
             try {
-                // Request gửi String theo format "CHUA_THANH_TOAN" hoặc "DA_THANH_TOAN"
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.valueOf(request.getTrangthaithanhtoan()));
             } catch (IllegalArgumentException e) {
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.CHUA_THANH_TOAN);
@@ -104,7 +160,7 @@ public class PhieunhapService {
                 // --- LOGIC KHO (Bảng chitietcaban) ---
                 // Cần Size để tìm trong kho
                 Sizeca sizeca = sizecaRepository.findById(itemRequest.getIdsizeca())
-                        .orElseThrow(() -> new RuntimeException("Size cá không tồn tại"));
+                        .orElseThrow(() -> new AppExceptions(ErrorCode.SIZECA_NOT_EXISTED));
 
                 // Tìm trong kho xem đã có cặp (Loại cá - Size) này chưa
                 Chitietcaban khoItem = chitietcabanRepository.findByIdloaicaAndIdsizeca(loaica, sizeca)

@@ -2,9 +2,12 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.request.PaymentVNPAYRequest;
 import com.minhquan.QuanLyVuaCa.entity.Donhang;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.DonhangRepository;
 import com.minhquan.QuanLyVuaCa.utils.VnPayUtils;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +49,7 @@ public class VnPayService {
         }
 
         if (soTien.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Số tiền thanh toán không hợp lệ (<= 0)");
+            throw new AppExceptions(ErrorCode.SOTIEN_THANH_TOAN_KHONG_HOP_LE);
         }
 
         // 2. Với partial payment: tạo bản ghi thanhtoan trước, dùng idthanhtoan làm TxnRef
@@ -139,7 +142,8 @@ public class VnPayService {
                         Donhang donhang = donhangRepository.findById(orderId).orElse(null);
 
                         if (donhang != null) {
-                            donhang.setTrangthaidonhang(TrangThaiDonHang.DA_THANH_TOAN);
+                            donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
+                            donhang.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
                             donhangRepository.save(donhang);
 
                             try {
@@ -151,7 +155,12 @@ public class VnPayService {
                         }
                     }
                 } else {
-                    return 0; // Return 0: Giao dịch lỗi/Hủy
+                    // VNPAY trả về thất bại/hủy → xóa record pending nếu là partial payment
+                    String failedTxnRef = request.getParameter("vnp_TxnRef");
+                    if (failedTxnRef != null && failedTxnRef.startsWith("DEBT-")) {
+                        thanhtoanService.huyBienBanVnpay(failedTxnRef.substring(5));
+                    }
+                    return 0;
                 }
             } else {
                 return -1; // Return -1: Sai chữ ký

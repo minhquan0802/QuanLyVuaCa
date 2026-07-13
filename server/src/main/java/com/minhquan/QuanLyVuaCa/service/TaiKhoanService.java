@@ -38,10 +38,17 @@ public class TaiKhoanService {
     ChitietGioHangRepository chitietGioHangRepository;
     EmailService emailService;
     CongNoService congNoService;
+    PwnedPasswordService pwnedPasswordService;
 
     public TaikhoanResponse taoTaiKhoan(TaiKhoanCreationRequest request) {
         if (taiKhoanRepository.existsByEmail(request.getEmail()))
             throw new AppExceptions(ErrorCode.USER_EXISTED);
+
+        if ("CUSTOMER".equals(request.getVaitro()) && (request.getDiachi() == null || request.getDiachi().isBlank()))
+            throw new AppExceptions(ErrorCode.ADDRESS_INVALID);
+
+        if (pwnedPasswordService.kiemTraMatKhauBiLo(request.getMatkhau()))
+            throw new AppExceptions(ErrorCode.PASSWORD_PWNED);
 
         Taikhoan taikhoan = taikhoanMapper.toTaikhoan(request);
         taikhoan.setMatkhau(passwordEncoder.encode(request.getMatkhau()));
@@ -56,7 +63,7 @@ public class TaiKhoanService {
             taikhoan.setTrangthaitk(TrangThaiTaiKhoan.HOAT_DONG);
             taiKhoanRepository.save(taikhoan);
 
-            if ("CUSTOMER".equals(request.getVaitro())) {
+            if ("CUSTOMER".equals(request.getVaitro()) || "STAFF".equals(request.getVaitro())) {
                 String token = UUID.randomUUID().toString();
                 String hoTen = request.getHo() + " " + request.getTen();
                 emailService.saveWelcomeToken(taikhoan.getEmail(), token);
@@ -120,6 +127,9 @@ public class TaiKhoanService {
 
         Taikhoan taikhoan = taiKhoanRepository.findByEmail(email)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
+
+        if (pwnedPasswordService.kiemTraMatKhauBiLo(matkhauMoi))
+            throw new AppExceptions(ErrorCode.PASSWORD_PWNED);
 
         taikhoan.setMatkhau(passwordEncoder.encode(matkhauMoi));
         taiKhoanRepository.save(taikhoan);
@@ -213,6 +223,9 @@ public class TaiKhoanService {
 
         if (!passwordEncoder.matches(matkhauCu, taikhoan.getMatkhau()))
             throw new AppExceptions(ErrorCode.WRONG_PASSWORD);
+
+        if (pwnedPasswordService.kiemTraMatKhauBiLo(matkhauMoi))
+            throw new AppExceptions(ErrorCode.PASSWORD_PWNED);
 
         taikhoan.setMatkhau(passwordEncoder.encode(matkhauMoi));
         taiKhoanRepository.save(taikhoan);

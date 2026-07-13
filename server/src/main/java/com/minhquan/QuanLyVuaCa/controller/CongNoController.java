@@ -20,13 +20,12 @@ import java.util.List;
 @RequestMapping("/CongNo")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class CongNoController {
 
     CongNoService congNoService;
 
-    // Khởi tạo công nợ ban đầu cho 1 khách từ lịch sử đơn hàng (Phase 1 - tái dùng ở Phase 5 khi admin set hạn mức lần đầu)
     @PostMapping("/{idtaikhoan}/khoi-tao")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> khoiTaoCongNo(@PathVariable String idtaikhoan) {
         congNoService.khoiTaoCongNo(idtaikhoan);
         return ApiResponse.<String>builder()
@@ -36,6 +35,7 @@ public class CongNoController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<List<CongNoKhachResponse>> layDanhSachKhachCoCongNo() {
         return ApiResponse.<List<CongNoKhachResponse>>builder()
                 .code(200)
@@ -45,6 +45,7 @@ public class CongNoController {
     }
 
     @PutMapping("/{idtaikhoan}/han-muc")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> capNhatHanMuc(@PathVariable String idtaikhoan, @Valid @RequestBody CapNhatHanMucRequest request) {
         congNoService.capNhatHanMuc(idtaikhoan, request.getHanmuctindung());
         return ApiResponse.<String>builder()
@@ -54,6 +55,7 @@ public class CongNoController {
     }
 
     @PutMapping("/{idtaikhoan}/dieu-chinh")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> dieuChinhThuCong(@PathVariable String idtaikhoan, @Valid @RequestBody DieuChinhCongNoRequest request) {
         congNoService.dieuChinhThuCong(idtaikhoan, request.getSotien(), request.isTang(), request.getGhichu());
         return ApiResponse.<String>builder()
@@ -63,6 +65,7 @@ public class CongNoController {
     }
 
     @PutMapping("/{idtaikhoan}/mo-khoa")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> moKhoaThuCong(@PathVariable String idtaikhoan, @Valid @RequestBody MoKhoaRequest request) {
         congNoService.moKhoaThuCong(idtaikhoan, request.getGhichu());
         return ApiResponse.<String>builder()
@@ -72,6 +75,7 @@ public class CongNoController {
     }
 
     @GetMapping("/{idtaikhoan}/lich-su")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<List<LichSuCongNoResponse>> layLichSu(@PathVariable String idtaikhoan) {
         return ApiResponse.<List<LichSuCongNoResponse>>builder()
                 .code(200)

@@ -2,15 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import api from "../config/axios";
 
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, role, logout } = useAuth();
+    const { user, logout } = useAuth();
     const { totalItems } = useCart();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+
+    // --- THÔNG BÁO ---
+    const [thongBaoList, setThongBaoList] = useState([]);
+    const [soChuaXem, setSoChuaXem] = useState(0);
+    const [isThongBaoOpen, setIsThongBaoOpen] = useState(false);
+    const thongBaoRef = useRef(null);
 
     const isActive = (path) => location.pathname === path;
 
@@ -19,12 +26,44 @@ export default function Header() {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
             }
+            if (thongBaoRef.current && !thongBaoRef.current.contains(event.target)) {
+                setIsThongBaoOpen(false);
+            }
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    // Chỉ tải & lắng nghe thông báo khi đã đăng nhập
+    useEffect(() => {
+        if (!user) return;
+
+        api.get("/ThongBao").then(res => setThongBaoList(res.data.result || [])).catch(() => {});
+        api.get("/ThongBao/chua-xem").then(res => setSoChuaXem(res.data.result || 0)).catch(() => {});
+
+        const eventSource = new EventSource(`${import.meta.env.VITE_BE_URL}/ThongBao/subscribe`, { withCredentials: true });
+        eventSource.addEventListener("thongbao", (e) => {
+            const thongBaoMoi = JSON.parse(e.data);
+            setThongBaoList(prev => [thongBaoMoi, ...prev]);
+            setSoChuaXem(prev => prev + 1);
+        });
+
+        return () => eventSource.close();
+    }, [user]);
+
+    const handleClickThongBao = async (thongBao) => {
+        if (!thongBao.daxem) {
+            try {
+                await api.put(`/ThongBao/${thongBao.idthongbao}/da-xem`);
+                setThongBaoList(prev => prev.map(tb => tb.idthongbao === thongBao.idthongbao ? { ...tb, daxem: true } : tb));
+                setSoChuaXem(prev => Math.max(0, prev - 1));
+            } catch { /* bỏ qua, vẫn cho điều hướng */ }
+        }
+        setIsThongBaoOpen(false);
+        if (thongBao.link) navigate(thongBao.link);
+    };
 
     const handleNavigation = (path) => {
         navigate(path);
@@ -90,6 +129,15 @@ export default function Header() {
                                                         Theo dõi đơn hàng
                                                     </button>
 
+                                                    {(user?.vaitro === 'ADMIN' || user?.vaitro === 'STAFF') && (
+                                                        <button
+                                                            onClick={() => handleNavigation('/admin')}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
+                                                        >
+                                                            <span className="material-symbols-outlined text-lg">dashboard</span>
+                                                            Trang quản trị
+                                                        </button>
+                                                    )}
 
                                                     <div className="border-t border-gray-100 my-1"></div>
 
@@ -114,6 +162,47 @@ export default function Header() {
                                     </button>
                                 )}
                             </div>
+
+                            {/* --- NÚT THÔNG BÁO --- */}
+                            {user && (
+                                <div className="relative" ref={thongBaoRef}>
+                                    <button
+                                        onClick={() => setIsThongBaoOpen(prev => !prev)}
+                                        className="relative flex items-center justify-center size-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-300 cursor-pointer"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">notifications</span>
+                                        {soChuaXem > 0 && (
+                                            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-cyan-600">
+                                                {soChuaXem > 9 ? "9+" : soChuaXem}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {isThongBaoOpen && (
+                                        <div className="absolute right-0 top-full mt-3 w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden z-50">
+                                            <div className="px-4 py-3 border-b border-slate-100 font-bold text-sm text-slate-800">
+                                                Thông báo
+                                            </div>
+                                            <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
+                                                {thongBaoList.length > 0 ? (
+                                                    thongBaoList.map(tb => (
+                                                        <button
+                                                            key={tb.idthongbao}
+                                                            onClick={() => handleClickThongBao(tb)}
+                                                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!tb.daxem ? "bg-cyan-50/40" : ""}`}
+                                                        >
+                                                            <p className="text-sm text-slate-700 leading-snug">{tb.noidung}</p>
+                                                            <p className="text-xs text-slate-400 mt-1">{new Date(tb.thoigiantao).toLocaleString('vi-VN')}</p>
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-4 py-8 text-center text-sm text-slate-400 italic">Chưa có thông báo nào.</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* --- CART BUTTON --- */}
                             <button
@@ -160,7 +249,7 @@ export default function Header() {
                                                 Hồ sơ cá nhân
                                             </button>
 
-                                            {role !== 'ADMIN' && (
+                                            {user?.vaitro === 'CUSTOMER' && (
                                                 <button
                                                     onClick={() => handleNavigation('/my-orders')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
@@ -170,7 +259,7 @@ export default function Header() {
                                                 </button>
                                             )}
 
-                                            {role === 'ADMIN' && (
+                                            {(user?.vaitro === 'ADMIN' || user?.vaitro === 'STAFF') && (
                                                 <button
                                                     onClick={() => handleNavigation('/admin')}
                                                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"

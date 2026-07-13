@@ -98,6 +98,7 @@ public class PhieuthanhlyService {
         return toResponse(savedPhieu);
     }
 
+    @Transactional(readOnly = true)
     public List<LoHangResponse> layDanhSachLoConHang(Integer idchitietcaban) {
         Chitietcaban kho = chitietcabanRepository.findById(idchitietcaban)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
@@ -110,6 +111,7 @@ public class PhieuthanhlyService {
     }
 
     // Tất cả lô còn hàng (mọi loại cá/size) — cho màn hình thanh lý nhanh theo lô
+    @Transactional(readOnly = true)
     public List<LoHangResponse> layTatCaLoConHang() {
         return chitietphieunhapRepository
                 .findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal.ZERO)
@@ -132,6 +134,7 @@ public class PhieuthanhlyService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public List<PhieuthanhlyResponse> layDanhSachPhieuThanhLy() {
         return phieuthanhlyRepository.findAll()
                 .stream()

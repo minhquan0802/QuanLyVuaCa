@@ -13,7 +13,6 @@ public interface ChitietphieunhapMapper {
     @Mapping(target = "idchitietcaban", ignore = true)
     @Mapping(target = "trangthaica", ignore = true)
     @Mapping(target = "ngaythanhly", ignore = true)
-    @Mapping(target = "soluongnhap", ignore = true)
     Chitietphieunhap toEntity(ChitietPhieunhapRequest request);
 
 }

@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -17,6 +18,7 @@ public class DonhangRequestCreation {
     String idthongtinkhachhang;
     LocalDateTime ngaydat;
     TrangThaiDonHang trangthaidonhang;
+    TrangThaiThanhToanDonHang trangthaithanhtoan;
     List<ChitietDonhangRequest> chiTietDonHang;
     String ghichu;
     String tenKhachLe;

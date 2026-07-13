@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
@@ -6,10 +6,17 @@ import { useToast } from "../../context/ToastContext";
 
 export default function QuanLyTaiKhoan() {
     const navigate = useNavigate();
+    const { showToast } = useToast();
+
+    // --- 1. STATE DỮ LIỆU GỐC ---
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // --- 2. STATE ĐIỀU KHIỂN BỘ LỌC, SẮP XẾP & PHÂN TRANG ---
     const [searchTerm, setSearchTerm] = useState("");
-    const { showToast } = useToast();
+    const [sortConfig, setSortConfig] = useState({ key: "idtaikhoan", direction: "desc" });
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 8; // Số tài khoản trên mỗi trang
 
     const ROLES = [
         { value: "ADMIN", label: "Quản trị viên" },
@@ -17,6 +24,7 @@ export default function QuanLyTaiKhoan() {
         { value: "CUSTOMER", label: "Khách hàng" },
     ];
 
+    // --- 3. GỌI API ---
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -34,10 +42,72 @@ export default function QuanLyTaiKhoan() {
         fetchData();
     }, []);
 
+    // --- 4. XỬ LÝ DỮ LIỆU: TÌM KIẾM & SẮP XẾP ---
+    const processedAccounts = useMemo(() => {
+        // Bước 1: Lọc theo từ khóa (Tên hoặc Email)
+        let filtered = accounts;
+        if (searchTerm.trim() !== "") {
+            const search = searchTerm.toLowerCase();
+            filtered = accounts.filter(account => {
+                const fullName = `${account.ho || ""} ${account.ten || ""}`.toLowerCase();
+                const email = (account.email || "").toLowerCase();
+                const phone = (account.sodienthoai || "").toLowerCase();
+                return fullName.includes(search) || email.includes(search) || phone.includes(search);
+            });
+        }
+
+        // Bước 2: Sắp xếp
+        const sorted = [...filtered].sort((a, b) => {
+            let valA = a[sortConfig.key] || "";
+            let valB = b[sortConfig.key] || "";
+
+            // Xử lý đặc biệt nếu đang sắp xếp theo "Họ và Tên" gộp chung
+            if (sortConfig.key === "hoten") {
+                valA = `${a.ho || ""} ${a.ten || ""}`;
+                valB = `${b.ho || ""} ${b.ten || ""}`;
+            }
+
+            // Sắp xếp chuỗi tiếng Việt
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return sortConfig.direction === "asc"
+                    ? valA.localeCompare(valB)
+                    : valB.localeCompare(valA);
+            }
+
+            // Sắp xếp số
+            if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+
+        return sorted;
+    }, [accounts, searchTerm, sortConfig]);
+
+    // --- 5. XỬ LÝ DỮ LIỆU: CẮT PHÂN TRANG ---
+    const paginatedAccounts = useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        return processedAccounts.slice(startIndex, startIndex + pageSize);
+    }, [processedAccounts, currentPage, pageSize]);
+
+    const totalPages = Math.ceil(processedAccounts.length / pageSize);
+
+    // --- 6. HÀM BẮT SỰ KIỆN GIAO DIỆN ---
+    const handleSearch = (e) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1); // Reset về trang 1 khi gõ tìm kiếm
+    };
+
+    const requestSort = (key) => {
+        let direction = "asc";
+        if (sortConfig.key === key && sortConfig.direction === "asc") {
+            direction = "desc";
+        }
+        setSortConfig({ key, direction });
+        setCurrentPage(1); // Reset về trang 1 khi đổi tiêu chí sắp xếp
+    };
+
     const handleAddNew = () => navigate("/admin/QuanLyTaiKhoan/them");
-
     const handleEdit = (user) => navigate(`/admin/QuanLyTaiKhoan/sua/${user.idtaikhoan}`, { state: { user } });
-
 
     const handleToggleLock = async (item) => {
         const isLocking = item.trangthaitk === "HOAT_DONG";
@@ -73,17 +143,8 @@ export default function QuanLyTaiKhoan() {
         return found ? found.label : vaitro;
     };
 
-    // Logic bộ lọc tìm kiếm tài khoản theo tên, họ, hoặc email
-    const filteredAccounts = accounts.filter(account => {
-        const fullName = `${account.ho || ""} ${account.ten || ""}`.toLowerCase();
-        const email = (account.email || "").toLowerCase();
-        const search = searchTerm.toLowerCase();
-        return fullName.includes(search) || email.includes(search);
-    });
-
     return (
         <AdminLayout title="Quản Lý Tài Khoản">
-
             {/* TOOLBAR */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="relative w-full sm:max-w-md flex items-center">
@@ -94,9 +155,9 @@ export default function QuanLyTaiKhoan() {
                     </div>
                     <input
                         type="text"
-                        placeholder="Tìm theo tên, email..."
+                        placeholder="Tìm theo tên, email, sđt..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={handleSearch}
                         className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white"
                     />
                 </div>
@@ -111,24 +172,43 @@ export default function QuanLyTaiKhoan() {
                     <table className="w-full text-left min-w-[850px]">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                             <tr>
-                                <th className="p-4">Họ và Tên</th>
-                                <th className="p-4">Email</th>
+                                <th 
+                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                                    onClick={() => requestSort("hoten")}
+                                >
+                                    Họ và Tên {sortConfig.key === "hoten" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                </th>
+                                <th 
+                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                                    onClick={() => requestSort("email")}
+                                >
+                                    Email {sortConfig.key === "email" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                </th>
                                 <th className="p-4">SĐT</th>
-                                <th className="p-4">Vai Trò</th>
-                                <th className="p-4">Trạng Thái</th>
-                                <th className="p-4 text-center"></th>
+                                <th 
+                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                                    onClick={() => requestSort("vaitro")}
+                                >
+                                    Vai Trò {sortConfig.key === "vaitro" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                </th>
+                                <th 
+                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                                    onClick={() => requestSort("trangthaitk")}
+                                >
+                                    Trạng Thái {sortConfig.key === "trangthaitk" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                </th>
+                                <th className="p-4 text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                             {loading ? (
                                 <tr><td colSpan="6" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
-                            ) : filteredAccounts.length > 0 ? (
-                                filteredAccounts.map((item) => (
+                            ) : paginatedAccounts.length > 0 ? (
+                                paginatedAccounts.map((item) => (
                                     <tr key={item.idtaikhoan} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="p-4 font-bold text-cyan-950">{item.ho} {item.ten}</td>
                                         <td className="p-4 text-slate-600">{item.email}</td>
                                         <td className="p-4 font-mono text-slate-500">{item.sodienthoai || "-"}</td>
-                                        {/* Gỡ bọc badge -> Hiển thị text trơn thông thường */}
                                         <td className="p-4 text-slate-700 font-medium">
                                             {getRoleName(item.vaitro)}
                                         </td>
@@ -154,7 +234,6 @@ export default function QuanLyTaiKhoan() {
                                                 </span>
                                             )}
                                         </td>
-                                        {/* Đơn giản hóa nút Sửa thành văn bản trơn có hover gạch chân */}
                                         <td className="p-4 text-center">
                                             <div className="flex items-center justify-center gap-3">
                                                 {item.trangthaitk === 'CHO_DUYET' && (
@@ -171,6 +250,12 @@ export default function QuanLyTaiKhoan() {
                                                 >
                                                     Sửa
                                                 </button>
+                                                <button
+                                                    onClick={() => handleToggleLock(item)}
+                                                    className={`${item.trangthaitk === 'HOAT_DONG' ? 'text-red-600' : 'text-green-600'} font-semibold text-xs hover:underline cursor-pointer`}
+                                                >
+                                                    {item.trangthaitk === 'HOAT_DONG' ? 'Khóa' : 'Mở khóa'}
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -181,8 +266,47 @@ export default function QuanLyTaiKhoan() {
                         </tbody>
                     </table>
                 </div>
-            </div>
 
+                {/* ĐIỀU HƯỚNG PHÂN TRANG */}
+                {!loading && processedAccounts.length > 0 && (
+                    <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50">
+                        
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setCurrentPage(prev => prev - 1)} 
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Trước
+                            </button>
+                            
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+                                            currentPage === page 
+                                                ? "bg-cyan-600 text-white shadow-sm" 
+                                                : "text-slate-600 hover:bg-slate-200"
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                onClick={() => setCurrentPage(prev => prev + 1)} 
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Sau
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </AdminLayout>
     );
 }

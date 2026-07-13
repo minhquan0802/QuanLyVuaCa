@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.entity;
 
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -27,7 +28,12 @@ public class Donhang {
     private LocalDateTime ngaydat;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trangthaidonhang", columnDefinition = "ENUM('CHO_XAC_NHAN', 'DA_THANH_TOAN', 'DANG_DONG_HANG', 'DANG_VAN_CHUYEN', 'GIAO_HANG_THANH_CONG', 'HUY') DEFAULT 'CHO_XAC_NHAN'")    private TrangThaiDonHang trangthaidonhang;
+    @Column(name = "trangthaidonhang", columnDefinition = "ENUM('CHO_XAC_NHAN','DANG_DONG_HANG','DANG_VAN_CHUYEN','GIAO_HANG_THANH_CONG','HUY') DEFAULT 'CHO_XAC_NHAN'")
+    private TrangThaiDonHang trangthaidonhang;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trangthaithanhtoan", columnDefinition = "ENUM('CHUA_THANH_TOAN','DA_THANH_TOAN') DEFAULT 'CHUA_THANH_TOAN'")
+    private TrangThaiThanhToanDonHang trangthaithanhtoan;
 
     @Column(name = "ten_khach_le")
     private String tenKhachLe;

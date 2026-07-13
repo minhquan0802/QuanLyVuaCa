@@ -86,15 +86,24 @@ public class LoaicaController {
     }
 
 
-    // ======================== DELETE ========================
+    // ======================== SOFT DELETE ========================
     @DeleteMapping("/{id}")
     private ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
         loaicaService.xoaLoaica(id);
-
         return ApiResponse.<String>builder()
                 .code(200)
                 .message("OK")
-                .result("Đã xóa loại cá")
+                .result("Đã ngừng bán loại cá")
+                .build();
+    }
+
+    @PatchMapping("/{id}/khoi-phuc")
+    private ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
+        loaicaService.khoiPhucLoaica(id);
+        return ApiResponse.<String>builder()
+                .code(200)
+                .message("OK")
+                .result("Đã mở lại loại cá")
                 .build();
     }
 }

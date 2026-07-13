@@ -18,12 +18,12 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class PhieuthanhlyController {
 
     PhieuthanhlyService phieuthanhlyService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PhieuthanhlyResponse> taoPhieuThanhly(@RequestBody PhieuthanhlyRequest request) {
         return ApiResponse.<PhieuthanhlyResponse>builder()
                 .code(200)
@@ -33,6 +33,7 @@ public class PhieuthanhlyController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<List<PhieuthanhlyResponse>> layDanhSachPhieuThanhLy() {
         return ApiResponse.<List<PhieuthanhlyResponse>>builder()
                 .code(200)
@@ -42,6 +43,7 @@ public class PhieuthanhlyController {
     }
 
     @GetMapping("/lo-con-hang")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<List<LoHangResponse>> layDanhSachLoConHang(@RequestParam Integer idchitietcaban) {
         return ApiResponse.<List<LoHangResponse>>builder()
                 .code(200)
@@ -51,6 +53,7 @@ public class PhieuthanhlyController {
     }
 
     @GetMapping("/tat-ca-lo-con-hang")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<List<LoHangResponse>> layTatCaLoConHang() {
         return ApiResponse.<List<LoHangResponse>>builder()
                 .code(200)

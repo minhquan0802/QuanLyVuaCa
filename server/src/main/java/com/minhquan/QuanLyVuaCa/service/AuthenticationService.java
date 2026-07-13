@@ -157,7 +157,7 @@ public class AuthenticationService {
             return jwsObject.serialize();
         } catch (JOSEException e) {
             log.error("Can not create token", e);
-            throw new RuntimeException(e);
+            throw new AppExceptions(ErrorCode.TOKEN_CREATION_FAILED, ErrorCode.TOKEN_CREATION_FAILED.getMessage(), e);
         }
     }
 

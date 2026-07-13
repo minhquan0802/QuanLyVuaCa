@@ -4,11 +4,13 @@ import com.minhquan.QuanLyVuaCa.dto.response.ThanhtoanItemResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.TinhTrangThanhToanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import com.minhquan.QuanLyVuaCa.entity.Thanhtoan;
-import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.DonhangRepository;
 import com.minhquan.QuanLyVuaCa.repository.ThanhtoanRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,10 +32,11 @@ public class ThanhtoanService {
     DonhangService donhangService;
     CongNoService congNoService;
 
+    @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public TinhTrangThanhToanResponse getTinhTrang(String idDonhang) {
         Donhang dh = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         BigDecimal tongTien = donhangService.tinhTongTienDonHang(idDonhang);
 
@@ -72,7 +75,7 @@ public class ThanhtoanService {
     @PreAuthorize("isAuthenticated()")
     public Thanhtoan taoBienBanChuyenKhoan(String idDonhang, BigDecimal sotien, String ghichu) {
         Donhang dh = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         Thanhtoan t = new Thanhtoan();
         t.setIddonhang(dh);
@@ -89,7 +92,10 @@ public class ThanhtoanService {
     @PreAuthorize("isAuthenticated()")
     public Thanhtoan taoBienBanVnpay(String idDonhang, BigDecimal sotien) {
         Donhang dh = donhangRepository.findById(idDonhang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+
+        // Xóa các bản ghi VNPAY "Chờ xác nhận" cũ còn treo (user bỏ trang VNPAY không trả)
+        thanhtoanRepository.deleteByIddonhangAndPhuongthucAndTrangthai(dh, "VNPAY", TrangThaiThanhToan.CHO_XAC_NHAN);
 
         Thanhtoan t = new Thanhtoan();
         t.setIddonhang(dh);
@@ -100,11 +106,48 @@ public class ThanhtoanService {
         return thanhtoanRepository.save(t);
     }
 
+    // Ghi nhận thanh toán thủ công (tiền mặt) cho toàn bộ số tiền còn nợ
+    @Transactional
+    public void ghiNhanThanhToanThuCong(String idDonhang) {
+        Donhang dh = donhangRepository.findById(idDonhang)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+
+        BigDecimal tongTien = donhangService.tinhTongTienDonHang(idDonhang);
+
+        List<Thanhtoan> daPaid = thanhtoanRepository.findByIddonhangAndTrangthai(
+                dh, TrangThaiThanhToan.DA_THANH_TOAN);
+        BigDecimal daTra = daPaid.stream().map(Thanhtoan::getSotien).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal conNo = tongTien.subtract(daTra).max(BigDecimal.ZERO);
+
+        if (conNo.compareTo(BigDecimal.ZERO) > 0) {
+            Thanhtoan t = new Thanhtoan();
+            t.setIddonhang(dh);
+            t.setSotien(conNo);
+            t.setPhuongthuc("TIEN_MAT");
+            t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
+            t.setNgaythanhtoan(LocalDateTime.now());
+            thanhtoanRepository.save(t);
+            congNoService.xuLyThanhToanXacNhan(t);
+        }
+
+        dh.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
+        donhangRepository.save(dh);
+    }
+
+    @Transactional
+    public void huyBienBanVnpay(String idThanhtoan) {
+        thanhtoanRepository.findById(idThanhtoan).ifPresent(t -> {
+            if (t.getTrangthai() == TrangThaiThanhToan.CHO_XAC_NHAN) {
+                thanhtoanRepository.delete(t);
+            }
+        });
+    }
+
     // Gọi từ VNPay callback hoặc admin xác nhận chuyển khoản
     @Transactional
     public void xacNhanThanhToan(String idThanhtoan) {
         Thanhtoan t = thanhtoanRepository.findById(idThanhtoan)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy bản ghi thanh toán: " + idThanhtoan));
+                .orElseThrow(() -> new AppExceptions(ErrorCode.THANHTOAN_NOT_EXISTED, "Không tìm thấy bản ghi thanh toán: " + idThanhtoan));
 
         t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
         thanhtoanRepository.save(t);
@@ -120,9 +163,10 @@ public class ThanhtoanService {
         BigDecimal daTra = daPaid.stream().map(Thanhtoan::getSotien).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         if (daTra.compareTo(tongTien) >= 0) {
-            Donhang dh = t.getIddonhang();
-            dh.setTrangthaidonhang(TrangThaiDonHang.DA_THANH_TOAN);
-            donhangRepository.save(dh);
+            donhangRepository.findById(idDonhang).ifPresent(dh -> {
+                dh.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
+                donhangRepository.save(dh);
+            });
         }
     }
 }
