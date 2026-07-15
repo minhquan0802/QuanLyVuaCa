@@ -216,6 +216,13 @@ public class DonhangService {
             sdtKhach = savedDonhang.getSdtKhachLe() != null ? savedDonhang.getSdtKhachLe() : "";
         }
 
+        // Báo cho Admin/Staff biết có đơn mới, bấm vào thông báo nhảy thẳng tới trang chi tiết đơn
+        // (giống cơ chế thông báo lô hàng quá hạn -> trang thanh lý ở LoHangQuaHanScheduler).
+        String noidungThongBao = "Đơn hàng mới #" + savedDonhang.getIddonhang().substring(0, 8).toUpperCase() + " từ " + tenKhach;
+        String linkThongBao = "/admin/QuanLyDonHang/chi-tiet/" + savedDonhang.getIddonhang();
+        thongBaoService.guiChoVaiTro("ADMIN", noidungThongBao, "DON_HANG_MOI", linkThongBao);
+        thongBaoService.guiChoVaiTro("STAFF", noidungThongBao, "DON_HANG_MOI", linkThongBao);
+
         return donhangMapper.toDonhangResponse(savedDonhang, tenKhach, sdtKhach);
     }
 
@@ -357,6 +364,8 @@ public class DonhangService {
             throw new AppExceptions(ErrorCode.ACCESS_DENIED, "Bạn không có quyền xác nhận đơn hàng này");
         }
 
+        chanGiaoDonRong(idDonhang);
+
         donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
         Donhang saved = donhangRepository.save(donhang);
 
@@ -399,6 +408,11 @@ public class DonhangService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
 
         TrangThaiDonHang oldStatus = donhang.getTrangthaidonhang();
+
+        if (newStatus == TrangThaiDonHang.DANG_VAN_CHUYEN && oldStatus != TrangThaiDonHang.DANG_VAN_CHUYEN) {
+            chanGiaoDonRong(id);
+        }
+
         donhang.setTrangthaidonhang(newStatus);
         Donhang savedDonhang = donhangRepository.save(donhang);
 
@@ -486,8 +500,9 @@ public class DonhangService {
         BigDecimal tongTien = BigDecimal.ZERO;
 
         for (Chitietdonhang ct : details) {
-            // Trường hợp 1: Trong DB đã có sẵn tổng tiền thực tế (Đơn mới)
-            if (ct.getTongtienthucte() != null && ct.getTongtienthucte().compareTo(BigDecimal.ZERO) > 0) {
+            // Trường hợp 1: Trong DB đã có sẵn tổng tiền thực tế (Đơn mới).
+            // Chỉ check != null - 0 là giá trị đã cân thật (vd cân được 0kg), không phải "chưa có dữ liệu".
+            if (ct.getTongtienthucte() != null) {
                 tongTien = tongTien.add(ct.getTongtienthucte());
             }
             // Trường hợp 2: DB chưa có (Đơn cũ) -> Tính lại on-the-fly
@@ -525,6 +540,16 @@ public class DonhangService {
         }
 
         return tongTien;
+    }
+
+    // Đơn tổng tiền = 0 nghĩa là mọi mặt hàng đều 0kg thực tế -> không có gì để giao, chặn ngay
+    // từ bước "Giao đơn vị vận chuyển" (DANG_DONG_HANG -> DANG_VAN_CHUYEN). Từng mặt hàng 0kg
+    // riêng lẻ (giao thiếu 1 phần) vẫn cho qua bình thường - chỉ chặn khi CẢ đơn rỗng.
+    private void chanGiaoDonRong(String idDonhang) {
+        if (tinhTongTienDonHang(idDonhang).compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppExceptions(ErrorCode.ORDER_STATUS_INVALID,
+                    "Đơn hàng không có mặt hàng nào để giao (tổng tiền = 0), không thể chuyển cho đơn vị vận chuyển");
+        }
     }
 
 //    @PreAuthorize("isAuthenticated()")
