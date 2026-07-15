@@ -17,7 +17,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LoHangQuaHanScheduler {
 
-    private static final int SO_NGAY_QUA_HAN = 2;
+    // public: ThongKeService/PhieuthanhlyService dùng chung ngưỡng này, tránh định nghĩa "quá hạn" lệch nhau
+    public static final int SO_NGAY_QUA_HAN = 2;
 
     private final ChitietphieunhapRepository chitietphieunhapRepository;
     private final ThongBaoService thongBaoService;
@@ -32,18 +33,33 @@ public class LoHangQuaHanScheduler {
         List<Chitietphieunhap> loQuaHan = chitietphieunhapRepository
                 .findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(BigDecimal.ZERO, nguong);
 
-        for (Chitietphieunhap lo : loQuaHan) {
+        if (loQuaHan.isEmpty()) return;
+
+        // Gộp thành 1 thông báo duy nhất mỗi lần chạy (thay vì 1 thông báo/lô) để tránh dồn thông báo
+        // trùng khi có nhiều lô quá hạn cùng lúc. Scheduler vẫn chạy lại mỗi ngày nên 1 lô bị bỏ quên
+        // sẽ tiếp tục được nhắc mỗi ngày cho tới khi được xử lý - không lo bị quên mất.
+        String noidung;
+        String link;
+        if (loQuaHan.size() == 1) {
+            Chitietphieunhap lo = loQuaHan.get(0);
             Chitietcaban kho = lo.getIdchitietcaban();
             String tenSanPham = kho.getIdloaica().getTenloaica() + " (" + kho.getIdsizeca().getSizeca() + ")";
 
-            String noidung = String.format(
+            noidung = String.format(
                     "Lô %s nhập ngày %s còn %skg chưa bán, đã quá hạn %d ngày. Gợi ý lập phiếu thanh lý.",
                     tenSanPham, lo.getIdphieunhap().getNgaynhap(), lo.getSoluongconlai(), SO_NGAY_QUA_HAN
             );
-
-            // Trỏ thẳng vào trang thanh lý của đúng lô này (không phải trang danh sách chung)
-            String link = "/admin/QuanLyThanhLy/thanh-ly/" + lo.getIdchitietphieunhap();
-            thongBaoService.guiChoVaiTro("ADMIN", noidung, "LO_QUA_HAN", link);
+            // Chỉ 1 lô -> trỏ thẳng vào trang thanh lý của đúng lô đó
+            link = "/admin/QuanLyThanhLy/thanh-ly/" + lo.getIdchitietphieunhap();
+        } else {
+            noidung = String.format(
+                    "Có %d lô hàng quá hạn %d ngày chưa bán, cần lập phiếu thanh lý.",
+                    loQuaHan.size(), SO_NGAY_QUA_HAN
+            );
+            // Nhiều lô -> trỏ vào tab "Lô hàng đã quá hạn" để admin tự chọn xử lý
+            link = "/admin/QuanLyThanhLy?tab=quahan";
         }
+
+        thongBaoService.guiChoVaiTro("ADMIN", noidung, "LO_QUA_HAN", link);
     }
 }

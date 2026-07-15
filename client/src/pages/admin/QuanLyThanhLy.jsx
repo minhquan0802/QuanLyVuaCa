@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
@@ -18,13 +18,19 @@ const LO_TRANGTHAI = {
 export default function QuanLyThanhLy() {
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const [searchParams] = useSearchParams();
 
     // --- STATE GIAO DIỆN & DỮ LIỆU ---
-    const [tab, setTab] = useState("lo"); // "lo" | "phieu"
+    // Cho phép nhảy thẳng vào tab qua URL (?tab=quahan) - dùng khi bấm từ thông báo/Dashboard
+    const tabHopLe = ["lo", "quahan", "phieu"];
+    const tabTuUrl = searchParams.get("tab");
+    const [tab, setTab] = useState(tabHopLe.includes(tabTuUrl) ? tabTuUrl : "lo"); // "lo" | "quahan" | "phieu"
     const [phieus, setPhieus] = useState([]);
     const [loadingPhieus, setLoadingPhieus] = useState(true);
     const [lots, setLots] = useState([]);
     const [loadingLots, setLoadingLots] = useState(true);
+    const [overdueLots, setOverdueLots] = useState([]);
+    const [loadingOverdue, setLoadingOverdue] = useState(true);
 
     // --- STATE TÌM KIẾM, SẮP XẾP & PHÂN TRANG ---
     const [searchTerm, setSearchTerm] = useState("");
@@ -51,9 +57,18 @@ export default function QuanLyThanhLy() {
             .finally(() => setLoadingLots(false));
     };
 
+    const fetchOverdueLots = () => {
+        setLoadingOverdue(true);
+        api.get("/Phieuthanhlys/lo-qua-han")
+            .then(res => setOverdueLots(res.data.result || []))
+            .catch(() => showToast("Không thể tải danh sách lô quá hạn!", "error"))
+            .finally(() => setLoadingOverdue(false));
+    };
+
     useEffect(() => {
         fetchPhieus();
         fetchLots();
+        fetchOverdueLots();
     }, []);
 
     // Reset về trang 1 mỗi khi đổi tab hoặc gõ tìm kiếm
@@ -99,6 +114,43 @@ export default function QuanLyThanhLy() {
 
     const totalLotPages = Math.ceil(processedLots.length / pageSize);
 
+    // --- XỬ LÝ DỮ LIỆU: TÌM KIẾM, SẮP XẾP, PHÂN TRANG CHO LÔ QUÁ HẠN (dùng chung sortLot với tab "lo") ---
+    const processedOverdueLots = useMemo(() => {
+        let filtered = overdueLots;
+        if (searchTerm.trim() !== "") {
+            const search = searchTerm.toLowerCase();
+            filtered = overdueLots.filter(l =>
+                (l.tenLoaiCa || "").toLowerCase().includes(search) ||
+                (l.tenSize || "").toLowerCase().includes(search)
+            );
+        }
+
+        return [...filtered].sort((a, b) => {
+            const valA = a[sortLot.key];
+            const valB = b[sortLot.key];
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return sortLot.direction === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            }
+            if (valA < valB) return sortLot.direction === "asc" ? -1 : 1;
+            if (valA > valB) return sortLot.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+    }, [overdueLots, searchTerm, sortLot]);
+
+    const paginatedOverdueLots = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return processedOverdueLots.slice(start, start + pageSize);
+    }, [processedOverdueLots, currentPage]);
+
+    const totalOverduePages = Math.ceil(processedOverdueLots.length / pageSize);
+
+    const tinhSoNgayQuaHan = (ngaynhap) => {
+        const ngayNhapDate = new Date(ngaynhap);
+        const homNay = new Date();
+        const soMs = homNay.setHours(0, 0, 0, 0) - ngayNhapDate.setHours(0, 0, 0, 0);
+        return Math.floor(soMs / (1000 * 60 * 60 * 24));
+    };
+
     // --- XỬ LÝ DỮ LIỆU: TÌM KIẾM, SẮP XẾP, PHÂN TRANG CHO PHIẾU ĐÃ LẬP ---
     const processedPhieus = useMemo(() => {
         let filtered = phieus;
@@ -130,8 +182,8 @@ export default function QuanLyThanhLy() {
     const totalPhieuPages = Math.ceil(processedPhieus.length / pageSize);
 
     // Lấy thông số phân trang của Tab hiện tại
-    const currentTotalPages = tab === "lo" ? totalLotPages : totalPhieuPages;
-    const currentTotalRecords = tab === "lo" ? processedLots.length : processedPhieus.length;
+    const currentTotalPages = tab === "lo" ? totalLotPages : tab === "quahan" ? totalOverduePages : totalPhieuPages;
+    const currentTotalRecords = tab === "lo" ? processedLots.length : tab === "quahan" ? processedOverdueLots.length : processedPhieus.length;
 
     // --- CÁC HÀM SỰ KIỆN SẮP XẾP ---
     const requestSortLot = (key) => {
@@ -160,7 +212,7 @@ export default function QuanLyThanhLy() {
                     </div>
                     <input
                         type="text"
-                        placeholder={`Tìm kiếm ${tab === 'lo' ? 'lô hàng (tên cá, size)' : 'phiếu (người tạo, lý do)'}...`}
+                        placeholder={`Tìm kiếm ${tab === 'phieu' ? 'phiếu (người tạo, lý do)' : 'lô hàng (tên cá, size)'}...`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white"
@@ -183,6 +235,17 @@ export default function QuanLyThanhLy() {
                     Lô hàng tồn
                 </button>
                 <button
+                    onClick={() => setTab("quahan")}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 ${tab === "quahan" ? "bg-white text-red-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                    Lô hàng đã quá hạn
+                    {overdueLots.length > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                            {overdueLots.length}
+                        </span>
+                    )}
+                </button>
+                <button
                     onClick={() => setTab("phieu")}
                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${tab === "phieu" ? "bg-white text-cyan-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
@@ -194,7 +257,7 @@ export default function QuanLyThanhLy() {
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
                 
                 {tab === "lo" ? (
-                    // --- BẢNG LÔ HÀNG ---
+                    // --- BẢNG LÔ HÀNG TỒN ---
                     <div className="overflow-x-auto">
                         <table className="w-full text-left min-w-[900px] border-collapse">
                             <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
@@ -249,6 +312,55 @@ export default function QuanLyThanhLy() {
                                     })
                                 ) : (
                                     <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Không có lô hàng nào hiển thị.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : tab === "quahan" ? (
+                    // --- BẢNG LÔ HÀNG ĐÃ QUÁ HẠN ---
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left min-w-[900px] border-collapse">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
+                                <tr>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("tenLoaiCa")}>
+                                        Loại cá {sortLot.key === "tenLoaiCa" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("tenSize")}>
+                                        Size {sortLot.key === "tenSize" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("ngaynhap")}>
+                                        Ngày nhập {sortLot.key === "ngaynhap" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 text-center text-red-600 bg-red-50">Quá hạn (ngày)</th>
+                                    <th className="p-4 text-right cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSortLot("soluongconlai")}>
+                                        Còn lại (kg) {sortLot.key === "soluongconlai" && (sortLot.direction === "asc" ? "↑" : "↓")}
+                                    </th>
+                                    <th className="p-4 text-center">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
+                                {loadingOverdue ? (
+                                    <tr><td colSpan="6" className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
+                                ) : paginatedOverdueLots.length > 0 ? (
+                                    paginatedOverdueLots.map((lot) => (
+                                        <tr key={lot.idchitietphieunhap} className="hover:bg-red-50/30 transition-colors">
+                                            <td className="p-4 font-bold text-slate-800">{lot.tenLoaiCa}</td>
+                                            <td className="p-4">{lot.tenSize}</td>
+                                            <td className="p-4 text-slate-500">{lot.ngaynhap}</td>
+                                            <td className="p-4 text-center font-bold text-red-600 bg-red-50/50">{tinhSoNgayQuaHan(lot.ngaynhap)}</td>
+                                            <td className="p-4 text-right font-bold text-cyan-700">{lot.soluongconlai}</td>
+                                            <td className="p-4 text-center">
+                                                <button
+                                                    onClick={() => navigate(`/admin/QuanLyThanhLy/thanh-ly/${lot.idchitietphieunhap}`)}
+                                                    className="px-3.5 py-1.5 bg-red-50 text-red-600 border border-red-200 font-bold rounded-lg text-xs hover:bg-red-100"
+                                                >
+                                                    Thanh lý
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan="6" className="p-8 text-center text-slate-400 italic">Không có lô hàng nào quá hạn.</td></tr>
                                 )}
                             </tbody>
                         </table>

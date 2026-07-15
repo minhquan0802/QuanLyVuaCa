@@ -28,6 +28,10 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     List<Chitietphieunhap> findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(
             BigDecimal soluong, LocalDate ngaynhap);
 
+    // Đếm số lô quá hạn (cùng điều kiện ở trên) — dùng cho ô cảnh báo trên Dashboard
+    long countBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(
+            BigDecimal soluong, LocalDate ngaynhap);
+
     // Lô mới nhất trước — dùng để hoàn trả tồn kho (LIFO ngược lại với FIFO lúc trừ)
     List<Chitietphieunhap> findByIdchitietcabanOrderByIdphieunhap_NgaynhapDesc(Chitietcaban idchitietcaban);
 
