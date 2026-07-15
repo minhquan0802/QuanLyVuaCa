@@ -13,7 +13,7 @@ export default function Checkout() {
 
     const isWholesale = user?.vaitro === "CUSTOMER" || user?.vaitro === "WHOLESALE_CUSTOMER";
 
-    const [paymentMethod, setPaymentMethod] = useState("cod");
+    const [paymentMethod, setPaymentMethod] = useState("vnpay");
     const [loading, setLoading] = useState(false);
     const [shipInfo, setShipInfo] = useState({ hoTen: "", sdt: "", diachi: "", ghichu: "" });
 
@@ -31,9 +31,6 @@ export default function Checkout() {
         if (!user) { navigate("/"); return; }
         if (cart.length === 0) { navigate("/cart"); }
     }, [cart, user]);
-
-    const shippingFee = paymentMethod === "cod" ? 30000 : 0;
-    const total = totalPrice + shippingFee;
 
     const getImageUrl = (url) => {
         if (!url) return "https://placehold.co/400x300?text=No+Image";
@@ -66,14 +63,9 @@ export default function Checkout() {
 
             const newOrderId = orderData.result.iddonhang;
 
-            if (paymentMethod === "cod" || paymentMethod === "later") {
+            if (paymentMethod === "later") {
                 await clearCart();
-                showToast(
-                    paymentMethod === "later"
-                        ? "Đặt hàng thành công! Chúng tôi sẽ liên hệ xác nhận."
-                        : "Đặt hàng thành công!",
-                    "success"
-                );
+                showToast("Đặt hàng thành công! Chúng tôi sẽ liên hệ xác nhận.", "success");
                 navigate("/my-orders");
             } else if (paymentMethod === "vnpay") {
                 const { data: paymentData } = await api.post("/payment/create-payment", {
@@ -137,15 +129,6 @@ export default function Checkout() {
                                     Phương thức thanh toán
                                 </h2>
                                 <div className="space-y-3">
-                                    <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === "cod" ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600" : "border-slate-200 hover:bg-slate-50"}`}>
-                                        <input type="radio" name="payment" value="cod" checked={paymentMethod === "cod"} onChange={() => setPaymentMethod("cod")} className="size-5 text-blue-600" />
-                                        <div className="flex-1">
-                                            <span className="block font-bold text-blue-900">Thanh toán khi nhận hàng (COD)</span>
-                                            <span className="text-sm text-slate-500">Trả tiền mặt khi nhận hàng (Phí ship: 30.000đ)</span>
-                                        </div>
-                                        <span className="material-symbols-outlined text-3xl text-slate-400">local_shipping</span>
-                                    </label>
-
                                     <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === "vnpay" ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600" : "border-slate-200 hover:bg-slate-50"}`}>
                                         <input type="radio" name="payment" value="vnpay" checked={paymentMethod === "vnpay"} onChange={() => setPaymentMethod("vnpay")} className="size-5 text-blue-600" />
                                         <div className="flex-1">
@@ -202,15 +185,9 @@ export default function Checkout() {
                                         <span>Tạm tính</span>
                                         <span>{Number(totalPrice).toLocaleString()}đ</span>
                                     </div>
-                                    <div className="flex justify-between text-sm text-slate-500">
-                                        <span>Phí vận chuyển</span>
-                                        <span className={`font-medium ${shippingFee === 0 ? "text-green-600" : "text-slate-700"}`}>
-                                            {shippingFee === 0 ? "Miễn phí" : `${shippingFee.toLocaleString()}đ`}
-                                        </span>
-                                    </div>
                                     <div className="flex justify-between text-lg font-bold text-blue-900 pt-2 border-t border-slate-100 mt-2">
                                         <span>Tổng cộng</span>
-                                        <span className="text-blue-600">{total.toLocaleString()}đ</span>
+                                        <span className="text-blue-600">{Number(totalPrice).toLocaleString()}đ</span>
                                     </div>
                                 </div>
 
