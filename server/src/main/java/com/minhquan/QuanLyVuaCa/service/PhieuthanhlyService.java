@@ -13,6 +13,7 @@ import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.ChitietphieuthanhlyMapper;
 import com.minhquan.QuanLyVuaCa.mapper.PhieuthanhlyMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -115,6 +117,17 @@ public class PhieuthanhlyService {
     public List<LoHangResponse> layTatCaLoConHang() {
         return chitietphieunhapRepository
                 .findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal.ZERO)
+                .stream()
+                .map(this::toLoHangResponse)
+                .toList();
+    }
+
+    // Lô còn hàng nhưng đã quá hạn (cùng ngưỡng với LoHangQuaHanScheduler) — cho tab cảnh báo
+    @Transactional(readOnly = true)
+    public List<LoHangResponse> layDanhSachLoQuaHan() {
+        LocalDate nguong = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
+        return chitietphieunhapRepository
+                .findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(BigDecimal.ZERO, nguong)
                 .stream()
                 .map(this::toLoHangResponse)
                 .toList();

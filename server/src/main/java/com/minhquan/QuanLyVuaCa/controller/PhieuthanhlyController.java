@@ -61,4 +61,14 @@ public class PhieuthanhlyController {
                 .result(phieuthanhlyService.layTatCaLoConHang())
                 .build();
     }
+
+    @GetMapping("/lo-qua-han")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ApiResponse<List<LoHangResponse>> layDanhSachLoQuaHan() {
+        return ApiResponse.<List<LoHangResponse>>builder()
+                .code(200)
+                .message("Lấy danh sách lô quá hạn thành công")
+                .result(phieuthanhlyService.layDanhSachLoQuaHan())
+                .build();
+    }
 }

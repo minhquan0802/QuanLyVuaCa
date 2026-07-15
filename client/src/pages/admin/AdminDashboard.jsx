@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../config/axios";
@@ -7,17 +7,18 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    DollarSign, CheckCircle2, ShoppingCart, Receipt,
+    DollarSign, CheckCircle2, ShoppingCart,
     PackagePlus, AlertCircle, TableProperties, BarChart2, Table
 } from "lucide-react";
 
 export default function SalesDashboard() {
     const { user } = useAuth() || {};
+    const navigate = useNavigate();
     const [timeRange, setTimeRange] = useState("THIS_MONTH");
     const [viewMode, setViewMode] = useState("TABLE"); // "TABLE" hoặc "CHART"
 
     // --- CHỈ SỐ TÀI CHÍNH & BÁN HÀNG ---
-    const [stats, setStats] = useState({ tongDoanhThu: 0, chiPhiNhapHang: 0, chiPhiPhatSinh: 0, donHoanThanh: 0 });
+    const [stats, setStats] = useState({ tongDoanhThu: 0, chiPhiNhapHang: 0, chiPhiPhatSinh: 0, donHoanThanh: 0, soLoQuaHan: 0 });
 
     // --- KHỐI LƯỢNG NHẬP - BÁN - HAO HỤT THEO LOẠI CÁ ---
     const [fishVolumeData, setFishVolumeData] = useState([]);
@@ -117,13 +118,25 @@ export default function SalesDashboard() {
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-red-50 rounded-2xl"><Receipt size={28} className="text-red-500" /></div></div>
-                    <div>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Chi Phí Khác (Linh tinh)</p>
-                        <h3 className="text-2xl lg:text-3xl font-black text-red-600">{formatCurrency(stats.chiPhiPhatSinh)}</h3>
+                <button
+                    type="button"
+                    onClick={() => navigate("/admin/QuanLyThanhLy?tab=quahan")}
+                    className={`text-left p-6 rounded-3xl shadow-sm border flex flex-col justify-between transition-all hover:shadow-md cursor-pointer ${
+                        stats.soLoQuaHan > 0 ? "bg-red-50 border-red-200" : "bg-white border-slate-200"
+                    }`}
+                >
+                    <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-2xl ${stats.soLoQuaHan > 0 ? "bg-red-100" : "bg-slate-50"}`}>
+                            <AlertCircle size={28} className={stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-400"} />
+                        </div>
                     </div>
-                </div>
+                    <div>
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Lô Hàng Quá Hạn</p>
+                        <h3 className={`text-2xl lg:text-3xl font-black ${stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-800"}`}>
+                            {stats.soLoQuaHan} <span className="text-lg font-semibold text-slate-400">lô</span>
+                        </h3>
+                    </div>
+                </button>
 
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4"><div className="p-3 bg-green-50 rounded-2xl"><CheckCircle2 size={28} className="text-green-600" /></div></div>

@@ -8,6 +8,7 @@ import com.minhquan.QuanLyVuaCa.entity.Chitietphieunhap;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -62,11 +63,17 @@ public class ThongKeService {
         long donHoanThanh = donhangRepository.countByTrangthaidonhangAndNgaydatBetween(
                 TrangThaiDonHang.GIAO_HANG_THANH_CONG, tuNgay, denNgay);
 
+        // Không phụ thuộc range (TODAY/THIS_WEEK/...) - đây là trạng thái tồn kho hiện tại,
+        // không phải KPI phát sinh trong khoảng thời gian đang lọc.
+        long soLoQuaHan = chitietphieunhapRepository.countBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(
+                BigDecimal.ZERO, LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN));
+
         return ThongKeTongQuanResponse.builder()
                 .tongDoanhThu(tongDoanhThu)
                 .chiPhiNhapHang(chiPhiNhapHang)
                 .chiPhiPhatSinh(chiPhiPhatSinh)
                 .donHoanThanh(donHoanThanh)
+                .soLoQuaHan(soLoQuaHan)
                 .build();
     }
 

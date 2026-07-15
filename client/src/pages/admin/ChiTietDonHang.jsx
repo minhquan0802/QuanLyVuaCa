@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 
 const ORDER_STATUS = {
@@ -17,7 +18,9 @@ const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value ||
 export default function ChiTietDonHang() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { showToast } = useToast();
+    const isAdmin = user?.vaitro === "ADMIN";
 
     const [order, setOrder] = useState(null);
     const [viewDetails, setViewDetails] = useState([]);
@@ -115,7 +118,7 @@ export default function ChiTietDonHang() {
     };
 
     // Tính tổng tiền toàn hóa đơn dựa trên dữ liệu thực tế hiện tại
-    const calculateTotal = () => viewDetails.reduce((sum, item) => sum + (item.tongtienthucte || item.tongtiendukien || 0), 0);
+    const calculateTotal = () => viewDetails.reduce((sum, item) => sum + (item.tongtienthucte ?? item.tongtiendukien ?? 0), 0);
 
     if (loading) return <AdminLayout title="Chi tiết đơn hàng"><div className="text-center py-20 text-slate-400">Đang tải dữ liệu...</div></AdminLayout>;
     if (!order) return <AdminLayout title="Chi tiết đơn hàng"><div className="text-center py-20 text-slate-400">Không tìm thấy đơn hàng.</div></AdminLayout>;
@@ -164,7 +167,7 @@ export default function ChiTietDonHang() {
                             {["CHO_XAC_NHAN", "DANG_DONG_HANG"].includes(order.trangthaidonhang) && (
                                 <button onClick={() => handleUpdateStatus("HUY")} className="px-4 py-1.5 border border-red-200 text-red-600 rounded-lg font-bold text-xs hover:bg-red-50 cursor-pointer">Hủy đơn</button>
                             )}
-                            {order.trangthaithanhtoan === "CHUA_THANH_TOAN" && order.trangthaidonhang === "GIAO_HANG_THANH_CONG" && (
+                            {isAdmin && order.trangthaithanhtoan === "CHUA_THANH_TOAN" && order.trangthaidonhang === "GIAO_HANG_THANH_CONG" && (
                                 <button onClick={handleMarkPayment} className="flex-1 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-700 cursor-pointer">Đánh dấu đã thanh toán</button>
                             )}
                         </div>
@@ -250,7 +253,7 @@ export default function ChiTietDonHang() {
                                                 ? formatCurrency(Math.round(d.tongtiendukien / d.soluongkgthuctequydoi)) + "/kg"
                                                 : formatCurrency(d.dongia)}
                                         </td>
-                                        <td className="p-3 text-right font-bold text-slate-800">{formatCurrency(d.tongtienthucte || d.tongtiendukien)}</td>
+                                        <td className="p-3 text-right font-bold text-slate-800">{formatCurrency(d.tongtienthucte ?? d.tongtiendukien)}</td>
                                     </tr>
                                 ))}
                             </tbody>

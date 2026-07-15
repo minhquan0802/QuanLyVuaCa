@@ -48,9 +48,9 @@ public class ThanhtoanController {
                 .build();
     }
 
-    // Staff/Admin ghi nhận thanh toán tiền mặt cho toàn bộ đơn hàng
+    // Chỉ Admin được ghi nhận thanh toán tiền mặt cho toàn bộ đơn hàng
     @PutMapping("/{iddonhang}/thanh-toan-thu-cong")
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> ghiNhanThanhToanThuCong(@PathVariable String iddonhang) {
         thanhtoanService.ghiNhanThanhToanThuCong(iddonhang);
         return ApiResponse.<String>builder()

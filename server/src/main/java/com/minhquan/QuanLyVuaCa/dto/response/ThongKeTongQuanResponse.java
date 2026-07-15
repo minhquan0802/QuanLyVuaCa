@@ -15,4 +15,5 @@ public class ThongKeTongQuanResponse {
     BigDecimal chiPhiNhapHang;
     BigDecimal chiPhiPhatSinh;
     Long donHoanThanh;
+    Long soLoQuaHan;
 }

@@ -3,13 +3,28 @@ import AdminSidebar from "./AdminSidebar";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 
+// Nhãn hiển thị cho từng loại thông báo (loai lưu dạng mã ngắn trong DB).
+// Loại nào chưa có trong map thì hiện thẳng mã gốc - không cần cập nhật map liên tục.
+const LOAI_LABELS = {
+    DON_HANG_MOI: "Đơn hàng mới",
+    GIAO_THIEU_HANG: "Giao thiếu hàng",
+    LO_QUA_HAN: "Lô hàng quá hạn",
+    CONG_NO_BI_KHOA: "Công nợ bị khóa",
+    CONG_NO_NGUY_HIEM: "Công nợ nguy hiểm",
+    CONG_NO_CANH_BAO: "Công nợ cảnh báo",
+};
+
 export default function AdminLayout({ children, title = "" }) {
     const navigate = useNavigate();
 
     const [thongBaoList, setThongBaoList] = useState([]);
     const [soChuaXem, setSoChuaXem] = useState(0);
     const [openDropdown, setOpenDropdown] = useState(false);
+    const [filterLoai, setFilterLoai] = useState("");
     const dropdownRef = useRef(null);
+
+    const cacLoaiCoSan = [...new Set(thongBaoList.map(tb => tb.loai).filter(Boolean))];
+    const dsThongBaoLoc = filterLoai ? thongBaoList.filter(tb => tb.loai === filterLoai) : thongBaoList;
 
     useEffect(() => {
         api.get("/ThongBao").then(res => setThongBaoList(res.data.result || [])).catch(() => {});
@@ -86,9 +101,23 @@ export default function AdminLayout({ children, title = "" }) {
                                             </button>
                                         )}
                                     </div>
+                                    {cacLoaiCoSan.length > 0 && (
+                                        <div className="px-4 py-2 border-b border-slate-100">
+                                            <select
+                                                value={filterLoai}
+                                                onChange={e => setFilterLoai(e.target.value)}
+                                                className="w-full text-xs rounded-lg border border-slate-200 py-1.5 px-2 text-slate-600 outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                            >
+                                                <option value="">Tất cả loại thông báo</option>
+                                                {cacLoaiCoSan.map(loai => (
+                                                    <option key={loai} value={loai}>{LOAI_LABELS[loai] || loai}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
                                     <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
-                                        {thongBaoList.length > 0 ? (
-                                            thongBaoList.map(tb => (
+                                        {dsThongBaoLoc.length > 0 ? (
+                                            dsThongBaoLoc.map(tb => (
                                                 <button
                                                     key={tb.idthongbao}
                                                     onClick={() => handleClickThongBao(tb)}
@@ -104,7 +133,9 @@ export default function AdminLayout({ children, title = "" }) {
                                                 </button>
                                             ))
                                         ) : (
-                                            <div className="px-4 py-8 text-center text-sm text-slate-400 italic">Chưa có thông báo nào.</div>
+                                            <div className="px-4 py-8 text-center text-sm text-slate-400 italic">
+                                                {filterLoai ? "Không có thông báo loại này." : "Chưa có thông báo nào."}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
