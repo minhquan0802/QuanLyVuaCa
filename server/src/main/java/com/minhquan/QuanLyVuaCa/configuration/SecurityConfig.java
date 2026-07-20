@@ -104,6 +104,7 @@ public class SecurityConfig {
         // cách nhau bởi dấu phẩy (vd: local dev + domain thật trên Render).
         List<String> allowedOrigins = Arrays.stream(frontendUrl.split(","))
                 .map(String::trim)
+                .map(origin -> origin.replaceAll("/+$", "")) // bỏ dấu "/" cuối, tránh lệch so với Origin header trình duyệt
                 .filter(origin -> !origin.isEmpty())
                 .toList();
         configuration.setAllowedOrigins(allowedOrigins);

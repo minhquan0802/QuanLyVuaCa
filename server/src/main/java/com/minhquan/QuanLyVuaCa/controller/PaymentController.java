@@ -18,7 +18,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/payment")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173") // Cho phép Frontend gọi
+// CORS đã được xử lý tập trung ở SecurityConfig.corsConfigurationSource() theo frontend.url,
+// không cần @CrossOrigin hardcode localhost ở đây nữa (sẽ đè/mâu thuẫn khi lên production).
 public class PaymentController {
 
     private final VnPayService vnPayService;
@@ -55,22 +56,26 @@ public class PaymentController {
 
         boolean isPartialPayment = txnRef != null && txnRef.startsWith("DEBT-");
 
+        // Bỏ dấu "/" ở cuối frontend.url (nếu có) để không bị dính "//" khi ghép path phía dưới,
+        // dù biến môi trường FRONTEND_URL được điền có "/" cuối hay không.
+        String baseUrl = frontendUrl.replaceAll("/+$", "");
+
         // 2. Điều hướng về Frontend dựa trên kết quả
         if (status == 1) {
             String redirectUrl;
             if (isPartialPayment) {
                 // Thanh toán từng phần → về trang theo dõi đơn hàng
-                redirectUrl = frontendUrl + "/my-orders";
+                redirectUrl = baseUrl + "/my-orders";
             } else {
                 // Thanh toán khi checkout → về trang order-success
                 redirectUrl = String.format(
                         "%s/order-success?orderId=%s&totalPrice=%s&time=%s",
-                        frontendUrl, txnRef, totalPrice, transactionTime
+                        baseUrl, txnRef, totalPrice, transactionTime
                 );
             }
             response.sendRedirect(redirectUrl);
         } else {
-            String redirectUrl = frontendUrl + "/order-failed?error=" +
+            String redirectUrl = baseUrl + "/order-failed?error=" +
                     URLEncoder.encode("Thanh toán thất bại", StandardCharsets.UTF_8);
             response.sendRedirect(redirectUrl);
         }
