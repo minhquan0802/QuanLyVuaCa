@@ -55,6 +55,17 @@ public class AuthenticationService {
     @Value("${jwt.refreshable-duration}")
     protected long REFRESH_TIME;
 
+    // Local dev (http, cùng site): Secure=false, SameSite=Lax.
+    // Production (https, FE/BE khác domain trên Render): Secure=true, SameSite=None,
+    // nếu không trình duyệt sẽ không gửi cookie cho request cross-site.
+    @NonFinal
+    @Value("${cookie.secure}")
+    protected boolean COOKIE_SECURE;
+
+    @NonFinal
+    @Value("${cookie.same-site}")
+    protected String COOKIE_SAME_SITE;
+
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         var taiKhoan = taiKhoanRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
@@ -207,18 +218,18 @@ public class AuthenticationService {
     public CookieResponse addCookie(String token, int tokenTime, String refreshToken, int refreshTokenTime) {
         ResponseCookie tokenCookie = ResponseCookie.from("token", token == null ? "" : token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(COOKIE_SECURE)
                 .maxAge(tokenTime)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite(COOKIE_SAME_SITE)
                 .build();
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken == null ? "" : refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(COOKIE_SECURE)
                 .maxAge(refreshTokenTime)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite(COOKIE_SAME_SITE)
                 .build();
 
         return CookieResponse.builder()

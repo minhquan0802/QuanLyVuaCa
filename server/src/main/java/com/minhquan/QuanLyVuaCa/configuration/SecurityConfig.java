@@ -99,8 +99,14 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 1. CHỈ ĐỊNH CHÍNH XÁC DOMAIN CỦA VITE (Không được dùng "*")
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // 1. CHỈ ĐỊNH CHÍNH XÁC DOMAIN ĐƯỢC PHÉP GỌI API (Không được dùng "*")
+        // frontend.url đọc từ biến môi trường FRONTEND_URL, hỗ trợ nhiều domain
+        // cách nhau bởi dấu phẩy (vd: local dev + domain thật trên Render).
+        List<String> allowedOrigins = Arrays.stream(frontendUrl.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+        configuration.setAllowedOrigins(allowedOrigins);
 
         // 2. CHO PHÉP CÁC METHOD CƠ BẢN
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

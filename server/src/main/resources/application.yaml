@@ -48,6 +48,13 @@ jwt:
   valid-duration: 43200
   refreshable-duration: 604800
 
+# Mặc định cho production (Render): FE và BE khác domain (cross-site) nên
+# bắt buộc Secure=true + SameSite=None thì trình duyệt mới gửi cookie kèm request.
+# application-local.yaml override lại thành false/Lax để chạy http://localhost.
+cookie:
+  secure: true
+  same-site: None
+
 vnpay:
   tmn-code: ${TMN_CODE}
   hash-secret: ${HASH_SECRET}
