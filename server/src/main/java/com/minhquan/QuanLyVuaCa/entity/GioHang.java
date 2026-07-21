@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "gio_hang")
+@Table(name = "giohang")
 public class GioHang {
     @Id
     @Size(max = 36)

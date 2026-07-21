@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "loaica")
+@Table(name = "sanpham")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Loaica {
     @Id

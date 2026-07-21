@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "chitiet_gio_hang")
+@Table(name = "chitietgiohang")
 public class ChitietGioHang {
     @Id
     @Size(max = 36)

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "chitietcaban",
+@Table(name = "chitietsanpham",
         // Thêm ràng buộc Unique để khớp với DB
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"idloaica", "idsizeca"})
