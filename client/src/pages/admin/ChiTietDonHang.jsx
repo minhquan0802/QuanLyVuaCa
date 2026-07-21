@@ -26,6 +26,7 @@ export default function ChiTietDonHang() {
     const [viewDetails, setViewDetails] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isEdited, setIsEdited] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
 
     // Tải thông tin chung của đơn hàng và danh sách chi tiết cùng lúc
     useEffect(() => {
@@ -57,6 +58,14 @@ export default function ChiTietDonHang() {
 
     // Lưu cân nặng thực tế về backend
     const handleSaveRealWeight = async () => {
+        const hasInvalidWeight = viewDetails.some(item => {
+            const weight = Number(item.editWeight);
+            return !Number.isFinite(weight) || weight <= 0;
+        });
+        if (hasInvalidWeight) {
+            showToast("Cân nặng thực tế phải lớn hơn 0!", "error");
+            return;
+        }
         const payload = viewDetails.map(item => ({
             idChitietdonhang: item.idchitietdonhang,
             soluongkgthucte: parseFloat(item.editWeight) || 0
@@ -89,8 +98,10 @@ export default function ChiTietDonHang() {
 
     // Thay đổi trạng thái đơn hàng nhanh
     const handleUpdateStatus = async (newStatus) => {
+        if (updatingStatus) return;
         if (isEdited && !window.confirm("Bạn chưa lưu cân nặng đã sửa. Tiếp tục đổi trạng thái?")) return;
         if (!window.confirm(`Xác nhận chuyển trạng thái sang: ${ORDER_STATUS[newStatus].label}?`)) return;
+        setUpdatingStatus(true);
         try {
             const res = await api.put(`/Donhangs/${id}/status`, { trangthaidonhang: newStatus });
             setOrder(prev => ({ ...prev, trangthaidonhang: newStatus }));
@@ -114,6 +125,8 @@ export default function ChiTietDonHang() {
         } catch (error) {
             const message = error?.response?.data?.message || "Lỗi thao tác thất bại!";
             showToast(message, "error");
+        } finally {
+            setUpdatingStatus(false);
         }
     };
 
@@ -156,16 +169,16 @@ export default function ChiTietDonHang() {
 
                         <div className="flex gap-2 flex-wrap">
                             {order.trangthaidonhang === "CHO_XAC_NHAN" && (
-                                <button onClick={() => handleUpdateStatus("DANG_DONG_HANG")} className="flex-1 py-1.5 bg-cyan-600 text-white rounded-lg font-bold text-xs hover:bg-cyan-700 cursor-pointer">Bắt đầu đóng hàng</button>
+                                <button disabled={updatingStatus} onClick={() => handleUpdateStatus("DANG_DONG_HANG")} className="flex-1 py-1.5 bg-cyan-600 text-white rounded-lg font-bold text-xs hover:bg-cyan-700 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Bắt đầu đóng hàng</button>
                             )}
                             {order.trangthaidonhang === "DANG_DONG_HANG" && (
-                                <button onClick={() => handleUpdateStatus("DANG_VAN_CHUYEN")} className="flex-1 py-1.5 bg-purple-600 text-white rounded-lg font-bold text-xs hover:bg-purple-700 cursor-pointer">Giao đơn vị vận chuyển</button>
+                                <button disabled={updatingStatus} onClick={() => handleUpdateStatus("DANG_VAN_CHUYEN")} className="flex-1 py-1.5 bg-purple-600 text-white rounded-lg font-bold text-xs hover:bg-purple-700 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Giao đơn vị vận chuyển</button>
                             )}
                             {order.trangthaidonhang === "DANG_VAN_CHUYEN" && (
-                                <button onClick={() => handleUpdateStatus("GIAO_HANG_THANH_CONG")} className="flex-1 py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 cursor-pointer">Xác nhận giao thành công</button>
+                                <button disabled={updatingStatus} onClick={() => handleUpdateStatus("GIAO_HANG_THANH_CONG")} className="flex-1 py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Xác nhận giao thành công</button>
                             )}
                             {["CHO_XAC_NHAN", "DANG_DONG_HANG"].includes(order.trangthaidonhang) && (
-                                <button onClick={() => handleUpdateStatus("HUY")} className="px-4 py-1.5 border border-red-200 text-red-600 rounded-lg font-bold text-xs hover:bg-red-50 cursor-pointer">Hủy đơn</button>
+                                <button disabled={updatingStatus} onClick={() => handleUpdateStatus("HUY")} className="px-4 py-1.5 border border-red-200 text-red-600 rounded-lg font-bold text-xs hover:bg-red-50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Hủy đơn</button>
                             )}
                             {isAdmin && order.trangthaithanhtoan === "CHUA_THANH_TOAN" && order.trangthaidonhang === "GIAO_HANG_THANH_CONG" && (
                                 <button onClick={handleMarkPayment} className="flex-1 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-700 cursor-pointer">Đánh dấu đã thanh toán</button>

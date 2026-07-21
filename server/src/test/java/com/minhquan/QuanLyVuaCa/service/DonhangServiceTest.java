@@ -111,7 +111,8 @@ class DonhangServiceTest {
             when(donhangMapper.toDonhang(request)).thenReturn(donhangEntity);
             when(donhangRepository.save(any(Donhang.class))).thenAnswer(inv -> {
                 Donhang d = inv.getArgument(0);
-                d.setIddonhang("dh-1");
+                // Mã đơn cần đủ 8 ký tự để tạo mã thanh toán theo quy tắc hiện tại.
+                d.setIddonhang("DONHANG-0001");
                 return d;
             });
 
@@ -324,7 +325,9 @@ class DonhangServiceTest {
             donhang.setTrangthaidonhang(TrangThaiDonHang.DANG_VAN_CHUYEN);
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
             when(donhangRepository.save(donhang)).thenReturn(donhang);
-            when(chitietdonhangRepository.findByIddonhang(donhang)).thenReturn(List.of());
+            Chitietdonhang chiTietDaGiao = new Chitietdonhang();
+            chiTietDaGiao.setTongtienthucte(BigDecimal.valueOf(500_000));
+            when(chitietdonhangRepository.findByIddonhang(donhang)).thenReturn(List.of(chiTietDaGiao));
             when(donhangMapper.toDonhangResponse(any(), any(), any())).thenReturn(DonhangResponse.builder().build());
 
             donhangService.xacNhanNhanHang("dh-1");
