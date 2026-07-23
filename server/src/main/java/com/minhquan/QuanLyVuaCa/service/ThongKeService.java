@@ -7,6 +7,7 @@ import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Chitietphieunhap;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhLy;
 import com.minhquan.QuanLyVuaCa.repository.*;
 import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import lombok.AccessLevel;
@@ -93,8 +94,11 @@ public class ThongKeService {
             BigDecimal ban = chitietdonhangRepository.tongSoLuongBanTheoLoaiCa(
                     loaica, TrangThaiDonHang.GIAO_HANG_THANH_CONG, tuNgay, denNgay);
 
-            BigDecimal haohut = chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCa(
-                    loaica, toInstant(tuNgay), toInstant(denNgay));
+            BigDecimal banThanhLy = chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCaVaTrangThai(
+                    loaica, TrangThaiThanhLy.DA_BAN_THANH_LY, toInstant(tuNgay), toInstant(denNgay));
+
+            BigDecimal tieuHuy = chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCaVaTrangThai(
+                    loaica, TrangThaiThanhLy.DA_TIEU_HUY, toInstant(tuNgay), toInstant(denNgay));
 
             // Tồn kho là số lượng thực tế đang có tại thời điểm xem Dashboard,
             // không được suy ra từ nhập - bán - hao hụt trong khoảng thời gian lọc.
@@ -107,7 +111,8 @@ public class ThongKeService {
                     .name(loaica.getTenloaica())
                     .nhap(nhap)
                     .ban(ban)
-                    .haohut(haohut)
+                    .banThanhLy(banThanhLy)
+                    .tieuHuy(tieuHuy)
                     .tonKho(tonKho)
                     .build());
         }

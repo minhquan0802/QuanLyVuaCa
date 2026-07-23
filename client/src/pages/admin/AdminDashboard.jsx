@@ -149,26 +149,31 @@ export default function SalesDashboard() {
     // Custom Tooltip cho Biểu đồ Cột (Cập nhật thêm Tồn kho)
     const CustomBarTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
+            const getValue = (dataKey) => Number(payload.find(item => item.dataKey === dataKey)?.value || 0);
             return (
                 <div className="bg-white p-4 rounded-xl shadow-lg border border-slate-100 min-w-[200px]">
                     <p className="font-bold text-slate-800 mb-3 border-b pb-2">{label}</p>
                     <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-center text-sm">
                             <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-blue-500"></span> Đã nhập:</span>
-                            <span className="font-bold text-slate-800">{payload[0].value.toLocaleString()} kg</span>
+                            <span className="font-bold text-slate-800">{getValue("nhap").toLocaleString()} kg</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-green-500"></span> Đã bán:</span>
-                            <span className="font-bold text-slate-800">{payload[1].value.toLocaleString()} kg</span>
+                            <span className="font-bold text-slate-800">{getValue("ban").toLocaleString()} kg</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                            <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-red-500"></span> Hao hụt:</span>
-                            <span className="font-bold text-slate-800">{payload[2].value.toLocaleString()} kg</span>
+                            <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-orange-500"></span> Bán thanh lý:</span>
+                            <span className="font-bold text-slate-800">{getValue("banThanhLy").toLocaleString()} kg</span>
                         </div>
-                        {showTonKho && payload[3] && (
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-red-500"></span> Tiêu hủy:</span>
+                            <span className="font-bold text-slate-800">{getValue("tieuHuy").toLocaleString()} kg</span>
+                        </div>
+                        {showTonKho && (
                             <div className="flex justify-between items-center text-sm pt-1 mt-1 border-t border-slate-50">
                                 <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-purple-500"></span> Tồn kho hiện tại:</span>
-                                <span className="font-bold text-purple-700">{payload[3].value.toLocaleString()} kg</span>
+                                <span className="font-bold text-purple-700">{getValue("tonKho").toLocaleString()} kg</span>
                             </div>
                         )}
                     </div>
@@ -279,8 +284,8 @@ export default function SalesDashboard() {
                         </h3>
                         <p className="text-slate-500 mt-1 text-sm">
                             {showTonKho
-                                ? "Hiển thị số lượng (kg) Nhập - Bán - Hao hụt trong hôm nay và tồn kho hiện tại"
-                                : "Hiển thị chi tiết số lượng (kg) Nhập - Bán - Hao hụt trong kỳ"}
+                                ? "Hiển thị số lượng (kg) Nhập - Bán - Bán thanh lý - Tiêu hủy trong hôm nay và tồn kho hiện tại"
+                                : "Hiển thị số lượng (kg) Nhập - Bán - Bán thanh lý - Tiêu hủy trong kỳ"}
                         </p>
                     </div>
                     
@@ -318,7 +323,8 @@ export default function SalesDashboard() {
                                     <th className="py-4 px-6 font-semibold border-b border-slate-200 rounded-tl-xl">Tên loại cá</th>
                                     <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-blue-600">Đã nhập (kg)</th>
                                     <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-green-600">Đã bán (kg)</th>
-                                    <th className={`py-4 px-6 font-semibold border-b border-slate-200 text-right text-red-500 ${!showTonKho ? "rounded-tr-xl" : ""}`}>Hao hụt (kg)</th>
+                                    <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-orange-600">Bán thanh lý (kg)</th>
+                                    <th className={`py-4 px-6 font-semibold border-b border-slate-200 text-right text-red-500 ${!showTonKho ? "rounded-tr-xl" : ""}`}>Tiêu hủy (kg)</th>
                                     {showTonKho && (
                                         <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-purple-600 bg-purple-50 rounded-tr-xl">Tồn kho hiện tại (kg)</th>
                                     )}
@@ -330,7 +336,8 @@ export default function SalesDashboard() {
                                         <td className="py-4 px-6 font-bold text-slate-700">{row.name}</td>
                                         <td className="py-4 px-6 text-right font-medium text-slate-600">{row.nhap.toLocaleString()}</td>
                                         <td className="py-4 px-6 text-right font-bold text-slate-800">{row.ban.toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-medium text-slate-500">{row.haohut.toLocaleString()}</td>
+                                        <td className="py-4 px-6 text-right font-medium text-orange-600">{Number(row.banThanhLy || 0).toLocaleString()}</td>
+                                        <td className="py-4 px-6 text-right font-medium text-red-500">{Number(row.tieuHuy || 0).toLocaleString()}</td>
                                         {showTonKho && (
                                             <td className="py-4 px-6 text-right font-bold text-purple-700 bg-purple-50/30">{Number(row.tonKho || 0).toLocaleString()}</td>
                                         )}
@@ -354,7 +361,8 @@ export default function SalesDashboard() {
                                 
                                 <Bar dataKey="nhap" name="Đã nhập" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
                                 <Bar dataKey="ban" name="Đã bán" fill="#10b981" radius={[4, 4, 0, 0]} barSize={12} />
-                                <Bar dataKey="haohut" name="Hao hụt" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={12} />
+                                <Bar dataKey="banThanhLy" name="Bán thanh lý" fill="#f97316" radius={[4, 4, 0, 0]} barSize={12} />
+                                <Bar dataKey="tieuHuy" name="Tiêu hủy" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={12} />
                                 {showTonKho && (
                                     <Bar dataKey="tonKho" name="Tồn kho hiện tại" fill="#a855f7" radius={[4, 4, 0, 0]} barSize={12} />
                                 )}

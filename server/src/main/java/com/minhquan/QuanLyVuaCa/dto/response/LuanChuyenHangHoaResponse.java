@@ -14,6 +14,7 @@ public class LuanChuyenHangHoaResponse {
     String name;
     BigDecimal nhap;
     BigDecimal ban;
-    BigDecimal haohut;
+    BigDecimal banThanhLy;
+    BigDecimal tieuHuy;
     BigDecimal tonKho;
 }
