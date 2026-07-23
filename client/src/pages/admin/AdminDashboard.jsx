@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { useAuth } from "../../context/AuthContext";
@@ -41,6 +41,9 @@ export default function SalesDashboard() {
 
     // --- DANH SÁCH ĐƠN HÀNG ---
     const [orders, setOrders] = useState([]);
+    const [orderDetailsById, setOrderDetailsById] = useState({});
+    const orderDetailsCacheRef = useRef({});
+    const loadingOrderDetailIdsRef = useRef(new Set());
     const [ordersLoading, setOrdersLoading] = useState(true);
     const [ordersPage, setOrdersPage] = useState(1);
     const ordersPageSize = 5;
@@ -61,21 +64,11 @@ export default function SalesDashboard() {
             .catch(() => {});
     }, [timeRange, customFrom, customTo]);
 
-    // Tận dụng API đơn hàng và API chi tiết có sẵn để hiển thị tóm tắt mặt hàng đã đặt.
+    // Chỉ tải danh sách đơn ở bước đầu. Chi tiết được tải theo trang đang hiển thị
+    // ở effect phía dưới để tránh gọi một API cho mọi đơn hàng cùng lúc.
     useEffect(() => {
         api.get("/Donhangs")
-            .then(async res => {
-                const orderList = res.data.result || [];
-                const ordersWithDetails = await Promise.all(orderList.map(async order => {
-                    try {
-                        const detailRes = await api.get(`/Donhangs/${order.iddonhang}/chitiet`);
-                        return { ...order, chiTietDonHangs: detailRes.data.result || [] };
-                    } catch {
-                        return { ...order, chiTietDonHangs: [] };
-                    }
-                }));
-                setOrders(ordersWithDetails);
-            })
+            .then(res => setOrders(res.data.result || []))
             .catch(() => setOrders([]))
             .finally(() => setOrdersLoading(false));
     }, []);
@@ -126,6 +119,35 @@ export default function SalesDashboard() {
         (ordersPage - 1) * ordersPageSize,
         ordersPage * ordersPageSize
     );
+    const visibleOrderIdsKey = paginatedOrders.map(order => order.iddonhang).join("|");
+
+    // Chỉ tải chi tiết của tối đa 5 đơn trên trang hiện tại. Kết quả được cache theo
+    // id đơn hàng nên quay lại trang đã xem sẽ không phát sinh request mới.
+    useEffect(() => {
+        if (!visibleOrderIdsKey) return;
+
+        const visibleOrderIds = visibleOrderIdsKey.split("|");
+        const missingOrderIds = visibleOrderIds.filter(id =>
+            !Object.prototype.hasOwnProperty.call(orderDetailsCacheRef.current, id)
+            && !loadingOrderDetailIdsRef.current.has(id)
+        );
+        if (missingOrderIds.length === 0) return;
+        missingOrderIds.forEach(id => loadingOrderDetailIdsRef.current.add(id));
+
+        Promise.all(missingOrderIds.map(async id => {
+            try {
+                const detailRes = await api.get(`/Donhangs/${id}/chitiet`);
+                return [id, detailRes.data.result || []];
+            } catch {
+                return [id, []];
+            }
+        })).then(detailEntries => {
+            const newDetails = Object.fromEntries(detailEntries);
+            orderDetailsCacheRef.current = { ...orderDetailsCacheRef.current, ...newDetails };
+            detailEntries.forEach(([id]) => loadingOrderDetailIdsRef.current.delete(id));
+            setOrderDetailsById({ ...orderDetailsCacheRef.current });
+        });
+    }, [visibleOrderIdsKey]);
 
     useEffect(() => {
         setOrdersPage(1);
@@ -426,7 +448,11 @@ export default function SalesDashboard() {
                                             title="Bấm để xem chi tiết đơn hàng"
                                         >
                                             <td className="px-5 py-4 font-bold text-slate-800">{order.tenKhachHang || "Khách vãng lai"}</td>
-                                            <td className="px-5 py-4 text-slate-600 max-w-xl truncate">{formatOrderItems(order.chiTietDonHangs)}</td>
+                                            <td className="px-5 py-4 text-slate-600 max-w-xl truncate">
+                                                {Object.prototype.hasOwnProperty.call(orderDetailsById, order.iddonhang)
+                                                    ? formatOrderItems(orderDetailsById[order.iddonhang])
+                                                    : "Đang tải mặt hàng..."}
+                                            </td>
                                             <td className="px-5 py-4">
                                                 <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold ${status.badge}`}>{status.label}</span>
                                             </td>
