@@ -1,0 +1,150 @@
+- generic [ref=f7e3]:
+  - banner [ref=f7e4]:
+    - generic [ref=f7e6]:
+      - heading "Vựa cá Điêu Hồng" [level=2] [ref=f7e8] [cursor=pointer]
+      - generic [ref=f7e9]:
+        - button "login" [ref=f7e11] [cursor=pointer]
+        - button "shopping_cart" [ref=f7e13] [cursor=pointer]
+  - main [ref=f7e15]:
+    - generic [ref=f7e17]:
+      - generic [ref=f7e18]:
+        - generic [ref=f7e19]:
+          - heading "Sản Phẩm Nổi Bật" [level=1] [ref=f7e20]
+          - paragraph [ref=f7e21]: Tuyển chọn những loại thủy sản tươi ngon nhất, cam kết nguồn gốc sạch và an toàn vệ sinh thực phẩm.
+        - generic [ref=f7e23]:
+          - generic: search
+          - textbox "Tìm kiếm loại cá, thủy sản..." [ref=f7e24]
+      - generic [ref=f7e25]:
+        - generic [ref=f7e26] [cursor=pointer]:
+          - generic [ref=f7e27]:
+            - generic [ref=f7e30]: "#1"
+            - generic [ref=f7e31]: HẾT HÀNG
+          - generic [ref=f7e33]:
+            - generic [ref=f7e34]:
+              - heading "Cá Điêu Hồng" [level=3] [ref=f7e35]
+              - generic [ref=f7e36]: Tạm hết hàng
+              - paragraph [ref=f7e38]: Thịt trắng, ngọt, ít xương dăm, da màu đỏ hồng đẹp mắt. Thường dùng để hấp xì dầu, nấu lẩu hoặc chiên xù.
+              - generic [ref=f7e40]:
+                - generic [ref=f7e41]: "Giá lẻ từ:"
+                - paragraph [ref=f7e42]: 70.000đ/kg
+            - button "add_shopping_cart Xem chi tiết" [ref=f7e43]:
+              - generic [ref=f7e44]: add_shopping_cart
+              - text: Xem chi tiết
+        - generic [ref=f7e45] [cursor=pointer]:
+          - generic [ref=f7e46]: "#2"
+          - generic [ref=f7e50]:
+            - generic [ref=f7e51]:
+              - heading "Cá Lóc" [level=3] [ref=f7e52]
+              - generic [ref=f7e54]:
+                - generic [ref=f7e55]: inventory_2
+                - text: "Sẵn hàng: 190.5"
+              - paragraph [ref=f7e56]: Hay còn gọi là cá quả, thịt chắc, ngọt và lành tính. Rất phổ biến và ngon nhất với món kho tộ hoặc nấu canh chua.
+              - generic [ref=f7e58]:
+                - generic [ref=f7e59]: "Giá lẻ từ:"
+                - paragraph [ref=f7e60]: 70.000đ/kg
+            - button "add_shopping_cart Xem chi tiết" [ref=f7e61]:
+              - generic [ref=f7e62]: add_shopping_cart
+              - text: Xem chi tiết
+        - generic [ref=f7e63] [cursor=pointer]:
+          - generic [ref=f7e64]:
+            - generic [ref=f7e67]: "#3"
+            - generic [ref=f7e68]: HẾT HÀNG
+          - generic [ref=f7e70]:
+            - generic [ref=f7e71]:
+              - heading "Cá Chép" [level=3] [ref=f7e72]
+              - generic [ref=f7e73]: Tạm hết hàng
+              - paragraph [ref=f7e75]: Loài cá nước ngọt truyền thống, thịt dày và béo. Thường được chế biến món cá chép om dưa, kho riềng hoặc nấu cháo.
+              - generic [ref=f7e77]:
+                - generic [ref=f7e78]: "Giá lẻ từ:"
+                - paragraph [ref=f7e79]: 55.000đ/kg
+            - button "add_shopping_cart Xem chi tiết" [ref=f7e80]:
+              - generic [ref=f7e81]: add_shopping_cart
+              - text: Xem chi tiết
+        - generic [ref=f7e82] [cursor=pointer]:
+          - generic [ref=f7e83]: "#4"
+          - generic [ref=f7e87]:
+            - generic [ref=f7e88]:
+              - heading "Cá Trắm" [level=3] [ref=f7e89]
+              - generic [ref=f7e91]:
+                - generic [ref=f7e92]: inventory_2
+                - text: "Sẵn hàng: 200"
+              - paragraph [ref=f7e93]: Kích thước lớn, thịt chắc, thớ thịt to và thơm ngon. Đặc biệt ngon khi kho, hấp bia hoặc làm gỏi cá.
+              - generic [ref=f7e95]:
+                - generic [ref=f7e96]: "Giá lẻ từ:"
+                - paragraph [ref=f7e97]: 80.000đ/kg
+            - button "add_shopping_cart Xem chi tiết" [ref=f7e98]:
+              - generic [ref=f7e99]: add_shopping_cart
+              - text: Xem chi tiết
+        - generic [ref=f7e100] [cursor=pointer]:
+          - generic [ref=f7e101]:
+            - generic [ref=f7e104]: "#5"
+            - generic [ref=f7e105]: HẾT HÀNG
+          - generic [ref=f7e107]:
+            - generic [ref=f7e108]:
+              - heading "Cá Rô" [level=3] [ref=f7e109]
+              - generic [ref=f7e110]: Tạm hết hàng
+              - paragraph [ref=f7e112]: Loại cá dân dã, tuy có xương nhưng thịt rất thơm, béo và ngọt đậm đà. Thường dùng chiên giòn hoặc nấu canh rau cải.
+              - generic [ref=f7e114]:
+                - generic [ref=f7e115]: "Giá lẻ từ:"
+                - paragraph [ref=f7e116]: 75.000đ/kg
+            - button "add_shopping_cart Xem chi tiết" [ref=f7e117]:
+              - generic [ref=f7e118]: add_shopping_cart
+              - text: Xem chi tiết
+        - generic [ref=f7e119] [cursor=pointer]:
+          - generic [ref=f7e120]: "#9"
+          - generic [ref=f7e124]:
+            - generic [ref=f7e125]:
+              - heading "Cá Basa" [level=3] [ref=f7e126]
+              - generic [ref=f7e128]:
+                - generic [ref=f7e129]: inventory_2
+                - text: "Sẵn hàng: 300"
+              - paragraph [ref=f7e130]: Cá basa là loài cá da trơn nước ngọt phổ biến ở Việt Nam, đặc biệt tại đồng bằng sông Cửu Long. Thịt cá mềm, ngọt, ít xương dăm, giàu dinh dưỡng và rất dễ chế biến trong nhiều món ăn truyền thống lẫn hiện đại
+              - generic [ref=f7e132]:
+                - generic [ref=f7e133]: "Giá lẻ từ:"
+                - paragraph [ref=f7e134]: 60.000đ/kg
+            - button "add_shopping_cart Xem chi tiết" [ref=f7e135]:
+              - generic [ref=f7e136]: add_shopping_cart
+              - text: Xem chi tiết
+        - generic [ref=f7e137] [cursor=pointer]:
+          - generic [ref=f7e138]:
+            - generic [ref=f7e141]: "#12"
+            - generic [ref=f7e142]: HẾT HÀNG
+          - generic [ref=f7e144]:
+            - generic [ref=f7e145]:
+              - heading "Cá Sặc" [level=3] [ref=f7e146]
+              - generic [ref=f7e147]: Tạm hết hàng
+              - paragraph [ref=f7e149]: Cá sặc là loài cá nước ngọt thân dẹt, thịt chắc và thơm, thường dài từ 10 đến 25 cm, có con lớn đạt khoảng 30 cm, trọng lượng trung bình 150–300 g mỗi con. Đây là loại cá dân dã quen thuộc trong bữa cơm Việt, dễ chế biến thành các món kho, chiên, nướng hoặc làm khô cá sặc trứng đặc sản.
+              - generic [ref=f7e151]:
+                - generic [ref=f7e152]: "Giá lẻ từ:"
+                - paragraph [ref=f7e153]: 69.000đ/kg
+            - button "add_shopping_cart Xem chi tiết" [ref=f7e154]:
+              - generic [ref=f7e155]: add_shopping_cart
+              - text: Xem chi tiết
+  - contentinfo [ref=f7e156]:
+    - generic [ref=f7e157]:
+      - generic [ref=f7e158]:
+        - generic [ref=f7e159]:
+          - heading "Vựa cá Điêu Hồng" [level=3] [ref=f7e160] [cursor=pointer]
+          - paragraph [ref=f7e161]: Chuyên cung cấp thủy sản tươi ngon, đảm bảo nguồn gốc sạch và an toàn vệ sinh thực phẩm.
+        - generic [ref=f7e162]:
+          - heading "Liên kết nhanh" [level=4] [ref=f7e163]
+          - list [ref=f7e164]:
+            - listitem [ref=f7e165]:
+              - button "Sản phẩm" [ref=f7e166] [cursor=pointer]
+            - listitem [ref=f7e167]:
+              - button "Giỏ hàng" [ref=f7e168] [cursor=pointer]
+            - listitem [ref=f7e169]:
+              - button "Đơn hàng của tôi" [ref=f7e170] [cursor=pointer]
+        - generic [ref=f7e171]:
+          - heading "Liên hệ" [level=4] [ref=f7e172]
+          - list [ref=f7e173]:
+            - listitem [ref=f7e174]:
+              - generic [ref=f7e175]: phone
+              - text: 0909 123 456
+            - listitem [ref=f7e176]:
+              - generic [ref=f7e177]: mail
+              - text: vuacadieuong@gmail.com
+            - listitem [ref=f7e178]:
+              - generic [ref=f7e179]: location_on
+              - generic [ref=f7e180]: 123 Đường Thủy Sản, TP. Hồ Chí Minh
+      - generic [ref=f7e181]: © 2026 Vựa cá Điêu Hồng. Tất cả quyền được bảo lưu.

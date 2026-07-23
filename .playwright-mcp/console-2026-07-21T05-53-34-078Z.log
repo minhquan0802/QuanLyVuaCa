@@ -1,0 +1,9 @@
+[      86ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=af0fa00f:20102
+[     128ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/quan-ly-vua-ca/tai-khoan/my-info:0
+[     140ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/quan-ly-vua-ca/auth/refresh:0
+[     212ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/login:0
+[   10011ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/quan-ly-vua-ca/auth/token:0
+[   10018ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/quan-ly-vua-ca/auth/refresh:0
+[   10081ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=af0fa00f:20102
+[   10113ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/quan-ly-vua-ca/tai-khoan/my-info:0
+[   10117ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/quan-ly-vua-ca/auth/refresh:0

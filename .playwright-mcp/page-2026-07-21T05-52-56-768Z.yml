@@ -1,0 +1,20 @@
+- generic [ref=f2e7]:
+  - heading "Vựa cá Điêu Hồng" [level=2] [ref=f2e9] [cursor=pointer]
+  - heading "Đăng nhập hệ thống" [level=1] [ref=f2e11]
+  - generic [ref=f2e12]:
+    - generic [ref=f2e13]:
+      - generic [ref=f2e14]: Email
+      - 'textbox "Ví dụ: quanly@fish.com" [ref=f2e16]'
+    - generic [ref=f2e17]:
+      - generic [ref=f2e18]: Mật khẩu
+      - generic [ref=f2e19]:
+        - textbox "Nhập mật khẩu" [ref=f2e20]
+        - button "visibility" [ref=f2e21]
+    - generic [ref=f2e23] [cursor=pointer]: "(Click điền nhanh: admin@gmail.com / 123456789)"
+    - link "Quên mật khẩu?" [ref=f2e25] [cursor=pointer]:
+      - /url: /quen-mat-khau
+    - button "Đăng nhập" [ref=f2e26]
+  - generic [ref=f2e27]:
+    - text: Chưa có tài khoản?
+    - link "Đăng ký ngay" [ref=f2e28] [cursor=pointer]:
+      - /url: "#"
