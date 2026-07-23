@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietCabanCreationRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.CapNhatSoKgTuongUngRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ChitietCabanResponse;
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
@@ -56,6 +57,9 @@ public class ChitietCabanService {
                 throw new AppExceptions(ErrorCode.CHITIET_CABAN_EXISTED);
             }
             record.setDeleted(false);
+            if (request.getSokgtuongung() != null) {
+                record.setSokgtuongung(request.getSokgtuongung());
+            }
             return chitietCabanMapper.toResponse(chitietcabanRepository.save(record));
         }
 
@@ -74,5 +78,12 @@ public class ChitietCabanService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
         chitietcaban.setDeleted(true);
         chitietcabanRepository.save(chitietcaban);
+    }
+
+    public ChitietCabanResponse capNhatSoKgTuongUng(Integer id, CapNhatSoKgTuongUngRequest request) {
+        Chitietcaban chitietcaban = chitietcabanRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
+        chitietcaban.setSokgtuongung(request.getSokgtuongung());
+        return chitietCabanMapper.toResponse(chitietcabanRepository.save(chitietcaban));
     }
 }

@@ -94,13 +94,10 @@ export default function ThemSuaLoaiCa() {
                     const { data: sizeData } = await api.post("/Sizecas", { sizeca: row.newSizeName.trim() });
                     sizeIdToUse = sizeData.result.idsizeca;
                 }
-                const { data: cbData } = await api.post("/Chitietcabans", {
+                await api.post("/Chitietcabans", {
                     idloaica: newLoaicaId,
                     idsizeca: sizeIdToUse,
-                    soluongton: 0
-                });
-                await api.post("/Quydois", {
-                    idchitietcaban: cbData.result.id,
+                    soluongton: 0,
                     sokgtuongung: parseFloat(row.kg)
                 });
             }

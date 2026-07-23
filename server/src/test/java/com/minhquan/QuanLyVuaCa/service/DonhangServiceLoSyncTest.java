@@ -3,6 +3,7 @@ package com.minhquan.QuanLyVuaCa.service;
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietDonhangRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.DonhangRequestCreation;
 import com.minhquan.QuanLyVuaCa.dto.request.UpdateCanNangRequest;
+import com.minhquan.QuanLyVuaCa.dto.response.DonhangResponse;
 import com.minhquan.QuanLyVuaCa.entity.*;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
@@ -49,7 +50,6 @@ class DonhangServiceLoSyncTest {
     @Mock TaiKhoanRepository taikhoanRepository;
     @Mock DonhangMapper donhangMapper;
     @Mock CongNoService congNoService;
-    @Mock QuydoiRepository quydoiRepository;
     @Mock BanggiaRepository banggiaRepository;
     @Mock ThongBaoService thongBaoService;
 
@@ -59,7 +59,9 @@ class DonhangServiceLoSyncTest {
     void setUp() {
         donhangService = new DonhangService(donhangRepository, chitietdonhangRepository, chitietcabanRepository,
                 chitietphieunhapRepository, donvitinhRepository, taikhoanRepository, donhangMapper, congNoService,
-                quydoiRepository, banggiaRepository, thongBaoService);
+                banggiaRepository, thongBaoService);
+        lenient().when(donhangMapper.toDonhangResponse(any(), any(), any()))
+                .thenReturn(DonhangResponse.builder().build());
     }
 
     @AfterEach
@@ -133,7 +135,7 @@ class DonhangServiceLoSyncTest {
             when(donhangMapper.toDonhang(request)).thenReturn(donhangEntity);
             when(donhangRepository.save(any(Donhang.class))).thenAnswer(inv -> {
                 Donhang d = inv.getArgument(0);
-                d.setIddonhang("dh-1");
+                d.setIddonhang("dh-12345678");
                 return d;
             });
 
@@ -141,9 +143,7 @@ class DonhangServiceLoSyncTest {
             when(donhangMapper.toChitietEntity(any())).thenReturn(ctdh);
             when(chitietcabanRepository.findById(1)).thenReturn(Optional.of(kho));
 
-            Quydoi quydoi = new Quydoi();
-            quydoi.setSokgtuongung(BigDecimal.valueOf(35)); // 1 đơn vị = 35kg -> luongCanTru = 35kg
-            when(quydoiRepository.findByIdchitietcaban(kho)).thenReturn(Optional.of(quydoi));
+            kho.setSokgtuongung(BigDecimal.valueOf(35)); // 1 đơn vị = 35kg -> luongCanTru = 35kg
 
             Banggia banggia = new Banggia();
             banggia.setGiabanle(BigDecimal.valueOf(50000));
@@ -203,6 +203,7 @@ class DonhangServiceLoSyncTest {
         private Chitietdonhang chitietDonHangDangXuLy(Chitietcaban kho, BigDecimal duKien, BigDecimal thucTeCu) {
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
+            donhang.setTongtien(BigDecimal.valueOf(100000));
             donhang.setTrangthaidonhang(TrangThaiDonHang.DANG_DONG_HANG);
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
 
@@ -337,6 +338,7 @@ class DonhangServiceLoSyncTest {
             // -> chuyển tiếp tiếp theo không được trừ kho/lô lần nữa.
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
+            donhang.setTongtien(BigDecimal.valueOf(100000));
             donhang.setTrangthaidonhang(TrangThaiDonHang.DANG_DONG_HANG);
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
             when(donhangRepository.save(donhang)).thenReturn(donhang);

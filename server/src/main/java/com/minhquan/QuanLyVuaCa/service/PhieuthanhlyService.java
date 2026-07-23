@@ -45,6 +45,8 @@ public class PhieuthanhlyService {
 
     @Transactional
     public PhieuthanhlyResponse taoPhieuThanhly(PhieuthanhlyRequest request) {
+        TrangThaiThanhLy trangThai = validateRequest(request);
+
         // --- 1. Người tạo phiếu (lấy từ user đang đăng nhập) ---
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Taikhoan nguoiTao = taiKhoanRepository.findByEmail(email)
@@ -55,11 +57,7 @@ public class PhieuthanhlyService {
         phieuthanhly.setIdnguoitaophieu(nguoiTao);
         phieuthanhly.setNgaythanhly(Instant.now());
 
-        try {
-            phieuthanhly.setTrangthai(TrangThaiThanhLy.valueOf(request.getTrangthai()));
-        } catch (Exception e) {
-            phieuthanhly.setTrangthai(TrangThaiThanhLy.DA_TIEU_HUY);
-        }
+        phieuthanhly.setTrangthai(trangThai);
 
         Phieuthanhly savedPhieu = phieuthanhlyRepository.save(phieuthanhly);
 
@@ -98,6 +96,41 @@ public class PhieuthanhlyService {
         }
 
         return toResponse(savedPhieu);
+    }
+
+    private TrangThaiThanhLy validateRequest(PhieuthanhlyRequest request) {
+        if (request == null || request.getListChiTiet() == null || request.getListChiTiet().isEmpty()) {
+            throw new AppExceptions(ErrorCode.CHITIET_THANHLY_EMPTY);
+        }
+
+        TrangThaiThanhLy trangThai;
+        try {
+            trangThai = TrangThaiThanhLy.valueOf(request.getTrangthai());
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            throw new AppExceptions(ErrorCode.TRANGTHAI_THANHLY_INVALID);
+        }
+
+        for (ChitietPhieuthanhlyRequest item : request.getListChiTiet()) {
+            if (item == null || item.getSoluongthanhly() == null
+                    || item.getSoluongthanhly().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new AppExceptions(ErrorCode.SOLUONG_THANHLY_INVALID);
+            }
+
+            BigDecimal donGia = item.getDongia();
+            if (donGia == null || donGia.compareTo(BigDecimal.ZERO) < 0) {
+                throw new AppExceptions(ErrorCode.DONGIA_THANHLY_INVALID);
+            }
+            if (trangThai == TrangThaiThanhLy.DA_BAN_THANH_LY
+                    && donGia.compareTo(BigDecimal.ZERO) == 0) {
+                throw new AppExceptions(ErrorCode.DONGIA_THANHLY_INVALID);
+            }
+            if (trangThai == TrangThaiThanhLy.DA_TIEU_HUY
+                    && donGia.compareTo(BigDecimal.ZERO) != 0) {
+                throw new AppExceptions(ErrorCode.DONGIA_THANHLY_INVALID);
+            }
+        }
+
+        return trangThai;
     }
 
     @Transactional(readOnly = true)

@@ -55,6 +55,10 @@ public enum ErrorCode {
     // --- PHIEU THANH LY ---
     CHITIETPHIEUNHAP_NOT_EXISTED(1040, "Lo hang (chi tiet phieu nhap) khong ton tai", HttpStatus.NOT_FOUND),
     SOLUONG_THANHLY_VUOT_QUA_TON_LO(1041, "So luong thanh ly vuot qua so luong con lai cua lo", HttpStatus.CONFLICT),
+    CHITIET_THANHLY_EMPTY(1061, "Danh sach chi tiet thanh ly khong duoc rong", HttpStatus.BAD_REQUEST),
+    SOLUONG_THANHLY_INVALID(1062, "So luong thanh ly phai lon hon 0", HttpStatus.BAD_REQUEST),
+    DONGIA_THANHLY_INVALID(1063, "Don gia thanh ly khong hop le", HttpStatus.BAD_REQUEST),
+    TRANGTHAI_THANHLY_INVALID(1064, "Trang thai thanh ly khong hop le", HttpStatus.BAD_REQUEST),
 
     // --- THONG BAO ---
     THONGBAO_NOT_EXISTED(1042, "Thong bao khong ton tai", HttpStatus.NOT_FOUND),

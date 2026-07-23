@@ -1,6 +1,8 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -14,14 +16,16 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PhieuthanhlyRequest {
-    @NotNull(message = "Vui lòng nhập lý do thanh lý")
+    @NotBlank(message = "INVALID_KEY")
     String lydothanhly;
 
     String ghichu;
 
     // "DA_TIEU_HUY" hoac "DA_BAN_THANH_LY"
+    @NotBlank(message = "TRANGTHAI_THANHLY_INVALID")
     String trangthai;
 
-    @NotNull(message = "Danh sách chi tiết không được trống")
+    @NotEmpty(message = "CHITIET_THANHLY_EMPTY")
+    @Valid
     List<ChitietPhieuthanhlyRequest> listChiTiet;
 }

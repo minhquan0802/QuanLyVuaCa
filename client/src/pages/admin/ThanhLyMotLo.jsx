@@ -54,7 +54,10 @@ export default function ThanhLyMotLo() {
         const soLuong = Number(form.soluongthanhly);
         if (soLuong <= 0) { showToast("Số lượng thanh lý phải > 0!", "error"); return; }
         if (soLuong > Number(lot.soluongconlai)) { showToast(`Lô này chỉ còn ${lot.soluongconlai}kg!`, "error"); return; }
-        if (Number(form.dongia) < 0) { showToast("Đơn giá không được âm!", "error"); return; }
+        const donGia = Number(form.dongia);
+        if (!Number.isFinite(donGia) || donGia < 0) { showToast("Đơn giá không được âm!", "error"); return; }
+        if (form.trangthai === "DA_BAN_THANH_LY" && donGia <= 0) { showToast("Bán thanh lý phải có đơn giá lớn hơn 0!", "error"); return; }
+        if (form.trangthai === "DA_TIEU_HUY" && donGia !== 0) { showToast("Tiêu hủy phải có đơn giá bằng 0!", "error"); return; }
 
         const payload = {
             lydothanhly: form.lydothanhly,
@@ -63,7 +66,7 @@ export default function ThanhLyMotLo() {
             listChiTiet: [{
                 idchitietphieunhap: lot.idchitietphieunhap,
                 soluongthanhly: soLuong,
-                dongia: Number(form.dongia),
+                dongia: donGia,
             }],
         };
 
@@ -152,7 +155,9 @@ export default function ThanhLyMotLo() {
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Đơn giá (0 nếu tiêu hủy)</label>
                             <input
                                 type="number"
-                                className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none"
+                                min="0"
+                                disabled={form.trangthai === "DA_TIEU_HUY"}
+                                className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500"
                                 value={form.dongia}
                                 onChange={e => setForm({ ...form, dongia: e.target.value })}
                             />
@@ -165,7 +170,10 @@ export default function ThanhLyMotLo() {
                             <select
                                 className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none"
                                 value={form.trangthai}
-                                onChange={e => setForm({ ...form, trangthai: e.target.value })}
+                                onChange={e => {
+                                    const trangthai = e.target.value;
+                                    setForm({ ...form, trangthai, ...(trangthai === "DA_TIEU_HUY" ? { dongia: 0 } : {}) });
+                                }}
                             >
                                 <option value="DA_TIEU_HUY">Đã tiêu hủy</option>
                                 <option value="DA_BAN_THANH_LY">Đã bán thanh lý</option>

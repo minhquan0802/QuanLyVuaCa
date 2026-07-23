@@ -47,7 +47,6 @@ class DonhangServiceTest {
     @Mock TaiKhoanRepository taikhoanRepository;
     @Mock DonhangMapper donhangMapper;
     @Mock CongNoService congNoService;
-    @Mock QuydoiRepository quydoiRepository;
     @Mock BanggiaRepository banggiaRepository;
     @Mock ThongBaoService thongBaoService;
 
@@ -57,7 +56,7 @@ class DonhangServiceTest {
     void setUp() {
         donhangService = new DonhangService(donhangRepository, chitietdonhangRepository, chitietcabanRepository,
                 chitietphieunhapRepository, donvitinhRepository, taikhoanRepository, donhangMapper, congNoService,
-                quydoiRepository, banggiaRepository, thongBaoService);
+                banggiaRepository, thongBaoService);
     }
 
     @AfterEach
@@ -111,7 +110,7 @@ class DonhangServiceTest {
             when(donhangMapper.toDonhang(request)).thenReturn(donhangEntity);
             when(donhangRepository.save(any(Donhang.class))).thenAnswer(inv -> {
                 Donhang d = inv.getArgument(0);
-                d.setIddonhang("dh-1");
+                d.setIddonhang("dh-12345678");
                 return d;
             });
 
@@ -164,8 +163,8 @@ class DonhangServiceTest {
             verifyNoInteractions(congNoService);
 
             ArgumentCaptor<Donhang> captor = ArgumentCaptor.forClass(Donhang.class);
-            verify(donhangRepository).save(captor.capture());
-            assertEquals("Khách vãng lai", captor.getValue().getTenKhachLe());
+            verify(donhangRepository, times(2)).save(captor.capture());
+            assertEquals("Khách vãng lai", captor.getAllValues().getLast().getTenKhachLe());
 
             ArgumentCaptor<List<Chitietdonhang>> chiTietCaptor = ArgumentCaptor.forClass(List.class);
             verify(chitietdonhangRepository).saveAll(chiTietCaptor.capture());
@@ -321,10 +320,10 @@ class DonhangServiceTest {
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
             donhang.setIdthongtinkhachhang("kh-1");
+            donhang.setTongtien(BigDecimal.valueOf(80000));
             donhang.setTrangthaidonhang(TrangThaiDonHang.DANG_VAN_CHUYEN);
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
             when(donhangRepository.save(donhang)).thenReturn(donhang);
-            when(chitietdonhangRepository.findByIddonhang(donhang)).thenReturn(List.of());
             when(donhangMapper.toDonhangResponse(any(), any(), any())).thenReturn(DonhangResponse.builder().build());
 
             donhangService.xacNhanNhanHang("dh-1");
@@ -372,10 +371,10 @@ class DonhangServiceTest {
         void chuyenSangGiaoHangThanhCong_GoiCongNoXuLyDonGiaoThanhCong() {
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
+            donhang.setTongtien(BigDecimal.valueOf(80000));
             donhang.setTrangthaidonhang(TrangThaiDonHang.DANG_VAN_CHUYEN);
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
             when(donhangRepository.save(donhang)).thenReturn(donhang);
-            when(chitietdonhangRepository.findByIddonhang(donhang)).thenReturn(List.of());
             when(donhangMapper.toDonhangResponse(any(), any(), any())).thenReturn(DonhangResponse.builder().build());
 
             donhangService.updateStatus("dh-1", TrangThaiDonHang.GIAO_HANG_THANH_CONG);
@@ -403,49 +402,29 @@ class DonhangServiceTest {
     class TinhTongTienDonHang {
 
         @Test
-        void coSanTongTienThucTe_TraVeTongCongCacChiTiet() {
+        void coSanTongTienDonHang_traVeGiaTriDaLuu() {
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
+            donhang.setTongtien(BigDecimal.valueOf(80000));
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
-
-            Chitietdonhang ct1 = new Chitietdonhang();
-            ct1.setTongtienthucte(BigDecimal.valueOf(50000));
-            Chitietdonhang ct2 = new Chitietdonhang();
-            ct2.setTongtienthucte(BigDecimal.valueOf(30000));
-            when(chitietdonhangRepository.findByIddonhang(donhang)).thenReturn(List.of(ct1, ct2));
 
             BigDecimal tong = donhangService.tinhTongTienDonHang("dh-1");
 
             assertEquals(0, BigDecimal.valueOf(80000).compareTo(tong));
+            verifyNoInteractions(chitietdonhangRepository, banggiaRepository);
         }
 
         @Test
-        void thieuTongTienThucTe_TinhLaiOnTheFlyTheoGiaLe() {
+        void tongTienBangKhong_traVeDungGiaTriDaLuu() {
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
+            donhang.setTongtien(BigDecimal.ZERO);
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
-
-            Chitietcaban kho = kho(BigDecimal.valueOf(10));
-            Donvitinh dvt = new Donvitinh();
-            dvt.setId(1);
-            dvt.setHesokg(BigDecimal.ONE);
-
-            Chitietdonhang ct = new Chitietdonhang();
-            ct.setSoluong(3);
-            ct.setTongtienthucte(null); // đơn cũ chưa lưu tổng tiền thực tế
-            ct.setIdchitietcaban(kho);
-            ct.setIddonvitinh(dvt);
-            when(chitietdonhangRepository.findByIddonhang(donhang)).thenReturn(List.of(ct));
-
-            Banggia banggia = new Banggia();
-            banggia.setGiabanle(BigDecimal.valueOf(20000));
-            banggia.setGiabansi(BigDecimal.valueOf(15000));
-            when(banggiaRepository.findByChitietcabanAndNgayketthucIsNull(kho)).thenReturn(Optional.of(banggia));
 
             BigDecimal tong = donhangService.tinhTongTienDonHang("dh-1");
 
-            // 3 (soluong) * 1 (hesokg) * 20000 (giá lẻ, tính an toàn) = 60000
-            assertEquals(0, BigDecimal.valueOf(60000).compareTo(tong));
+            assertEquals(0, BigDecimal.ZERO.compareTo(tong));
+            verifyNoInteractions(chitietdonhangRepository, banggiaRepository);
         }
     }
 }

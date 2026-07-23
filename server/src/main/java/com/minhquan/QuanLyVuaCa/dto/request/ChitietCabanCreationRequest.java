@@ -22,4 +22,7 @@ public class ChitietCabanCreationRequest {
 
     // Số lượng tồn ban đầu (thường là 0, nhưng có thể cho nhập nếu kiểm kê ban đầu)
     BigDecimal soluongton = BigDecimal.ZERO;
+
+    @DecimalMin(value = "0.01", message = "Số kg tương ứng phải lớn hơn 0")
+    BigDecimal sokgtuongung;
 }

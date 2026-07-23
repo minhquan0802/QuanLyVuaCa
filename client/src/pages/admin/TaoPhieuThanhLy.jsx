@@ -101,7 +101,10 @@ export default function TaoPhieuThanhLy() {
 
         // Cực kì quan trọng: Số lượng mang đi thanh lý không được vượt quá số lượng cá còn tồn trong lô đó
         if (soLuong > Number(selectedLot.soluongconlai)) { showToast(`Lô này chỉ còn ${selectedLot.soluongconlai}kg!`, "error"); return; }
-        if (Number(currentDetail.dongia) < 0) { showToast("Đơn giá không được âm", "error"); return; }
+        const donGia = Number(currentDetail.dongia);
+        if (!Number.isFinite(donGia) || donGia < 0) { showToast("Đơn giá không được âm", "error"); return; }
+        if (headerForm.trangthai === "DA_BAN_THANH_LY" && donGia <= 0) { showToast("Bán thanh lý phải có đơn giá lớn hơn 0", "error"); return; }
+        if (headerForm.trangthai === "DA_TIEU_HUY" && donGia !== 0) { showToast("Tiêu hủy phải có đơn giá bằng 0", "error"); return; }
 
         // Đẩy thông tin lô vào mảng tạm `addedDetails`
         setAddedDetails(prev => [...prev, {
@@ -111,7 +114,7 @@ export default function TaoPhieuThanhLy() {
             tenSize: selectedProduct.tenSize,
             ngaynhap: selectedLot.ngaynhap,
             soluongthanhly: soLuong,
-            dongia: Number(currentDetail.dongia),
+            dongia: donGia,
         }]);
 
         // Reset form nhập chi tiết lô sau khi thêm thành công
@@ -174,7 +177,11 @@ export default function TaoPhieuThanhLy() {
 
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Trạng thái xử lý</label>
-                        <select className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none" value={headerForm.trangthai} onChange={e => setHeaderForm({ ...headerForm, trangthai: e.target.value })}>
+                        <select className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none" value={headerForm.trangthai} onChange={e => {
+                            const trangthai = e.target.value;
+                            setHeaderForm({ ...headerForm, trangthai });
+                            if (trangthai === "DA_TIEU_HUY") setCurrentDetail(prev => ({ ...prev, dongia: 0 }));
+                        }}>
                             <option value="DA_TIEU_HUY">Đã tiêu hủy</option>
                             <option value="DA_BAN_THANH_LY">Đã bán thanh lý</option>
                         </select>
@@ -234,7 +241,7 @@ export default function TaoPhieuThanhLy() {
                             </div>
                             <div className="col-span-4">
                                 <label className="text-xs font-bold text-slate-500 block mb-1.5">Đơn giá (0 nếu tiêu hủy)</label>
-                                <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" value={currentDetail.dongia} onChange={e => setCurrentDetail({ ...currentDetail, dongia: e.target.value })} />
+                                <input type="number" min="0" disabled={headerForm.trangthai === "DA_TIEU_HUY"} className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none disabled:bg-slate-100 disabled:text-slate-500" value={currentDetail.dongia} onChange={e => setCurrentDetail({ ...currentDetail, dongia: e.target.value })} />
                             </div>
                             <div className="col-span-4">
                                 <button onClick={handleAddDetail} className="w-full p-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 flex justify-center items-center gap-1.5 cursor-pointer text-sm font-bold">

@@ -90,8 +90,10 @@ export default function AppRoutes() {
                 <Route path='/admin/QuanLyKho' element={<QuanLyKho />} />
                 <Route path='/admin/QuanLyKho/nhap-hang' element={<NhapHang />} />
                 <Route path='/admin/QuanLyThanhLy' element={<QuanLyThanhLy />} />
-                <Route path='/admin/QuanLyThanhLy/tao-phieu' element={<TaoPhieuThanhLy />} />
-                <Route path='/admin/QuanLyThanhLy/thanh-ly/:idLo' element={<ThanhLyMotLo />} />
+                <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+                    <Route path='/admin/QuanLyThanhLy/tao-phieu' element={<TaoPhieuThanhLy />} />
+                    <Route path='/admin/QuanLyThanhLy/thanh-ly/:idLo' element={<ThanhLyMotLo />} />
+                </Route>
                 <Route path='/admin/QuanLyCongNo' element={<QuanLyCongNo />} />
             </Route>
         </Routes>

@@ -1,6 +1,6 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -15,14 +15,14 @@ import java.math.BigDecimal;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChitietPhieuthanhlyRequest {
-    @NotNull(message = "Vui lòng chọn lô hàng cần thanh lý")
+    @NotNull(message = "CHITIETPHIEUNHAP_NOT_EXISTED")
     String idchitietphieunhap;
 
-    @NotNull(message = "Số lượng thanh lý không được để trống")
-    @Min(value = 0, message = "Số lượng thanh lý phải lớn hơn 0")
+    @NotNull(message = "SOLUONG_THANHLY_INVALID")
+    @DecimalMin(value = "0", inclusive = false, message = "SOLUONG_THANHLY_INVALID")
     BigDecimal soluongthanhly;
 
-    @NotNull(message = "Đơn giá thanh lý không được để trống")
-    @Min(value = 0, message = "Đơn giá thanh lý không được âm")
+    @NotNull(message = "DONGIA_THANHLY_INVALID")
+    @DecimalMin(value = "0", message = "DONGIA_THANHLY_INVALID")
     BigDecimal dongia;
 }

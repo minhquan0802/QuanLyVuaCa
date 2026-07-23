@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietCabanCreationRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.CapNhatSoKgTuongUngRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.ChitietCabanResponse;
 import com.minhquan.QuanLyVuaCa.service.ChitietCabanService;
@@ -39,6 +40,15 @@ public class ChitietCabanController {
         chitietCabanService.delete(id);
         return ApiResponse.<String>builder()
                 .result("Đã xóa sản phẩm khỏi danh sách kinh doanh")
+                .build();
+    }
+
+    @PutMapping("/{id}/so-kg-tuong-ung")
+    public ApiResponse<ChitietCabanResponse> capNhatSoKgTuongUng(
+            @PathVariable Integer id,
+            @RequestBody @Validated CapNhatSoKgTuongUngRequest request) {
+        return ApiResponse.<ChitietCabanResponse>builder()
+                .result(chitietCabanService.capNhatSoKgTuongUng(id, request))
                 .build();
     }
 }

@@ -18,7 +18,6 @@ export default function TaoDonHang() {
     const [sizes, setSizes] = useState([]);
     const [units, setUnits] = useState([]);
     const [priceList, setPriceList] = useState([]);
-    const [conversionList, setConversionList] = useState([]);
 
     const [newOrder, setNewOrder] = useState({ idthongtinkhachhang: "", tenKhachLe: "", sdtKhachLe: "", items: [] });
     const [currentItem, setCurrentItem] = useState({ fishId: "", sizeId: "", repoId: "", unitId: "", unitName: "", factor: 0, quantity: 1, estimatedKg: 0, pricePerKg: 0 });
@@ -33,13 +32,11 @@ export default function TaoDonHang() {
             api.get("/Chitietcabans"),
             api.get("/Donvitinhs"),
             api.get("/Banggias"),
-            api.get("/Quydois"),
-        ]).then(([resCust, resRepo, resUnits, resPrices, resConversions]) => {
+        ]).then(([resCust, resRepo, resUnits, resPrices]) => {
             setCustomers((resCust.data?.result || []).filter(u => u.vaitro === "CUSTOMER"));
             setFishes(resRepo.data?.result || []); // Dùng thẳng Chitietcabans để map loại cá & size nhằm bỏ qua API Loaicas/Sizecas
             setUnits(resUnits.data?.result || []);
             setPriceList(resPrices.data?.result || []);
-            setConversionList(resConversions.data?.result || []);
         }).catch(() => showToast("Không thể tải dữ liệu!", "error"));
     }, []);
 
@@ -64,11 +61,11 @@ export default function TaoDonHang() {
         }, []);
     }, [fishes]);
 
-    // Lấy hệ số quy đổi dựa trên cấu trúc object lồng nhau của API /Quydois
+    // Lấy hệ số quy đổi trực tiếp từ chi tiết sản phẩm.
     const getConversionFactor = useCallback((repoId) => {
-        const match = conversionList.find(c => Number(c.idchitietcaban?.id) === Number(repoId));
+        const match = fishes.find(c => Number(c.id) === Number(repoId));
         return match ? match.sokgtuongung : 0;
-    }, [conversionList]);
+    }, [fishes]);
 
     // Dò giá bán sỉ/lẻ hiện hành
     const getAutoPrice = useCallback((repoId, isWholesale) => {

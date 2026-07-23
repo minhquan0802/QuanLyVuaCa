@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -40,4 +41,7 @@ public class Donhang {
 
     @Column(name = "sdt_khach_le")
     private String sdtKhachLe;
+
+    @Column(name = "tongtien", nullable = false, precision = 18, scale = 2)
+    private BigDecimal tongtien = BigDecimal.ZERO;
 }

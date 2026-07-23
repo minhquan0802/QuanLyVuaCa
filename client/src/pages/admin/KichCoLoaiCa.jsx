@@ -12,7 +12,6 @@ export default function KichCoLoaiCa() {
     const [selectedFish, setSelectedFish] = useState(null);
     const [fishInventory, setFishInventory] = useState([]);
     const [allGlobalSizes, setAllGlobalSizes] = useState([]);
-    const [quydois, setQuydois] = useState([]);
     const [selectedSizeId, setSelectedSizeId] = useState("");
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [newSizeName, setNewSizeName] = useState("");
@@ -21,15 +20,13 @@ export default function KichCoLoaiCa() {
 
     const loadData = async (fish = selectedFish) => {
         try {
-            const [resInventory, resAllSizes, resQuydois] = await Promise.all([
+            const [resInventory, resAllSizes] = await Promise.all([
                 api.get("/Chitietcabans"),
                 api.get("/Sizecas"),
-                api.get("/Quydois"),
             ]);
             const allItems = resInventory.data.result || [];
             if (fish) setFishInventory(allItems.filter(item => item.tenLoaiCa === fish.tenloaica));
             setAllGlobalSizes(resAllSizes.data.result || []);
-            setQuydois(resQuydois.data.result || []);
         } catch {
             showToast("Không thể tải dữ liệu kích thước!", "error");
         }
@@ -68,15 +65,10 @@ export default function KichCoLoaiCa() {
             }
 
             // Bước 1: Tạo chitietcaban (size - loại cá)
-            const { data: cbData } = await api.post("/Chitietcabans", {
+            await api.post("/Chitietcabans", {
                 idloaica: Number(loaicaId),
                 idsizeca: sizeIdToAdd,
-                soluongton: 0
-            });
-
-            // Bước 2: Tạo quy đổi kg tương ứng
-            await api.post("/Quydois", {
-                idchitietcaban: cbData.result.id,
+                soluongton: 0,
                 sokgtuongung: kgValue
             });
 
@@ -98,8 +90,7 @@ export default function KichCoLoaiCa() {
             return;
         }
         try {
-            await api.post("/Quydois", {
-                idchitietcaban: chitietcabanId,
+            await api.put(`/Chitietcabans/${chitietcabanId}/so-kg-tuong-ung`, {
                 sokgtuongung: kgValue
             });
             showToast("Đã lưu quy đổi kg thành công!", "success");
@@ -206,13 +197,12 @@ export default function KichCoLoaiCa() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {fishInventory.map((item) => {
-                                        const quy = quydois.find(q => q.idchitietcaban === item.id);
                                         return (
                                             <tr key={item.id} className="hover:bg-slate-50/60">
                                                 <td className="px-3 py-2.5 font-bold text-slate-700">{item.tenSize}</td>
                                                 <td className="px-3 py-2 text-center">
-                                                    {quy ? (
-                                                        <span className="text-cyan-700 font-bold">{quy.sokgtuongung} kg</span>
+                                                    {item.sokgtuongung ? (
+                                                        <span className="text-cyan-700 font-bold">{item.sokgtuongung} kg</span>
                                                     ) : (
                                                         <div className="flex items-center gap-1.5 justify-center">
                                                             <input

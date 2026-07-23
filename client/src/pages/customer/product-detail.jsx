@@ -20,7 +20,6 @@ export default function ProductDetail() {
     const [priceList, setPriceList] = useState([]);
     const [stockList, setStockList] = useState([]);
     const [selectedOption, setSelectedOption] = useState(null);
-    const [conversionList, setConversionList] = useState([]);
     const [unitList, setUnitList] = useState([]);
     const [selectedUnit, setSelectedUnit] = useState(null);
 
@@ -30,17 +29,15 @@ export default function ProductDetail() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [resProduct, resPrices, resConversions, resStocks, resUnits] = await Promise.all([
+                const [resProduct, resPrices, resStocks, resUnits] = await Promise.all([
                     api.get(`/Loaicas/${product_id}`),
                     api.get("/Banggias"),
-                    api.get("/Quydois"),
                     api.get("/Chitietcabans"),
                     api.get("/Donvitinhs"),
                 ]);
 
                 const productObj = resProduct.data.result || resProduct.data;
                 setProduct(productObj);
-                setConversionList(resConversions.data.result || []);
                 setStockList(resStocks.data.result || []);
 
                 const units = resUnits.data.result || [];
@@ -79,8 +76,8 @@ export default function ProductDetail() {
     const getBaseWeight = () => {
         if (!selectedOption) return 0;
         const idKho = selectedOption.idChitietcaban || selectedOption.chitietcaban?.id;
-        const conv = conversionList.find(c => Number(c.idchitietcaban?.id || c.idchitietcaban) === Number(idKho));
-        return conv ? conv.sokgtuongung : 0;
+        const stock = stockList.find(c => Number(c.id) === Number(idKho));
+        return stock ? Number(stock.sokgtuongung) || 0 : 0;
     };
 
     const weightPerUnit = (() => {

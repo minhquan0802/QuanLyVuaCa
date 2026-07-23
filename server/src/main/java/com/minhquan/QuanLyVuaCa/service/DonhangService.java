@@ -46,7 +46,6 @@ public class DonhangService {
     DonhangMapper donhangMapper;
     CongNoService congNoService;
 
-    QuydoiRepository quydoiRepository;
     BanggiaRepository banggiaRepository;
     ThongBaoService thongBaoService;
 
@@ -54,6 +53,7 @@ public class DonhangService {
     public DonhangResponse createDonhang(DonhangRequestCreation request) {
 
         Donhang donhang = donhangMapper.toDonhang(request);
+        donhang.setTongtien(BigDecimal.ZERO);
 
         if (request.getNgaydat() != null) {
             donhang.setNgaydat(request.getNgaydat());
@@ -135,9 +135,9 @@ public class DonhangService {
                 if (donvitinh != null && donvitinh.getHesokg() != null && donvitinh.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
                     heSoQuyDoi = donvitinh.getHesokg(); // Kg hoặc Bao: dùng hesokg cố định
                 } else {
-                    heSoQuyDoi = quydoiRepository.findByIdchitietcaban(finalChitietcaban) // Con: dùng hệ số theo loại cá
-                            .map(Quydoi::getSokgtuongung)
-                            .orElse(BigDecimal.ONE);
+                    heSoQuyDoi = finalChitietcaban.getSokgtuongung() != null
+                            ? finalChitietcaban.getSokgtuongung()
+                            : BigDecimal.ONE;
                 }
 
                 // B2. Lấy giá bán hiện tại
@@ -195,6 +195,9 @@ public class DonhangService {
                 chitietdonhangRepository.saveAll(listChiTietEntity);
             }
         }
+
+        savedDonhang.setTongtien(tongTienDonHang);
+        savedDonhang = donhangRepository.save(savedDonhang);
 
         // 3. Chuẩn bị dữ liệu trả về
         String tenKhach;
@@ -462,6 +465,10 @@ public class DonhangService {
             thongBaoService.guiChoTaiKhoan(savedDonhang.getIdthongtinkhachhang(), noidung, "GIAO_THIEU_HANG", "/my-orders");
         }
 
+        if (!canhBaoGiaoThieu.isEmpty()) {
+            capNhatTongTien(savedDonhang);
+        }
+
         // Đơn bị hủy sau khi đã lỡ trừ kho (rời CHO_XAC_NHAN rồi mới hủy, vd đang "Đang đóng hàng")
         // -> hoàn lại kho + lô đúng bằng số đã trừ, tránh mất hàng vĩnh viễn khỏi kho.
         if (newStatus == TrangThaiDonHang.HUY
@@ -494,52 +501,7 @@ public class DonhangService {
     public BigDecimal tinhTongTienDonHang(String idDonHang) {
         Donhang donhang = donhangRepository.findById(idDonHang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + idDonHang));
-
-        List<Chitietdonhang> details = chitietdonhangRepository.findByIddonhang(donhang);
-
-        BigDecimal tongTien = BigDecimal.ZERO;
-
-        for (Chitietdonhang ct : details) {
-            // Trường hợp 1: Trong DB đã có sẵn tổng tiền thực tế (Đơn mới).
-            // Chỉ check != null - 0 là giá trị đã cân thật (vd cân được 0kg), không phải "chưa có dữ liệu".
-            if (ct.getTongtienthucte() != null) {
-                tongTien = tongTien.add(ct.getTongtienthucte());
-            }
-            // Trường hợp 2: DB chưa có (Đơn cũ) -> Tính lại on-the-fly
-            else {
-                try {
-                    // Lấy lại thông tin kho và đơn vị tính
-                    Chitietcaban kho = ct.getIdchitietcaban();
-                    Donvitinh dvtCt = ct.getIddonvitinh();
-
-                    // Lấy giá đang áp dụng
-                    Banggia banggia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(kho).orElse(null);
-
-                    if (dvtCt != null && banggia != null) {
-                        BigDecimal heSo;
-                        if (dvtCt.getHesokg() != null && dvtCt.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
-                            heSo = dvtCt.getHesokg();
-                        } else {
-                            heSo = quydoiRepository.findByIdchitietcaban(kho)
-                                    .map(Quydoi::getSokgtuongung)
-                                    .orElse(BigDecimal.ONE);
-                        }
-                        BigDecimal gia = banggia.getGiabanle(); // Mặc định lấy giá lẻ cho an toàn
-
-                        // Tính tiền: Số lượng * Hệ số * Giá
-                        BigDecimal thanhTien = new BigDecimal(ct.getSoluong())
-                                .multiply(heSo)
-                                .multiply(gia);
-
-                        tongTien = tongTien.add(thanhTien);
-                    }
-                } catch (Exception e) {
-                    System.out.println("Lỗi tính lại tiền cho chi tiết ID: " + ct.getIdchitietdonhang());
-                }
-            }
-        }
-
-        return tongTien;
+        return donhang.getTongtien();
     }
 
     // Đơn tổng tiền = 0 nghĩa là mọi mặt hàng đều 0kg thực tế -> không có gì để giao, chặn ngay
@@ -868,5 +830,17 @@ public class DonhangService {
 
             chitietdonhangRepository.save(ctdh);
         }
+
+        capNhatTongTien(donhang);
+    }
+
+    private void capNhatTongTien(Donhang donhang) {
+        BigDecimal tongTien = chitietdonhangRepository.findByIddonhang(donhang).stream()
+                .map(ct -> ct.getTongtienthucte() != null
+                        ? ct.getTongtienthucte()
+                        : (ct.getTongtiendukien() != null ? ct.getTongtiendukien() : BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        donhang.setTongtien(tongTien);
+        donhangRepository.save(donhang);
     }
 }

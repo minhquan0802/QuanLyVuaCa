@@ -36,7 +36,6 @@ public class SecurityConfig {
             "/Loaicas/**",
             "/Chitietcabans",
             "/Banggias",
-            "/Quydois",
             "/Donvitinhs",
             "/tai-khoan/verify-email",
     };

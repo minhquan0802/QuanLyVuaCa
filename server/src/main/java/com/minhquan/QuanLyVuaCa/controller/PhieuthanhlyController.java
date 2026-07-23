@@ -8,6 +8,7 @@ import com.minhquan.QuanLyVuaCa.service.PhieuthanhlyService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,7 @@ public class PhieuthanhlyController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<PhieuthanhlyResponse> taoPhieuThanhly(@RequestBody PhieuthanhlyRequest request) {
+    public ApiResponse<PhieuthanhlyResponse> taoPhieuThanhly(@Valid @RequestBody PhieuthanhlyRequest request) {
         return ApiResponse.<PhieuthanhlyResponse>builder()
                 .code(200)
                 .message("Tạo phiếu thanh lý thành công")

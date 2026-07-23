@@ -32,7 +32,6 @@ public class GioHangService {
     ChitietcabanRepository chitietcabanRepository;
     DonvitinhRepository donvitinhRepository;
     BanggiaRepository banggiaRepository;
-    QuydoiRepository quydoiRepository;
 
     // ── Lấy hoặc tạo giỏ hàng đang hoạt động của user hiện tại ──────────────
     private GioHang layHoacTaoGioHang(Taikhoan taikhoan) {
@@ -66,9 +65,9 @@ public class GioHangService {
             if (dvt != null && dvt.getHesokg() != null && dvt.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
                 heSoQuyDoi = dvt.getHesokg(); // Kg hoặc Bao: dùng hesokg cố định
             } else {
-                heSoQuyDoi = quydoiRepository.findByIdchitietcaban(sanpham) // Con: dùng hệ số theo loại cá
-                        .map(Quydoi::getSokgtuongung)
-                        .orElse(BigDecimal.ONE);
+                heSoQuyDoi = sanpham.getSokgtuongung() != null
+                        ? sanpham.getSokgtuongung()
+                        : BigDecimal.ONE;
             }
 
             BigDecimal giaBan = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(sanpham)
