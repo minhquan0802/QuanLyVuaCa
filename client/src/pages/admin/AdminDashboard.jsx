@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../config/axios";
@@ -8,49 +8,143 @@ import {
 } from 'recharts';
 import {
     DollarSign, CheckCircle2, ShoppingCart,
-    PackagePlus, AlertCircle, TableProperties, BarChart2, Table
+    AlertCircle, TableProperties, BarChart2, Table
 } from "lucide-react";
+
+const ORDER_STATUS = {
+    CHO_XAC_NHAN: { label: "Chờ xác nhận", badge: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    DANG_DONG_HANG: { label: "Đang đóng hàng", badge: "bg-blue-50 text-blue-700 border-blue-200" },
+    DANG_VAN_CHUYEN: { label: "Đang vận chuyển", badge: "bg-purple-50 text-purple-700 border-purple-200" },
+    GIAO_HANG_THANH_CONG: { label: "Giao thành công", badge: "bg-green-50 text-green-700 border-green-200" },
+    HUY: { label: "Đã hủy", badge: "bg-red-50 text-red-700 border-red-200" },
+};
 
 export default function SalesDashboard() {
     const { user } = useAuth() || {};
     const navigate = useNavigate();
-    const [timeRange, setTimeRange] = useState("THIS_MONTH");
+    const [timeRange, setTimeRange] = useState("TODAY");
+    const [customFrom, setCustomFrom] = useState(() => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+    });
+    const [customTo, setCustomTo] = useState(() => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    });
     const [viewMode, setViewMode] = useState("TABLE"); // "TABLE" hoặc "CHART"
 
     // --- CHỈ SỐ TÀI CHÍNH & BÁN HÀNG ---
-    const [stats, setStats] = useState({ tongDoanhThu: 0, chiPhiNhapHang: 0, chiPhiPhatSinh: 0, donHoanThanh: 0, soLoQuaHan: 0 });
+    const [stats, setStats] = useState({ tongDoanhThu: 0, chiPhiNhapHang: 0, thuTuBanThanhLy: 0, donHoanThanh: 0, soLoQuaHan: 0 });
 
     // --- KHỐI LƯỢNG NHẬP - BÁN - HAO HỤT THEO LOẠI CÁ ---
     const [fishVolumeData, setFishVolumeData] = useState([]);
 
-    // --- GỢI Ý NHẬP HÀNG ---
-    const [restockSuggestions, setRestockSuggestions] = useState([]);
+    // --- DANH SÁCH ĐƠN HÀNG ---
+    const [orders, setOrders] = useState([]);
+    const [ordersLoading, setOrdersLoading] = useState(true);
+    const [ordersPage, setOrdersPage] = useState(1);
+    const ordersPageSize = 5;
 
     // KPI và bảng luân chuyển phụ thuộc khoảng thời gian đang chọn, tải lại mỗi khi đổi
     useEffect(() => {
-        api.get(`/Thongke/tong-quan?range=${timeRange}`)
+        if (timeRange === "CUSTOM" && (!customFrom || !customTo || customFrom > customTo)) return;
+        const params = timeRange === "CUSTOM"
+            ? { range: timeRange, from: customFrom, to: customTo }
+            : { range: timeRange };
+
+        api.get("/Thongke/tong-quan", { params })
             .then(res => setStats(res.data.result))
             .catch(() => {});
 
-        api.get(`/Thongke/luan-chuyen-hang-hoa?range=${timeRange}`)
+        api.get("/Thongke/luan-chuyen-hang-hoa", { params })
             .then(res => setFishVolumeData(res.data.result || []))
             .catch(() => {});
-    }, [timeRange]);
+    }, [timeRange, customFrom, customTo]);
 
-    // Gợi ý nhập hàng luôn tính theo 30 ngày gần nhất, không phụ thuộc timeRange, chỉ cần tải 1 lần
+    // Tận dụng API đơn hàng và API chi tiết có sẵn để hiển thị tóm tắt mặt hàng đã đặt.
     useEffect(() => {
-        api.get("/Thongke/de-xuat-nhap-hang")
-            .then(res => setRestockSuggestions(res.data.result || []))
-            .catch(() => {});
+        api.get("/Donhangs")
+            .then(async res => {
+                const orderList = res.data.result || [];
+                const ordersWithDetails = await Promise.all(orderList.map(async order => {
+                    try {
+                        const detailRes = await api.get(`/Donhangs/${order.iddonhang}/chitiet`);
+                        return { ...order, chiTietDonHangs: detailRes.data.result || [] };
+                    } catch {
+                        return { ...order, chiTietDonHangs: [] };
+                    }
+                }));
+                setOrders(ordersWithDetails);
+            })
+            .catch(() => setOrders([]))
+            .finally(() => setOrdersLoading(false));
     }, []);
 
-    // Xử lý dữ liệu: Tự động tính Tồn kho cho cả Bảng và Biểu đồ
-    const processedFishData = fishVolumeData.map(item => ({
-        ...item,
-        tonKho: item.nhap - item.ban - item.haohut
-    })).sort((a, b) => b.ban - a.ban); // Ưu tiên xếp theo loại cá bán chạy nhất
+    const showTonKho = timeRange === "TODAY";
+
+    // Tồn kho do backend lấy trực tiếp từ kho hiện tại, không tự suy ra từ số phát sinh trong kỳ.
+    const processedFishData = [...fishVolumeData]
+        .sort((a, b) => b.ban - a.ban); // Ưu tiên xếp theo loại cá bán chạy nhất
 
     const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+
+    const getRangeBounds = () => {
+        const now = new Date();
+        const start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+
+        if (timeRange === "CUSTOM") {
+            const customStart = new Date(`${customFrom}T00:00:00`);
+            const customEnd = new Date(`${customTo}T23:59:59.999`);
+            return { start: customStart, end: customEnd };
+        }
+
+        if (timeRange === "THIS_WEEK") {
+            const day = start.getDay() || 7;
+            start.setDate(start.getDate() - day + 1);
+        } else if (timeRange === "THIS_MONTH") {
+            start.setDate(1);
+        } else if (timeRange === "THIS_QUARTER") {
+            start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1);
+        } else if (timeRange === "THIS_YEAR") {
+            start.setMonth(0, 1);
+        }
+        return { start, end: now };
+    };
+
+    const filteredOrders = orders
+        .filter(order => {
+            if (!order.ngaydat) return false;
+            const ngayDat = new Date(order.ngaydat);
+            const { start, end } = getRangeBounds();
+            return ngayDat >= start && ngayDat <= end;
+        })
+        .sort((a, b) => new Date(b.ngaydat) - new Date(a.ngaydat));
+
+    const ordersTotalPages = Math.ceil(filteredOrders.length / ordersPageSize);
+    const paginatedOrders = filteredOrders.slice(
+        (ordersPage - 1) * ordersPageSize,
+        ordersPage * ordersPageSize
+    );
+
+    useEffect(() => {
+        setOrdersPage(1);
+    }, [timeRange]);
+
+    useEffect(() => {
+        if (ordersTotalPages > 0 && ordersPage > ordersTotalPages) {
+            setOrdersPage(ordersTotalPages);
+        }
+    }, [ordersPage, ordersTotalPages]);
+
+    const formatOrderItems = (details = []) => {
+        if (details.length === 0) return "Chưa có thông tin mặt hàng";
+        return details.map(item => {
+            const tenSanPham = [item.tenLoaiCa, item.tenSize].filter(Boolean).join(" - ");
+            const donVi = item.tenDonViTinh ? ` ${item.tenDonViTinh}` : "";
+            return `${tenSanPham || "Sản phẩm"} × ${item.soluong ?? 0}${donVi}`;
+        }).join(", ");
+    };
 
     // Custom Tooltip cho Biểu đồ Cột (Cập nhật thêm Tồn kho)
     const CustomBarTooltip = ({ active, payload, label }) => {
@@ -71,10 +165,12 @@ export default function SalesDashboard() {
                             <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-red-500"></span> Hao hụt:</span>
                             <span className="font-bold text-slate-800">{payload[2].value.toLocaleString()} kg</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm pt-1 mt-1 border-t border-slate-50">
-                            <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-purple-500"></span> Tồn kho:</span>
-                            <span className="font-bold text-purple-700">{payload[3].value.toLocaleString()} kg</span>
-                        </div>
+                        {showTonKho && payload[3] && (
+                            <div className="flex justify-between items-center text-sm pt-1 mt-1 border-t border-slate-50">
+                                <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-purple-500"></span> Tồn kho hiện tại:</span>
+                                <span className="font-bold text-purple-700">{payload[3].value.toLocaleString()} kg</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -86,27 +182,51 @@ export default function SalesDashboard() {
         <AdminLayout title="Báo Cáo Bán Hàng (Sales Dashboard)">
             
             {/* --- HEADER LỌC THỜI GIAN --- */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-8">
                 <h2 className="text-2xl font-bold text-slate-800">Tổng kết Kinh doanh</h2>
-                <select 
-                    value={timeRange} 
-                    onChange={(e) => setTimeRange(e.target.value)}
-                    className="border-slate-300 rounded-xl text-sm font-medium focus:ring-blue-500 focus:border-blue-500 p-2.5 border bg-white shadow-sm outline-none cursor-pointer"
-                >
-                    <option value="TODAY">Hôm nay</option>
-                    <option value="THIS_WEEK">Tuần này</option>
-                    <option value="THIS_MONTH">Tháng này</option>
-                    <option value="THIS_YEAR">Năm nay</option>
-                </select>
+                <div className="flex flex-wrap items-center gap-2">
+                    <select
+                        value={timeRange}
+                        onChange={(e) => setTimeRange(e.target.value)}
+                        className="border-slate-300 rounded-xl text-sm font-medium focus:ring-blue-500 focus:border-blue-500 p-2.5 border bg-white shadow-sm outline-none cursor-pointer"
+                    >
+                        <option value="TODAY">Hôm nay</option>
+                        <option value="THIS_WEEK">Tuần này</option>
+                        <option value="THIS_MONTH">Tháng này</option>
+                        <option value="THIS_QUARTER">Quý này</option>
+                        <option value="THIS_YEAR">Năm nay</option>
+                        <option value="CUSTOM">Tùy chọn...</option>
+                    </select>
+                    {timeRange === "CUSTOM" && (
+                        <>
+                            <label className="text-sm text-slate-500">Từ</label>
+                            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="p-2 border border-slate-300 rounded-xl bg-white text-sm" />
+                            <label className="text-sm text-slate-500">đến</label>
+                            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="p-2 border border-slate-300 rounded-xl bg-white text-sm" />
+                        </>
+                    )}
+                </div>
             </div>
 
+            {timeRange === "CUSTOM" && customFrom > customTo && (
+                <p className="-mt-5 mb-6 text-right text-sm font-medium text-red-600">Ngày bắt đầu không được lớn hơn ngày kết thúc.</p>
+            )}
+
             {/* --- KHU VỰC 1: 4 THẺ KPI TÀI CHÍNH --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 ${timeRange === "TODAY" ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
                 <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-lg text-white flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4"><div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl"><DollarSign size={28} className="text-white" /></div></div>
                     <div>
-                        <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">Tổng Doanh Thu</p>
+                        <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">Doanh Thu Đơn Hàng</p>
                         <h3 className="text-2xl lg:text-3xl font-black">{formatCurrency(stats.tongDoanhThu)}</h3>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-purple-50 rounded-2xl"><DollarSign size={28} className="text-purple-600" /></div></div>
+                    <div>
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Thu Từ Bán Thanh Lý</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-slate-800">{formatCurrency(stats.thuTuBanThanhLy)}</h3>
                     </div>
                 </div>
 
@@ -118,25 +238,27 @@ export default function SalesDashboard() {
                     </div>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={() => navigate("/admin/QuanLyThanhLy?tab=quahan")}
-                    className={`text-left p-6 rounded-3xl shadow-sm border flex flex-col justify-between transition-all hover:shadow-md cursor-pointer ${
-                        stats.soLoQuaHan > 0 ? "bg-red-50 border-red-200" : "bg-white border-slate-200"
-                    }`}
-                >
-                    <div className="flex justify-between items-start mb-4">
-                        <div className={`p-3 rounded-2xl ${stats.soLoQuaHan > 0 ? "bg-red-100" : "bg-slate-50"}`}>
-                            <AlertCircle size={28} className={stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-400"} />
+                {timeRange === "TODAY" && (
+                    <button
+                        type="button"
+                        onClick={() => navigate("/admin/QuanLyThanhLy?tab=quahan")}
+                        className={`text-left p-6 rounded-3xl shadow-sm border flex flex-col justify-between transition-all hover:shadow-md cursor-pointer ${
+                            stats.soLoQuaHan > 0 ? "bg-red-50 border-red-200" : "bg-white border-slate-200"
+                        }`}
+                    >
+                        <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 rounded-2xl ${stats.soLoQuaHan > 0 ? "bg-red-100" : "bg-slate-50"}`}>
+                                <AlertCircle size={28} className={stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-400"} />
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Lô Hàng Quá Hạn</p>
-                        <h3 className={`text-2xl lg:text-3xl font-black ${stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-800"}`}>
-                            {stats.soLoQuaHan} <span className="text-lg font-semibold text-slate-400">lô</span>
-                        </h3>
-                    </div>
-                </button>
+                        <div>
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Lô Hàng Quá Hạn</p>
+                            <h3 className={`text-2xl lg:text-3xl font-black ${stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-800"}`}>
+                                {stats.soLoQuaHan} <span className="text-lg font-semibold text-slate-400">lô</span>
+                            </h3>
+                        </div>
+                    </button>
+                )}
 
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4"><div className="p-3 bg-green-50 rounded-2xl"><CheckCircle2 size={28} className="text-green-600" /></div></div>
@@ -155,7 +277,11 @@ export default function SalesDashboard() {
                             {viewMode === "TABLE" ? <TableProperties size={24} className="text-blue-600" /> : <BarChart2 size={24} className="text-blue-600" />}
                             Thống kê luân chuyển hàng hóa
                         </h3>
-                        <p className="text-slate-500 mt-1 text-sm">Hiển thị chi tiết số lượng (kg) Nhập - Bán - Hao hụt - Tồn kho</p>
+                        <p className="text-slate-500 mt-1 text-sm">
+                            {showTonKho
+                                ? "Hiển thị số lượng (kg) Nhập - Bán - Hao hụt trong hôm nay và tồn kho hiện tại"
+                                : "Hiển thị chi tiết số lượng (kg) Nhập - Bán - Hao hụt trong kỳ"}
+                        </p>
                     </div>
                     
                     {/* Nút Toggle Switch */}
@@ -192,8 +318,10 @@ export default function SalesDashboard() {
                                     <th className="py-4 px-6 font-semibold border-b border-slate-200 rounded-tl-xl">Tên loại cá</th>
                                     <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-blue-600">Đã nhập (kg)</th>
                                     <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-green-600">Đã bán (kg)</th>
-                                    <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-red-500">Hao hụt (kg)</th>
-                                    <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-purple-600 bg-purple-50 rounded-tr-xl">Tồn kho (kg)</th>
+                                    <th className={`py-4 px-6 font-semibold border-b border-slate-200 text-right text-red-500 ${!showTonKho ? "rounded-tr-xl" : ""}`}>Hao hụt (kg)</th>
+                                    {showTonKho && (
+                                        <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-purple-600 bg-purple-50 rounded-tr-xl">Tồn kho hiện tại (kg)</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -203,7 +331,9 @@ export default function SalesDashboard() {
                                         <td className="py-4 px-6 text-right font-medium text-slate-600">{row.nhap.toLocaleString()}</td>
                                         <td className="py-4 px-6 text-right font-bold text-slate-800">{row.ban.toLocaleString()}</td>
                                         <td className="py-4 px-6 text-right font-medium text-slate-500">{row.haohut.toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-bold text-purple-700 bg-purple-50/30">{row.tonKho.toLocaleString()}</td>
+                                        {showTonKho && (
+                                            <td className="py-4 px-6 text-right font-bold text-purple-700 bg-purple-50/30">{Number(row.tonKho || 0).toLocaleString()}</td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -225,63 +355,119 @@ export default function SalesDashboard() {
                                 <Bar dataKey="nhap" name="Đã nhập" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
                                 <Bar dataKey="ban" name="Đã bán" fill="#10b981" radius={[4, 4, 0, 0]} barSize={12} />
                                 <Bar dataKey="haohut" name="Hao hụt" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={12} />
-                                <Bar dataKey="tonKho" name="Tồn kho" fill="#a855f7" radius={[4, 4, 0, 0]} barSize={12} />
+                                {showTonKho && (
+                                    <Bar dataKey="tonKho" name="Tồn kho hiện tại" fill="#a855f7" radius={[4, 4, 0, 0]} barSize={12} />
+                                )}
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 )}
             </div>
 
-            {/* --- KHU VỰC 3: GỢI Ý NHẬP HÀNG --- */}
+            {/* --- KHU VỰC 3: ĐƠN HÀNG TRONG KỲ --- */}
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-                <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
-                            <PackagePlus size={24} className="text-blue-600" />
-                            Cảnh báo & Đề xuất nhập hàng
+                            <ShoppingCart size={24} className="text-blue-600" />
+                            Đơn hàng trong kỳ
                         </h3>
-                        <p className="text-slate-500 mt-1 text-sm">Danh sách các mặt hàng đang bán chạy nhưng tồn kho ở mức thấp</p>
+                        <p className="text-slate-500 mt-1 text-sm">Danh sách đơn hàng theo khoảng thời gian đang chọn ở phía trên</p>
                     </div>
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl transition-colors shadow-sm text-sm">
-                        Lập phiếu nhập kho hàng loạt
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <span className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-sm font-bold">
+                            {filteredOrders.length} đơn
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => navigate("/admin/QuanLyDonHang")}
+                            className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
+                        >
+                            Xem tất cả đơn hàng
+                        </button>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                    {restockSuggestions.map((item, index) => (
-                        <div key={index} className={`p-5 border rounded-2xl transition-all hover:shadow-md ${item.mucDo === 'GAP' ? 'border-red-200 bg-red-50/40' : 'border-slate-200 bg-slate-50'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <h4 className="font-bold text-slate-800 text-lg">{item.name}</h4>
-                                {item.mucDo === 'GAP' && (
-                                    <span className="flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-1 bg-red-100 text-red-600 rounded-full">
-                                        <AlertCircle size={12} /> Nhập Gấp
-                                    </span>
-                                )}
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                                <div>
-                                    <p className="text-slate-500 text-xs mb-1">Tồn hiện tại</p>
-                                    <p className="font-semibold text-slate-700">{item.tonKho} kg</p>
-                                </div>
-                                <div>
-                                    <p className="text-slate-500 text-xs mb-1">Tốc độ bán</p>
-                                    <p className="font-semibold text-slate-700">{item.tocDoBan} kg/ngày</p>
-                                </div>
-                            </div>
+                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table className="w-full min-w-[760px] text-sm text-left">
+                        <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                            <tr>
+                                <th className="px-5 py-3 font-bold">Khách hàng</th>
+                                <th className="px-5 py-3 font-bold">Mặt hàng đã đặt</th>
+                                <th className="px-5 py-3 font-bold">Trạng thái</th>
+                                <th className="px-5 py-3 font-bold text-right">Tổng giá trị</th>
+                                <th className="px-5 py-3 font-bold text-right">Ngày đặt</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {ordersLoading ? (
+                                <tr><td colSpan="5" className="px-5 py-8 text-center text-slate-400">Đang tải danh sách đơn hàng...</td></tr>
+                            ) : paginatedOrders.length > 0 ? (
+                                paginatedOrders.map(order => {
+                                    const status = ORDER_STATUS[order.trangthaidonhang] || {
+                                        label: order.trangthaidonhang || "Không xác định",
+                                        badge: "bg-slate-50 text-slate-600 border-slate-200"
+                                    };
+                                    return (
+                                        <tr
+                                            key={order.iddonhang}
+                                            onClick={() => navigate(`/admin/QuanLyDonHang/chi-tiet/${order.iddonhang}`, {
+                                                state: { returnTo: "/admin" }
+                                            })}
+                                            className="cursor-pointer hover:bg-blue-50/50 transition-colors"
+                                            title="Bấm để xem chi tiết đơn hàng"
+                                        >
+                                            <td className="px-5 py-4 font-bold text-slate-800">{order.tenKhachHang || "Khách vãng lai"}</td>
+                                            <td className="px-5 py-4 text-slate-600 max-w-xl truncate">{formatOrderItems(order.chiTietDonHangs)}</td>
+                                            <td className="px-5 py-4">
+                                                <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold ${status.badge}`}>{status.label}</span>
+                                            </td>
+                                            <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(order.tongtien || 0)}</td>
+                                            <td className="px-5 py-4 text-right text-slate-500">{new Date(order.ngaydat).toLocaleString("vi-VN")}</td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr><td colSpan="5" className="px-5 py-8 text-center text-slate-400 italic">Không có đơn hàng trong khoảng thời gian này.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
 
-                            <div className="pt-4 border-t border-slate-200/60 flex items-end justify-between">
-                                <div>
-                                    <p className="text-slate-500 text-xs mb-1">Đề xuất nhập</p>
-                                    <p className="font-black text-blue-600 text-xl">+{item.deXuatNhap} kg</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-slate-400 text-[10px] uppercase mb-1">Dự toán</p>
-                                    <p className="font-bold text-slate-800 text-sm">{formatCurrency(item.giaDapUng)}</p>
-                                </div>
+                    {!ordersLoading && filteredOrders.length > 0 && (
+                        <div className="px-5 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+                            <span className="text-xs text-slate-500">
+                                Hiển thị {(ordersPage - 1) * ordersPageSize + 1}–{Math.min(ordersPage * ordersPageSize, filteredOrders.length)} trong {filteredOrders.length} đơn
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setOrdersPage(page => page - 1)}
+                                    disabled={ordersPage === 1}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Trước
+                                </button>
+                                {Array.from({ length: ordersTotalPages }, (_, index) => index + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setOrdersPage(page)}
+                                        className={`size-8 rounded-lg text-sm font-bold transition-colors ${ordersPage === page
+                                            ? "bg-blue-600 text-white"
+                                            : "text-slate-600 hover:bg-slate-200"
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setOrdersPage(page => page + 1)}
+                                    disabled={ordersPage === ordersTotalPages}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Sau
+                                </button>
                             </div>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
 

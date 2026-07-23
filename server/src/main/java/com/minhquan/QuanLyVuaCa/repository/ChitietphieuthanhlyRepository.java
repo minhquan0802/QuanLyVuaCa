@@ -29,8 +29,8 @@ public interface ChitietphieuthanhlyRepository extends JpaRepository<Chitietphie
                                             @Param("tuNgay") Instant tuNgay,
                                             @Param("denNgay") Instant denNgay);
 
-    // Tổng giá trị ghi nhận từ các phiếu thanh lý (mọi loại cá) trong khoảng thời gian —
-    // dùng làm "chi phí phát sinh" trên Dashboard (hàng tiêu hủy thường = 0đ, hàng bán thanh lý sẽ có giá trị)
+    // Tổng tiền thu từ bán thanh lý trong khoảng thời gian. Phiếu tiêu hủy bắt buộc có đơn giá bằng 0
+    // nên không làm tăng khoản thu này.
     @Query("""
         SELECT COALESCE(SUM(ct.thanhtien), 0)
         FROM Chitietphieuthanhly ct

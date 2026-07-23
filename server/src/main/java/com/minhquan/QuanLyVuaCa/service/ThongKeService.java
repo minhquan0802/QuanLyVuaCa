@@ -47,9 +47,10 @@ public class ThongKeService {
 
     // --- KHU VỰC 1: 4 THẺ KPI TÀI CHÍNH ---
     @Transactional(readOnly = true)
-    public ThongKeTongQuanResponse tinhTongQuan(String range) {
-        LocalDateTime tuNgay = tinhNgayBatDau(range);
-        LocalDateTime denNgay = LocalDateTime.now();
+    public ThongKeTongQuanResponse tinhTongQuan(String range, LocalDate from, LocalDate to) {
+        KhoangThoiGian khoang = tinhKhoangThoiGian(range, from, to);
+        LocalDateTime tuNgay = khoang.tuNgay();
+        LocalDateTime denNgay = khoang.denNgay();
 
         BigDecimal tongDoanhThu = chitietdonhangRepository.tongDoanhThuTrongKhoang(
                 TrangThaiDonHang.GIAO_HANG_THANH_CONG, tuNgay, denNgay);
@@ -57,7 +58,7 @@ public class ThongKeService {
         BigDecimal chiPhiNhapHang = chitietphieunhapRepository.tongTienNhapTrongKhoang(
                 tuNgay.toLocalDate(), denNgay.toLocalDate());
 
-        BigDecimal chiPhiPhatSinh = chitietphieuthanhlyRepository.tongTienThanhLyTrongKhoang(
+        BigDecimal thuTuBanThanhLy = chitietphieuthanhlyRepository.tongTienThanhLyTrongKhoang(
                 toInstant(tuNgay), toInstant(denNgay));
 
         long donHoanThanh = donhangRepository.countByTrangthaidonhangAndNgaydatBetween(
@@ -71,7 +72,7 @@ public class ThongKeService {
         return ThongKeTongQuanResponse.builder()
                 .tongDoanhThu(tongDoanhThu)
                 .chiPhiNhapHang(chiPhiNhapHang)
-                .chiPhiPhatSinh(chiPhiPhatSinh)
+                .thuTuBanThanhLy(thuTuBanThanhLy)
                 .donHoanThanh(donHoanThanh)
                 .soLoQuaHan(soLoQuaHan)
                 .build();
@@ -79,9 +80,10 @@ public class ThongKeService {
 
     // --- KHU VỰC 2: BẢNG/BIỂU ĐỒ LUÂN CHUYỂN HÀNG HÓA (NHẬP - BÁN - HAO HỤT THEO LOẠI CÁ) ---
     @Transactional(readOnly = true)
-    public List<LuanChuyenHangHoaResponse> tinhLuanChuyenHangHoa(String range) {
-        LocalDateTime tuNgay = tinhNgayBatDau(range);
-        LocalDateTime denNgay = LocalDateTime.now();
+    public List<LuanChuyenHangHoaResponse> tinhLuanChuyenHangHoa(String range, LocalDate from, LocalDate to) {
+        KhoangThoiGian khoang = tinhKhoangThoiGian(range, from, to);
+        LocalDateTime tuNgay = khoang.tuNgay();
+        LocalDateTime denNgay = khoang.denNgay();
 
         List<LuanChuyenHangHoaResponse> ketQua = new ArrayList<>();
         for (Loaica loaica : layDanhSachLoaiCaChuaXoa()) {
@@ -94,11 +96,19 @@ public class ThongKeService {
             BigDecimal haohut = chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCa(
                     loaica, toInstant(tuNgay), toInstant(denNgay));
 
+            // Tồn kho là số lượng thực tế đang có tại thời điểm xem Dashboard,
+            // không được suy ra từ nhập - bán - hao hụt trong khoảng thời gian lọc.
+            BigDecimal tonKho = chitietcabanRepository.findByIdloaica(loaica).stream()
+                    .map(Chitietcaban::getSoluongton)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             ketQua.add(LuanChuyenHangHoaResponse.builder()
                     .name(loaica.getTenloaica())
                     .nhap(nhap)
                     .ban(ban)
                     .haohut(haohut)
+                    .tonKho(tonKho)
                     .build());
         }
         return ketQua;
@@ -182,16 +192,27 @@ public class ThongKeService {
         return tong.divide(BigDecimal.valueOf(danhSachGiaNhap.size()), 2, RoundingMode.HALF_UP);
     }
 
-    // Quy đổi mốc thời gian lọc theo range được chọn trên Dashboard
-    private LocalDateTime tinhNgayBatDau(String range) {
+    // Quy đổi bộ lọc nhanh hoặc khoảng ngày tùy chọn thành mốc đầu/cuối đầy đủ.
+    private KhoangThoiGian tinhKhoangThoiGian(String range, LocalDate from, LocalDate to) {
         LocalDate homNay = LocalDate.now();
-        return switch (range) {
-            case "TODAY" -> homNay.atStartOfDay();
-            case "THIS_WEEK" -> homNay.minusDays(homNay.getDayOfWeek().getValue() - 1).atStartOfDay();
-            case "THIS_YEAR" -> homNay.withDayOfYear(1).atStartOfDay();
-            default -> homNay.withDayOfMonth(1).atStartOfDay(); // THIS_MONTH
+        if ("CUSTOM".equals(range)) {
+            if (from == null || to == null || from.isAfter(to)) {
+                throw new IllegalArgumentException("Khoảng thời gian tùy chọn không hợp lệ");
+            }
+            return new KhoangThoiGian(from.atStartOfDay(), to.plusDays(1).atStartOfDay().minusNanos(1));
+        }
+
+        LocalDate ngayBatDau = switch (range) {
+            case "TODAY" -> homNay;
+            case "THIS_WEEK" -> homNay.minusDays(homNay.getDayOfWeek().getValue() - 1);
+            case "THIS_QUARTER" -> homNay.withMonth(((homNay.getMonthValue() - 1) / 3) * 3 + 1).withDayOfMonth(1);
+            case "THIS_YEAR" -> homNay.withDayOfYear(1);
+            default -> homNay.withDayOfMonth(1); // THIS_MONTH
         };
+        return new KhoangThoiGian(ngayBatDau.atStartOfDay(), LocalDateTime.now());
     }
+
+    private record KhoangThoiGian(LocalDateTime tuNgay, LocalDateTime denNgay) {}
 
     private Instant toInstant(LocalDateTime thoiGian) {
         return thoiGian.atZone(ZoneId.systemDefault()).toInstant();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
@@ -18,6 +18,7 @@ const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value ||
 export default function ChiTietDonHang() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
     const { showToast } = useToast();
     const isAdmin = user?.vaitro === "ADMIN";
@@ -268,7 +269,7 @@ export default function ChiTietDonHang() {
                 </div>
 
                 <div className="flex justify-start">
-                    <button onClick={() => navigate("/admin/QuanLyDonHang")} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-sm cursor-pointer">
+                    <button onClick={() => navigate(location.state?.returnTo || "/admin/QuanLyDonHang")} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-sm cursor-pointer">
                         ← Quay lại danh sách
                     </button>
                 </div>

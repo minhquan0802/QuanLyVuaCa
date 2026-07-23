@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public class ThongKeTongQuanResponse {
     BigDecimal tongDoanhThu;
     BigDecimal chiPhiNhapHang;
-    BigDecimal chiPhiPhatSinh;
+    BigDecimal thuTuBanThanhLy;
     Long donHoanThanh;
     Long soLoQuaHan;
 }

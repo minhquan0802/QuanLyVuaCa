@@ -15,4 +15,5 @@ public class LuanChuyenHangHoaResponse {
     BigDecimal nhap;
     BigDecimal ban;
     BigDecimal haohut;
+    BigDecimal tonKho;
 }

@@ -9,8 +9,10 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 // Cung cấp số liệu cho trang Dashboard admin (AdminDashboard.jsx)
@@ -26,22 +28,28 @@ public class ThongKeController {
     // 4 thẻ KPI: tổng doanh thu, chi phí nhập hàng, chi phí phát sinh, đơn hoàn thành
     @GetMapping("/tong-quan")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<ThongKeTongQuanResponse> layTongQuan(@RequestParam(defaultValue = "THIS_MONTH") String range) {
+    public ApiResponse<ThongKeTongQuanResponse> layTongQuan(
+            @RequestParam(defaultValue = "THIS_MONTH") String range,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ApiResponse.<ThongKeTongQuanResponse>builder()
                 .code(200)
                 .message("Lấy số liệu tổng quan thành công")
-                .result(thongKeService.tinhTongQuan(range))
+                .result(thongKeService.tinhTongQuan(range, from, to))
                 .build();
     }
 
     // Bảng/biểu đồ nhập - bán - hao hụt theo từng loại cá
     @GetMapping("/luan-chuyen-hang-hoa")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<List<LuanChuyenHangHoaResponse>> layLuanChuyenHangHoa(@RequestParam(defaultValue = "THIS_MONTH") String range) {
+    public ApiResponse<List<LuanChuyenHangHoaResponse>> layLuanChuyenHangHoa(
+            @RequestParam(defaultValue = "THIS_MONTH") String range,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ApiResponse.<List<LuanChuyenHangHoaResponse>>builder()
                 .code(200)
                 .message("Lấy dữ liệu luân chuyển hàng hóa thành công")
-                .result(thongKeService.tinhLuanChuyenHangHoa(range))
+                .result(thongKeService.tinhLuanChuyenHangHoa(range, from, to))
                 .build();
     }
 
