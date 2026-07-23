@@ -380,7 +380,7 @@ export default function ThongTinDonHang() {
                                                     {/* Giá của món này (Optional - hiển thị bên phải) */}
                                                     <div className="text-right flex flex-col justify-center">
                                                         <span className="text-sm font-medium text-slate-700">
-                                                            {(firstItem.tongtiendukien || firstItem.tongtienthucte || 0).toLocaleString()}đ
+                                                            {(firstItem.tongtienthucte ?? firstItem.tongtiendukien ?? 0).toLocaleString()}đ
                                                         </span>
                                                     </div>
                                                 </>

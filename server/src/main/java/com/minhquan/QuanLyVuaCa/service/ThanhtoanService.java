@@ -76,6 +76,7 @@ public class ThanhtoanService {
     public Thanhtoan taoBienBanChuyenKhoan(String idDonhang, BigDecimal sotien, String ghichu) {
         Donhang dh = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+        kiemTraSoTienHopLe(sotien);
 
         Thanhtoan t = new Thanhtoan();
         t.setIddonhang(dh);
@@ -93,6 +94,7 @@ public class ThanhtoanService {
     public Thanhtoan taoBienBanVnpay(String idDonhang, BigDecimal sotien) {
         Donhang dh = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+        kiemTraSoTienHopLe(sotien);
 
         // Xóa các bản ghi VNPAY "Chờ xác nhận" cũ còn treo (user bỏ trang VNPAY không trả)
         thanhtoanRepository.deleteByIddonhangAndPhuongthucAndTrangthai(dh, "VNPAY", TrangThaiThanhToan.CHO_XAC_NHAN);
@@ -149,6 +151,12 @@ public class ThanhtoanService {
         Thanhtoan t = thanhtoanRepository.findById(idThanhtoan)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.THANHTOAN_NOT_EXISTED, "Không tìm thấy bản ghi thanh toán: " + idThanhtoan));
 
+        // Có thể nhận callback hoặc thao tác xác nhận lặp lại. Chỉ giao dịch đang chờ
+        // mới được ghi nhận để tránh trừ công nợ nhiều lần.
+        if (t.getTrangthai() != TrangThaiThanhToan.CHO_XAC_NHAN) {
+            return;
+        }
+
         t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
         thanhtoanRepository.save(t);
 
@@ -167,6 +175,12 @@ public class ThanhtoanService {
                 dh.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
                 donhangRepository.save(dh);
             });
+        }
+    }
+
+    private void kiemTraSoTienHopLe(BigDecimal soTien) {
+        if (soTien == null || soTien.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppExceptions(ErrorCode.SOTIEN_THANH_TOAN_KHONG_HOP_LE);
         }
     }
 }

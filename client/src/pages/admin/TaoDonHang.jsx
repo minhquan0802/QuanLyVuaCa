@@ -187,8 +187,16 @@ export default function TaoDonHang() {
             showToast("Tạo đơn hàng thành công!", "success");
             setCompletedOrderTotal(newOrderTotal);
             setOrderDone(true);
-        } catch {
-            showToast("Lỗi tạo đơn hàng!", "error");
+        } catch (error) {
+            const errorCode = error.response?.data?.code;
+            if (Number(errorCode) === 1045) {
+                // Khách sỉ bị khóa do quá hạn công nợ: mở lại phần chọn khách để
+                // nhân viên đổi sang khách khác mà không phải tải lại trang.
+                setCustomerConfirmed(false);
+                showToast("Khách hàng đang bị khóa đặt hàng do quá hạn công nợ. Vui lòng chọn khách hàng khác!", "error");
+                return;
+            }
+            showToast(error.response?.data?.message || "Lỗi tạo đơn hàng!", "error");
         }
     };
 
@@ -255,7 +263,16 @@ export default function TaoDonHang() {
                         {!customerConfirmed ? (
                             <button onClick={handleConfirmCustomer} className="w-full py-2 bg-cyan-600 text-white font-bold rounded-lg text-xs">Xác nhận khách hàng</button>
                         ) : (
-                            <div className="text-center text-xs text-green-700 bg-green-50 py-1.5 border border-green-200 rounded-lg font-bold">Đã khóa</div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 text-center text-xs text-green-700 bg-green-50 py-1.5 border border-green-200 rounded-lg font-bold">Đã xác nhận</div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCustomerConfirmed(false)}
+                                    className="px-3 py-1.5 text-xs font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-lg hover:bg-cyan-100"
+                                >
+                                    Đổi khách hàng
+                                </button>
+                            </div>
                         )}
                     </div>
 

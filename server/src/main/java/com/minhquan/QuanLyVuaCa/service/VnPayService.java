@@ -39,8 +39,7 @@ public class VnPayService {
 
         // 1. Xác định số tiền: dùng custom amount nếu có, ngược lại dùng tổng đơn hàng
         BigDecimal soTien;
-        boolean isPartialPayment = paymentVNPAYRequest.getSoTienThanhToan() != null
-                && paymentVNPAYRequest.getSoTienThanhToan().compareTo(BigDecimal.ZERO) > 0;
+        boolean isPartialPayment = paymentVNPAYRequest.getSoTienThanhToan() != null;
 
         if (isPartialPayment) {
             soTien = paymentVNPAYRequest.getSoTienThanhToan();
@@ -142,14 +141,25 @@ public class VnPayService {
                         Donhang donhang = donhangRepository.findById(orderId).orElse(null);
 
                         if (donhang != null) {
+                            // Callback có thể được VNPay gửi lại. Nếu đơn đã được ghi nhận thanh toán
+                            // thì không cập nhật và đặc biệt không trừ kho thêm lần nữa.
+                            if (donhang.getTrangthaithanhtoan() == TrangThaiThanhToanDonHang.DA_THANH_TOAN) {
+                                return 1;
+                            }
+
+                            TrangThaiDonHang trangThaiCu = donhang.getTrangthaidonhang();
                             donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
                             donhang.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
                             donhangRepository.save(donhang);
 
-                            try {
-                                donhangService.truSoluongTon(orderId);
-                            } catch (Exception e) {
-                                System.err.println("LỖI TRỪ KHO (VNPAY): " + e.getMessage());
+                            // Đơn online CHO_XAC_NHAN chưa trừ kho. Các trạng thái khác đã rời
+                            // CHO_XAC_NHAN qua luồng quản lý đơn và đã trừ kho trước đó.
+                            if (trangThaiCu == TrangThaiDonHang.CHO_XAC_NHAN) {
+                                try {
+                                    donhangService.truSoluongTon(orderId);
+                                } catch (Exception e) {
+                                    System.err.println("LỖI TRỪ KHO (VNPAY): " + e.getMessage());
+                                }
                             }
                             return 1;
                         }
