@@ -121,7 +121,7 @@ public class DonhangController {
 
     // Một lần: đối soát lại lô (Chitietphieunhap.soluongconlai) cho khớp với kho tổng
     // (Chitietcaban.soluongton) — dùng để sửa dữ liệu cũ đã lệch do bug đơn COD trước đây không trừ lô.
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/dong-bo-lai-ton-kho")
     public ApiResponse<List<String>> dongBoLaiTonKhoTheoLo() {
         List<String> canhBao = donhangService.dongBoLaiTonKhoTheoLo();

@@ -1,7 +1,6 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
-import com.minhquan.QuanLyVuaCa.dto.response.DeXuatNhapHangResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.LuanChuyenHangHoaResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.ThongKeTongQuanResponse;
 import com.minhquan.QuanLyVuaCa.service.ThongKeService;
@@ -53,14 +52,4 @@ public class ThongKeController {
                 .build();
     }
 
-    // Danh sách loại cá bán chạy nhưng tồn kho thấp, cần nhập thêm
-    @GetMapping("/de-xuat-nhap-hang")
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<List<DeXuatNhapHangResponse>> layDeXuatNhapHang() {
-        return ApiResponse.<List<DeXuatNhapHangResponse>>builder()
-                .code(200)
-                .message("Lấy đề xuất nhập hàng thành công")
-                .result(thongKeService.tinhDeXuatNhapHang())
-                .build();
-    }
 }

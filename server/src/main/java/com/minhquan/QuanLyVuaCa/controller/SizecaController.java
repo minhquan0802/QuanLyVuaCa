@@ -7,6 +7,7 @@ import com.minhquan.QuanLyVuaCa.service.SizecaService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class SizecaController {
     SizecaService sizecaService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<SizecaResponse> createSize(@RequestBody SizecaRequest request) {
         return ApiResponse.<SizecaResponse>builder()
                 .code(200)
@@ -31,6 +33,7 @@ public class SizecaController {
     // API: Xóa size
     // URL: /Sizecas/{id} (DELETE)
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> deleteSize(@PathVariable Integer id) {
         sizecaService.deleteSize(id);
         return ApiResponse.<String>builder()
