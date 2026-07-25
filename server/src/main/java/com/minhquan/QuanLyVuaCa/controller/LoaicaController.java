@@ -56,7 +56,7 @@ public class LoaicaController {
     // ======================== UPDATE (ĐÃ SỬA) ========================
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    private ApiResponse<LoaicaResponse> capNhatLoaica(
+    ApiResponse<LoaicaResponse> capNhatLoaica(
             @PathVariable("id") Integer id,
             @RequestParam("tenloaica") String tenloaica,
             @RequestParam("mieuta") String mieuta,
@@ -80,7 +80,7 @@ public class LoaicaController {
 
 
     @GetMapping("/{id}")
-    private ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
+    ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("OK")
@@ -92,7 +92,7 @@ public class LoaicaController {
     // ======================== SOFT DELETE ========================
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    private ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
+    ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
         loaicaService.xoaLoaica(id);
         return ApiResponse.<String>builder()
                 .code(200)
@@ -103,7 +103,7 @@ public class LoaicaController {
 
     @PatchMapping("/{id}/khoi-phuc")
     @PreAuthorize("hasRole('ADMIN')")
-    private ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
+    ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
         loaicaService.khoiPhucLoaica(id);
         return ApiResponse.<String>builder()
                 .code(200)
