@@ -24,7 +24,7 @@ public class ThongKeController {
 
     ThongKeService thongKeService;
 
-    // 4 thẻ KPI: tổng doanh thu, chi phí nhập hàng, chi phí phát sinh, đơn hoàn thành
+    // 5 KPI chính và giá trị hàng nhập đã thanh toán.
     @GetMapping("/tong-quan")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<ThongKeTongQuanResponse> layTongQuan(

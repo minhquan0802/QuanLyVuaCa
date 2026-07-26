@@ -1,8 +1,10 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
+import com.minhquan.QuanLyVuaCa.dto.request.NhacungcapRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
-import com.minhquan.QuanLyVuaCa.entity.Nhacungcap;
+import com.minhquan.QuanLyVuaCa.dto.response.NhacungcapResponse;
 import com.minhquan.QuanLyVuaCa.service.NhacungcapService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -15,24 +17,23 @@ import java.util.List;
 @RequestMapping("/Nhacungcaps")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@CrossOrigin(origins = "http://localhost:5173")
 public class NhacungcapController {
 
     NhacungcapService nhacungcapService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<List<Nhacungcap>> getAll() {
-        return ApiResponse.<List<Nhacungcap>>builder()
+    public ApiResponse<List<NhacungcapResponse>> getAll() {
+        return ApiResponse.<List<NhacungcapResponse>>builder()
                 .result(nhacungcapService.getAll())
                 .build();
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<Nhacungcap> create(@RequestBody Nhacungcap ncc) {
-        return ApiResponse.<Nhacungcap>builder()
-                .result(nhacungcapService.create(ncc))
+    public ApiResponse<NhacungcapResponse> create(@RequestBody @Valid NhacungcapRequest request) {
+        return ApiResponse.<NhacungcapResponse>builder()
+                .result(nhacungcapService.create(request))
                 .build();
     }
 }

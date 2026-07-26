@@ -3,8 +3,10 @@ package com.minhquan.QuanLyVuaCa.repository;
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Chitietdonhang;
 import com.minhquan.QuanLyVuaCa.entity.Donhang;
+import com.minhquan.QuanLyVuaCa.entity.Donvitinh;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
+import com.minhquan.QuanLyVuaCa.repository.projection.ThongKeLoaiCaProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +20,7 @@ import java.util.List;
 public interface ChitietdonhangRepository extends JpaRepository<Chitietdonhang, String> {
     List<Chitietdonhang> findByIddonhang(Donhang donhang);
     boolean existsByIdchitietcaban(Chitietcaban idchitietcaban);
+    boolean existsByIddonvitinh(Donvitinh iddonvitinh);
 
     // Tổng kg dự kiến của các đơn KHÁC (trừ idDonhangHienTai) đang trong trạng thái chờ xử lý
     @Query("""
@@ -58,4 +61,17 @@ public interface ChitietdonhangRepository extends JpaRepository<Chitietdonhang, 
     BigDecimal tongDoanhThuTrongKhoang(@Param("trangThai") TrangThaiDonHang trangThai,
                                        @Param("tuNgay") LocalDateTime tuNgay,
                                        @Param("denNgay") LocalDateTime denNgay);
+
+    @Query("""
+        SELECT ct.idchitietcaban.idloaica.id AS idLoaiCa,
+               COALESCE(SUM(ct.khoiluongthucte), 0) AS tong
+        FROM Chitietdonhang ct
+        WHERE ct.iddonhang.trangthaidonhang = :trangThai
+          AND ct.iddonhang.ngaydat BETWEEN :tuNgay AND :denNgay
+        GROUP BY ct.idchitietcaban.idloaica.id
+    """)
+    List<ThongKeLoaiCaProjection> tongSoLuongBanTheoTatCaLoaiCa(
+            @Param("trangThai") TrangThaiDonHang trangThai,
+            @Param("tuNgay") LocalDateTime tuNgay,
+            @Param("denNgay") LocalDateTime denNgay);
 }

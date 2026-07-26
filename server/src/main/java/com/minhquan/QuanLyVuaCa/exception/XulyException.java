@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import jakarta.validation.ConstraintViolationException;
 
 @ControllerAdvice
 @Slf4j
@@ -69,15 +70,40 @@ public class XulyException {
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse> xulyValidation (MethodArgumentNotValidException exception){
-        String enumKey = exception.getFieldError().getDefaultMessage();
-        ErrorCode errorCode=ErrorCode.valueOf(enumKey);
+        String validationMessage = exception.getFieldError() != null
+                ? exception.getFieldError().getDefaultMessage()
+                : ErrorCode.INVALID_KEY.name();
+        ErrorCode errorCode = resolveValidationError(validationMessage);
 
         return ResponseEntity.status(errorCode.getStatus()).body(
                 ApiResponse.builder()
                         .code(errorCode.getCode())
-                        .message(errorCode.getMessage())
+                        .message(errorCode == ErrorCode.INVALID_KEY ? validationMessage : errorCode.getMessage())
                         .build()
         );
+    }
+
+    @ExceptionHandler(value = ConstraintViolationException.class)
+    ResponseEntity<ApiResponse> xulyConstraintViolation(ConstraintViolationException exception) {
+        String validationMessage = exception.getConstraintViolations().stream()
+                .findFirst()
+                .map(violation -> violation.getMessage())
+                .orElse(ErrorCode.INVALID_KEY.name());
+        ErrorCode errorCode = resolveValidationError(validationMessage);
+        return ResponseEntity.status(errorCode.getStatus()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode == ErrorCode.INVALID_KEY ? validationMessage : errorCode.getMessage())
+                        .build()
+        );
+    }
+
+    private ErrorCode resolveValidationError(String validationMessage) {
+        try {
+            return ErrorCode.valueOf(validationMessage);
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            return ErrorCode.INVALID_KEY;
+        }
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

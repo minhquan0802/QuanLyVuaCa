@@ -14,6 +14,7 @@ public interface PhieunhapMapper {
     @Mapping(target = "idloaica", ignore = true)  // Tên biến trong Entity là idloaica
     @Mapping(target = "idnguoitaophieu", ignore = true)
     @Mapping(target = "tongsoluong", ignore = true)
+    @Mapping(target = "trangthaithanhtoan", ignore = true)
     Phieunhap toEntity(PhieunhapRequest request);
 
     // Map Response: Chấm (.) qua tên biến object

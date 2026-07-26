@@ -4,6 +4,8 @@ import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -17,6 +19,8 @@ public interface DonhangRepository extends JpaRepository<Donhang, String> {
 
     // 2. Lấy tất cả đơn hàng sắp xếp ngày mới nhất
     List<Donhang> findAllByOrderByNgaydatDesc();
+    Page<Donhang> findByNgaydatBetween(
+            LocalDateTime tuNgay, LocalDateTime denNgay, Pageable pageable);
 
     // 3. Tìm đơn đã giao nhưng chưa thanh toán đủ (để áp dụng số dư), cũ nhất trước
     List<Donhang> findByIdthongtinkhachhangAndTrangthaidonhangAndTrangthaithanhtoanOrderByNgaydatAsc(

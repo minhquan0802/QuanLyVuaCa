@@ -81,7 +81,27 @@ public enum ErrorCode {
     NHACUNGCAP_NOT_EXISTED(1055, "Nha cung cap khong ton tai", HttpStatus.NOT_FOUND),
     THANHTOAN_NOT_EXISTED(1056, "Ban ghi thanh toan khong ton tai", HttpStatus.NOT_FOUND),
     TOKEN_CREATION_FAILED(1057, "Khong the tao token xac thuc", HttpStatus.INTERNAL_SERVER_ERROR),
-    PHIEUNHAP_NOT_EXISTED(1058, "Phieu nhap hang khong ton tai", HttpStatus.NOT_FOUND);
+    PHIEUNHAP_NOT_EXISTED(1058, "Phieu nhap hang khong ton tai", HttpStatus.NOT_FOUND),
+    LOAICA_NAME_INVALID(1065, "Ten loai ca khong hop le", HttpStatus.BAD_REQUEST),
+    LOAICA_DESCRIPTION_INVALID(1066, "Mieu ta loai ca khong hop le", HttpStatus.BAD_REQUEST),
+    LOAICA_IMAGE_INVALID(1067, "Anh loai ca khong hop le", HttpStatus.BAD_REQUEST),
+    LOAICA_NOT_ACTIVE(1068, "Loai ca da ngung kinh doanh", HttpStatus.CONFLICT),
+    DONVITINH_EXISTED(1069, "Don vi tinh da ton tai", HttpStatus.CONFLICT),
+    DONVITINH_NAME_INVALID(1070, "Ten don vi tinh khong hop le", HttpStatus.BAD_REQUEST),
+    HESOKG_INVALID(1071, "He so kg khong hop le", HttpStatus.BAD_REQUEST),
+    GIABANLE_INVALID(1072, "Gia ban le phai lon hon 0", HttpStatus.BAD_REQUEST),
+    GIABANSI_INVALID(1073, "Gia ban si phai lon hon 0", HttpStatus.BAD_REQUEST),
+    BANGGIA_RELATION_INVALID(1074, "Gia ban si khong duoc lon hon gia ban le", HttpStatus.BAD_REQUEST),
+    BANGGIA_FOR_DELETED_PRODUCT(1075, "Khong the lap gia cho san pham da ngung kinh doanh", HttpStatus.CONFLICT),
+    BANGGIA_BOTH_PRICES_REQUIRED(1076, "Phai nhap day du gia ban le va gia ban si", HttpStatus.BAD_REQUEST),
+    CHITIET_PHIEUNHAP_EMPTY(1077, "Danh sach chi tiet phieu nhap khong duoc rong", HttpStatus.BAD_REQUEST),
+    SOLUONG_NHAP_INVALID(1078, "So luong nhap phai lon hon 0", HttpStatus.BAD_REQUEST),
+    GIANHAP_INVALID(1079, "Gia nhap phai lon hon 0", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_EXISTED(1080, "Nha cung cap da ton tai", HttpStatus.CONFLICT),
+    NHACUNGCAP_NAME_INVALID(1081, "Ten nha cung cap khong hop le", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_PHONE_INVALID(1082, "So dien thoai nha cung cap khong hop le", HttpStatus.BAD_REQUEST),
+    LYDO_THANHLY_EMPTY(1083, "Ly do thanh ly khong duoc de trong", HttpStatus.BAD_REQUEST),
+    QUYDOI_INVALID(1084, "So kg quy doi phai lon hon 0", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;
