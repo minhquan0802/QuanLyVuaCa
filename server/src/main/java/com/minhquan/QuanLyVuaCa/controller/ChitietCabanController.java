@@ -8,6 +8,7 @@ import com.minhquan.QuanLyVuaCa.service.ChitietCabanService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ public class ChitietCabanController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ChitietCabanResponse> create(@RequestBody @Validated ChitietCabanCreationRequest request) {
         return ApiResponse.<ChitietCabanResponse>builder()
                 .result(chitietCabanService.create(request))
@@ -36,6 +38,7 @@ public class ChitietCabanController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> delete(@PathVariable Integer id) {
         chitietCabanService.delete(id);
         return ApiResponse.<String>builder()
@@ -44,6 +47,7 @@ public class ChitietCabanController {
     }
 
     @PutMapping("/{id}/so-kg-tuong-ung")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ChitietCabanResponse> capNhatSoKgTuongUng(
             @PathVariable Integer id,
             @RequestBody @Validated CapNhatSoKgTuongUngRequest request) {

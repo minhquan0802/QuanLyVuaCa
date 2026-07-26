@@ -9,6 +9,7 @@ import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.service.LoaicaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +35,7 @@ public class LoaicaController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<LoaicaResponse> themLoaiCa(
             @RequestParam("tenloaica") String tenloaica,
             @RequestParam("mieuta") String mieuta,
@@ -53,7 +55,8 @@ public class LoaicaController {
 
     // ======================== UPDATE (ĐÃ SỬA) ========================
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    private ApiResponse<LoaicaResponse> capNhatLoaica(
+    @PreAuthorize("hasRole('ADMIN')")
+    ApiResponse<LoaicaResponse> capNhatLoaica(
             @PathVariable("id") Integer id,
             @RequestParam("tenloaica") String tenloaica,
             @RequestParam("mieuta") String mieuta,
@@ -77,7 +80,7 @@ public class LoaicaController {
 
 
     @GetMapping("/{id}")
-    private ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
+    ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("OK")
@@ -88,7 +91,8 @@ public class LoaicaController {
 
     // ======================== SOFT DELETE ========================
     @DeleteMapping("/{id}")
-    private ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
         loaicaService.xoaLoaica(id);
         return ApiResponse.<String>builder()
                 .code(200)
@@ -98,7 +102,8 @@ public class LoaicaController {
     }
 
     @PatchMapping("/{id}/khoi-phuc")
-    private ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
         loaicaService.khoiPhucLoaica(id);
         return ApiResponse.<String>builder()
                 .code(200)

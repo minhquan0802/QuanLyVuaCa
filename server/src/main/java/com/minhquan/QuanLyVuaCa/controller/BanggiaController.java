@@ -7,6 +7,7 @@ import com.minhquan.QuanLyVuaCa.service.BanggiaService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class BanggiaController {
     BanggiaService banggiaService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<BanggiaResponse> create(@RequestBody BanggiaRequest request) {
         return ApiResponse.<BanggiaResponse>builder()
                 .result(banggiaService.create(request))
@@ -35,6 +37,7 @@ public class BanggiaController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> delete(@PathVariable Integer id) {
         banggiaService.delete(id);
         return ApiResponse.<String>builder()

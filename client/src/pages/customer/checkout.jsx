@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
@@ -16,6 +16,7 @@ export default function Checkout() {
     const [paymentMethod, setPaymentMethod] = useState("vnpay");
     const [loading, setLoading] = useState(false);
     const [shipInfo, setShipInfo] = useState({ hoTen: "", sdt: "", diachi: "", ghichu: "" });
+    const orderCompletedRef = useRef(false);
 
     useEffect(() => {
         if (!user) return;
@@ -29,7 +30,7 @@ export default function Checkout() {
 
     useEffect(() => {
         if (!user) { navigate("/"); return; }
-        if (cart.length === 0) { navigate("/cart"); }
+        if (cart.length === 0 && !orderCompletedRef.current) { navigate("/cart"); }
     }, [cart, user]);
 
     const getImageUrl = (url) => {
@@ -42,6 +43,11 @@ export default function Checkout() {
         if (cart.length === 0) { navigate("/cart"); return; }
         if (!shipInfo.hoTen || !shipInfo.sdt || !shipInfo.diachi) {
             showToast("Vui lòng điền đầy đủ thông tin giao hàng!", "error");
+            return;
+        }
+        const normalizedPhone = shipInfo.sdt.replace(/\s+/g, "");
+        if (!/^(0\d{9}|\+84\d{9})$/.test(normalizedPhone)) {
+            showToast("Số điện thoại không hợp lệ!", "error");
             return;
         }
 
@@ -64,6 +70,7 @@ export default function Checkout() {
             const newOrderId = orderData.result.iddonhang;
 
             if (paymentMethod === "later") {
+                orderCompletedRef.current = true;
                 await clearCart();
                 showToast("Đặt hàng thành công! Chúng tôi sẽ liên hệ xác nhận.", "success");
                 navigate("/my-orders");
@@ -74,6 +81,7 @@ export default function Checkout() {
                     language: "vn",
                 });
                 if (paymentData.paymentUrl) {
+                    orderCompletedRef.current = true;
                     await clearCart();
                     window.location.href = paymentData.paymentUrl;
                 } else {

@@ -6,6 +6,7 @@ import com.minhquan.QuanLyVuaCa.service.NhacungcapService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class NhacungcapController {
     NhacungcapService nhacungcapService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<List<Nhacungcap>> getAll() {
         return ApiResponse.<List<Nhacungcap>>builder()
                 .result(nhacungcapService.getAll())
@@ -27,6 +29,7 @@ public class NhacungcapController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<Nhacungcap> create(@RequestBody Nhacungcap ncc) {
         return ApiResponse.<Nhacungcap>builder()
                 .result(nhacungcapService.create(ncc))

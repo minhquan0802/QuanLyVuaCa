@@ -40,6 +40,8 @@ export default function QuanLyCongNo() {
     const [lichSuModal, setLichSuModal] = useState(null); // { idtaikhoan, ten }
     const [lichSuData, setLichSuData] = useState([]);
     const [loadingLichSu, setLoadingLichSu] = useState(false);
+    const [lichSuPage, setLichSuPage] = useState(1);
+    const lichSuPageSize = 8;
 
     const [submitting, setSubmitting] = useState(false);
 
@@ -142,6 +144,8 @@ export default function QuanLyCongNo() {
 
     const openLichSu = (khach) => {
         setLichSuModal({ idtaikhoan: khach.idtaikhoan, ten: `${khach.ho} ${khach.ten}` });
+        setLichSuPage(1);
+        setLichSuData([]);
         setLoadingLichSu(true);
         api.get(`/CongNo/${khach.idtaikhoan}/lich-su`)
             .then(res => setLichSuData(res.data.result || []))
@@ -150,6 +154,12 @@ export default function QuanLyCongNo() {
     };
 
     const LOAI_LABEL = { TANG: "Tăng nợ", GIAM: "Giảm nợ", DIEU_CHINH: "Điều chỉnh" };
+
+    const tongTrangLichSu = Math.ceil(lichSuData.length / lichSuPageSize);
+    const lichSuPhanTrang = useMemo(() => {
+        const start = (lichSuPage - 1) * lichSuPageSize;
+        return lichSuData.slice(start, start + lichSuPageSize);
+    }, [lichSuData, lichSuPage]);
 
     // Lọc + phân trang danh sách công nợ
     const processedDanhSach = useMemo(() => {
@@ -444,7 +454,7 @@ export default function QuanLyCongNo() {
                                     {loadingLichSu ? (
                                         <tr><td colSpan="6" className="p-8 text-center text-slate-400">Đang tải...</td></tr>
                                     ) : lichSuData.length > 0 ? (
-                                        lichSuData.map(ls => (
+                                        lichSuPhanTrang.map(ls => (
                                             <tr key={ls.idlichsucongno} className="hover:bg-slate-50/50">
                                                 <td className="p-3 text-slate-500 whitespace-nowrap">{new Date(ls.ngaytao).toLocaleString('vi-VN')}</td>
                                                 <td className="p-3 font-bold">{LOAI_LABEL[ls.loaithaydoi] || ls.loaithaydoi}</td>
@@ -460,6 +470,38 @@ export default function QuanLyCongNo() {
                                 </tbody>
                             </table>
                         </div>
+                        {!loadingLichSu && lichSuData.length > lichSuPageSize && (
+                            <div className="px-6 py-3 border-t border-slate-200 flex items-center justify-center gap-2 bg-slate-50/50">
+                                <button
+                                    type="button"
+                                    onClick={() => setLichSuPage(page => page - 1)}
+                                    disabled={lichSuPage === 1}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Trước
+                                </button>
+                                {Array.from({ length: tongTrangLichSu }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        type="button"
+                                        key={page}
+                                        onClick={() => setLichSuPage(page)}
+                                        className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+                                            lichSuPage === page ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200"
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setLichSuPage(page => page + 1)}
+                                    disabled={lichSuPage === tongTrangLichSu}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Sau
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
