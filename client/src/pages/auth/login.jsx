@@ -99,12 +99,16 @@ export default function Login() {
 
                     <form className="w-full flex flex-col gap-4" onSubmit={handleLogin}>
                         <div className="group">
-                            <label className="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Email</label>
+                            <label htmlFor="login-email" className="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Email</label>
                             <div className="relative">
                                 <input
-                                    type="text"
+                                    id="login-email"
+                                    type="email"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        if (error) setError("");
+                                    }}
                                     placeholder="Ví dụ: quanly@fish.com"
                                     className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"
                                 />
@@ -112,18 +116,24 @@ export default function Login() {
                         </div>
 
                         <div className="group">
-                            <label className="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Mật khẩu</label>
+                            <label htmlFor="login-password" className="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Mật khẩu</label>
                             <div className="relative">
                                 <input
+                                    id="login-password"
                                     type={showPassword ? "text" : "password"}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (error) setError("");
+                                    }}
                                     className="w-full h-11 pl-4 pr-11 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all"
                                     placeholder="Nhập mật khẩu"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
+                                    title={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
                                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-600 transition-colors flex items-center justify-center"
                                 >
                                     <span className="material-symbols-outlined text-[20px]">
@@ -157,7 +167,7 @@ export default function Login() {
                     </form>
 
                     <div className="mt-6 text-center text-sm text-slate-500">
-                        Chưa có tài khoản? <a href="#" onClick={handleRegister} className="font-bold text-cyan-600 hover:text-cyan-800 transition-colors">Đăng ký ngay</a>
+                        Chưa có tài khoản? <a href="/register" onClick={(e) => { e.preventDefault(); handleRegister(); }} className="font-bold text-cyan-600 hover:text-cyan-800 transition-colors">Đăng ký ngay</a>
                     </div>
 
                 </div>
