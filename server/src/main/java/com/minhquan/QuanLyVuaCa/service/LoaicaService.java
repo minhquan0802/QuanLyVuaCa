@@ -14,78 +14,96 @@ import com.minhquan.QuanLyVuaCa.mapper.LoaicaMapper;
 import com.minhquan.QuanLyVuaCa.repository.BanggiaRepository;
 import com.minhquan.QuanLyVuaCa.repository.ChitietcabanRepository;
 import com.minhquan.QuanLyVuaCa.repository.LoaicaRepository;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class LoaicaService {
     LoaicaRepository loaicaRepository;
     LoaicaMapper mapper;
     ChitietcabanRepository chitietcabanRepository;
     BanggiaRepository banggiaRepository;
-//    final String UPLOAD_DIR = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
-    Cloudinary cloudinary; // inject thay vì UPLOAD_DIR
+    Cloudinary cloudinary;
 
-    public List<LoaicaResponse> getLoaiCa(){
-        List<Loaica> Loaicas = loaicaRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<LoaicaResponse> getLoaiCa() {
+        return toResponses(loaicaRepository.findAllByDeletedFalse());
+    }
+
+    @Transactional(readOnly = true)
+    public List<LoaicaResponse> getTatCaLoaiCa() {
+        return toResponses(loaicaRepository.findAll());
+    }
+
+    private List<LoaicaResponse> toResponses(List<Loaica> entities) {
         List<LoaicaResponse> responses = new ArrayList<>();
-        for (Loaica lc : Loaicas) {
-            responses.add(mapper.toLoaicaResponse(lc));
+        for (Loaica entity : entities) {
+            responses.add(mapper.toLoaicaResponse(entity));
         }
         return responses;
     }
-    public LoaicaResponse timLoaica(Integer id){
-        return mapper.toLoaicaResponse(loaicaRepository.findById(id).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED)));
+
+    @Transactional(readOnly = true)
+    public LoaicaResponse timLoaica(Integer id) {
+        Loaica loaica = loaicaRepository.findById(id)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
+        return mapper.toLoaicaResponse(loaica);
     }
 
-
     public LoaicaResponse capNhatLoaica(Integer id, LoaicaUpdateRequest request) {
-        // Tìm loại cá cũ
         Loaica loaica = loaicaRepository.findById(id)
-                .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
-
-        loaica.setTenloaica(request.getTenloaica());
-        loaica.setMieuta(request.getMieuta());
-
-        // XỬ LÝ ẢNH
-        MultipartFile newFile = request.getHinhanh();
-
-        // Chỉ xử lý nếu có file mới được upload lên
-        if (newFile != null && !newFile.isEmpty()) {
-            // A. Xóa ảnh cũ đi (tránh rác bộ nhớ)
-            String oldFileName = loaica.getHinhanhurl();
-            deleteFile(oldFileName);
-
-            // B. Tạo tên file mới (theo tên loại cá mới)
-            String baseName = slugify(request.getTenloaica());
-            String extension = Objects.requireNonNull(newFile.getOriginalFilename())
-                    .substring(newFile.getOriginalFilename().lastIndexOf("."));
-            String finalFileName = baseName + extension;
-
-            // C. Upload lên Cloudinary và lấy URL
-            String cloudinaryUrl = saveImage(newFile, finalFileName);
-
-            // D. Cập nhật Cloudinary URL vào DB
-            loaica.setHinhanhurl(cloudinaryUrl);
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
+        String tenLoaiCa = request.getTenloaica().trim();
+        if (loaicaRepository.existsByTenloaicaIgnoreCaseAndIdNot(tenLoaiCa, id)) {
+            throw new AppExceptions(ErrorCode.DATA_EXISTED);
         }
-        // Nếu không có file mới, giữ nguyên hinhanhurl cũ
 
-        Loaica updated = loaicaRepository.save(loaica);
+        MultipartFile newFile = request.getHinhanh();
+        String oldImageUrl = loaica.getHinhanhurl();
+        String newImageUrl = null;
+        if (newFile != null && !newFile.isEmpty()) {
+            validateImage(newFile);
+            newImageUrl = saveImage(newFile, buildImageFileName(tenLoaiCa, newFile));
+        }
+
+        loaica.setTenloaica(tenLoaiCa);
+        loaica.setMieuta(normalizeNullableText(request.getMieuta()));
+        if (newImageUrl != null) {
+            loaica.setHinhanhurl(newImageUrl);
+        }
+
+        Loaica updated;
+        try {
+            updated = loaicaRepository.saveAndFlush(loaica);
+        } catch (RuntimeException exception) {
+            if (newImageUrl != null) {
+                deleteFile(newImageUrl);
+            }
+            throw exception;
+        }
+
+        if (newImageUrl != null && oldImageUrl != null && !oldImageUrl.equals(newImageUrl)) {
+            deleteFile(oldImageUrl);
+        }
         return mapper.toLoaicaResponse(updated);
     }
 
@@ -94,24 +112,18 @@ public class LoaicaService {
         Loaica loaica = loaicaRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
 
-        // Kiểm tra còn tồn kho không
-        if (chitietcabanRepository.existsByIdloaicaAndSoluongtonGreaterThan(loaica, java.math.BigDecimal.ZERO)) {
+        if (chitietcabanRepository.existsByIdloaicaAndSoluongtonGreaterThan(loaica, BigDecimal.ZERO)) {
             throw new AppExceptions(ErrorCode.LOAICA_CON_TON_KHO);
         }
 
-        // Lấy tất cả chitietcaban của loại cá này
         List<Chitietcaban> danhSachKho = chitietcabanRepository.findByIdloaica(loaica);
-
-        // Đóng tất cả bảng giá đang hoạt động
-        List<Banggia> banggiaConHan = banggiaRepository.findByChitietcabanInAndNgayketthucIsNull(danhSachKho);
-        banggiaConHan.forEach(bg -> bg.setNgayketthuc(java.time.LocalDate.now()));
+        List<Banggia> banggiaConHan =
+                banggiaRepository.findByChitietcabanInAndNgayketthucIsNull(danhSachKho);
+        banggiaConHan.forEach(banggia -> banggia.setNgayketthuc(LocalDate.now()));
         banggiaRepository.saveAll(banggiaConHan);
 
-        // Soft delete toàn bộ chitietcaban
-        danhSachKho.forEach(ctcb -> ctcb.setDeleted(true));
+        danhSachKho.forEach(chitiet -> chitiet.setDeleted(true));
         chitietcabanRepository.saveAll(danhSachKho);
-
-        // Đánh dấu loại cá đã ngừng bán
         loaica.setDeleted(true);
         loaicaRepository.save(loaica);
     }
@@ -120,111 +132,103 @@ public class LoaicaService {
     public void khoiPhucLoaica(Integer id) {
         Loaica loaica = loaicaRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
-
         List<Chitietcaban> danhSachKho = chitietcabanRepository.findByIdloaica(loaica);
-        danhSachKho.forEach(ctcb -> ctcb.setDeleted(false));
+        danhSachKho.forEach(chitiet -> chitiet.setDeleted(false));
         chitietcabanRepository.saveAll(danhSachKho);
-
         loaica.setDeleted(false);
         loaicaRepository.save(loaica);
+    }
+
+    public LoaicaResponse taoLoaica(LoaicaCeationRequest request) {
+        String tenLoaiCa = request.getTenloaica().trim();
+        if (loaicaRepository.existsByTenloaicaIgnoreCase(tenLoaiCa)) {
+            throw new AppExceptions(ErrorCode.DATA_EXISTED);
+        }
+
+        Loaica loaica = new Loaica();
+        loaica.setTenloaica(tenLoaiCa);
+        loaica.setMieuta(normalizeNullableText(request.getMieuta()));
+
+        MultipartFile file = request.getHinhanh();
+        String imageUrl = null;
+        if (file != null && !file.isEmpty()) {
+            validateImage(file);
+            imageUrl = saveImage(file, buildImageFileName(tenLoaiCa, file));
+            loaica.setHinhanhurl(imageUrl);
+        }
+
+        try {
+            return mapper.toLoaicaResponse(loaicaRepository.saveAndFlush(loaica));
+        } catch (RuntimeException exception) {
+            if (imageUrl != null) {
+                deleteFile(imageUrl);
+            }
+            throw exception;
+        }
+    }
+
+    private String normalizeNullableText(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private void validateImage(MultipartFile file) {
+        Set<String> allowedContentTypes = Set.of("image/jpeg", "image/png", "image/webp");
+        String contentType = file.getContentType();
+        if (file.isEmpty() || contentType == null
+                || !allowedContentTypes.contains(contentType.toLowerCase())) {
+            throw new AppExceptions(ErrorCode.LOAICA_IMAGE_INVALID);
+        }
+    }
+
+    private String buildImageFileName(String tenLoaiCa, MultipartFile file) {
+        String extension = switch (Objects.requireNonNull(file.getContentType()).toLowerCase()) {
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> throw new AppExceptions(ErrorCode.LOAICA_IMAGE_INVALID);
+        };
+        return slugify(tenLoaiCa) + "-" + UUID.randomUUID() + extension;
     }
 
     private String slugify(String input) {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("[^\\p{ASCII}]", "")
                 .replaceAll("[^a-zA-Z0-9]+", "-")
+                .replaceAll("(^-|-$)", "")
                 .toLowerCase();
     }
 
-//    public String saveImage(MultipartFile file, String fileName) {
-//        try {
-//            String uploadDir = "D:/SynologyDrive/Dev/Project_on_school/Nam_4_HK1/Do_An_HK1_Nam4/ThucTapChuyenNganh/sourceCode/BE/QuanLyVuaCa/images/loaica/";
-//
-//            // Tạo folder nếu chưa tồn tại
-//            Path uploadPath = Paths.get(uploadDir);
-//            if (!Files.exists(uploadPath)) {
-//                Files.createDirectories(uploadPath);
-//            }
-//            if (!Files.exists(uploadPath)) {
-//                Files.createDirectories(uploadPath);
-//            }
-//
-//            Path filePath = uploadPath.resolve(fileName);
-//            file.transferTo(filePath.toFile());
-//
-//            System.out.println("Đã lưu file ảnh: " + filePath.toAbsolutePath());
-//            return fileName;
-//        } catch (IOException e) {
-//            throw new RuntimeException("Không thể lưu ảnh: " + e.getMessage(), e);
-//        }
-//    }
-
-//    private void deleteFile(String fileName) {
-//        if (fileName == null || fileName.isEmpty()) return;
-//        try {
-//            Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName);
-//            Files.deleteIfExists(filePath);
-//            System.out.println("Đã xóa ảnh cũ: " + filePath.toString());
-//        } catch (IOException e) {
-//            System.err.println("Không thể xóa ảnh cũ: " + e.getMessage());
-//        }
-//    }
-
     public String saveImage(MultipartFile file, String fileName) {
         try {
-            // Bỏ extension khỏi public_id để Cloudinary quản lý format, và deleteFile strip đúng
-            String publicIdName = fileName.replaceAll("\\.[^.]+$", ""); // "ca-tram.jpg" → "ca-tram"
-            Map result = cloudinary.uploader().upload(
+            String publicIdName = fileName.replaceAll("\\.[^.]+$", "");
+            Map<?, ?> result = cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
                             "public_id", "loaica/" + publicIdName,
-                            "overwrite", true
+                            "overwrite", false
                     )
             );
             return (String) result.get("secure_url");
-        } catch (IOException e) {
-            throw new AppExceptions(ErrorCode.UPLOAD_ANH_THAT_BAI, "Không thể upload ảnh: " + e.getMessage(), e);
+        } catch (IOException exception) {
+            throw new AppExceptions(
+                    ErrorCode.UPLOAD_ANH_THAT_BAI,
+                    "Không thể upload ảnh: " + exception.getMessage(),
+                    exception
+            );
         }
     }
 
     private void deleteFile(String imageUrl) {
-        if (imageUrl == null || imageUrl.isEmpty()) return;
+        if (imageUrl == null || imageUrl.isBlank() || !imageUrl.contains("/loaica/")) {
+            return;
+        }
         try {
-            // Lấy public_id từ URL: .../loaica/ten-ca.jpg -> loaica/ten-ca
             String publicId = imageUrl
                     .substring(imageUrl.indexOf("/loaica/") + 1)
                     .replaceAll("\\.[^.]+$", "");
             cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-        } catch (Exception e) {
-            log.error("Không thể xóa ảnh cũ: {}", e.getMessage());
+        } catch (Exception exception) {
+            log.error("Không thể xóa ảnh Cloudinary cũ: {}", exception.getMessage());
         }
-    }
-
-
-
-    public LoaicaResponse taoLoaica(LoaicaCeationRequest request) {
-
-        if (loaicaRepository.existsByTenloaica(request.getTenloaica())) {
-            throw new AppExceptions(ErrorCode.DATA_EXISTED);
-        }
-
-        Loaica loaica = new Loaica();
-        loaica.setTenloaica(request.getTenloaica());
-        loaica.setMieuta(request.getMieuta());
-
-        MultipartFile file = request.getHinhanh(); // MultipartFile từ FE
-
-        if (file != null && !file.isEmpty()) {
-            String baseName = slugify(request.getTenloaica());
-            String extension = Objects.requireNonNull(file.getOriginalFilename())
-                    .substring(file.getOriginalFilename().lastIndexOf("."));
-            String finalFileName = baseName + extension;
-
-            String cloudinaryUrl = saveImage(file, finalFileName);
-            loaica.setHinhanhurl(cloudinaryUrl);
-        }
-
-        Loaica saved = loaicaRepository.save(loaica);
-        return mapper.toLoaicaResponse(saved);
     }
 }

@@ -16,6 +16,7 @@ public interface BanggiaRepository extends JpaRepository<Banggia, Integer> {
     // Tìm bảng giá đang "mở" (chưa có ngày kết thúc) của 1 sản phẩm
     Optional<Banggia> findByChitietcabanAndNgayketthucIsNull(Chitietcaban chitietcaban);
 
+    List<Banggia> findAllByNgayketthucIsNull();
     List<Banggia> findByChitietcaban(Chitietcaban chitietcaban);
     List<Banggia> findByChitietcabanInAndNgayketthucIsNull(List<Chitietcaban> chitietcabans);
 

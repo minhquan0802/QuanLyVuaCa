@@ -4,6 +4,7 @@ import com.minhquan.QuanLyVuaCa.dto.request.PhieunhapRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.PhieunhapResponse;
 import com.minhquan.QuanLyVuaCa.service.PhieunhapService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -31,7 +32,7 @@ public class PhieunhapController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<PhieunhapResponse> nhapHang(@RequestBody PhieunhapRequest request) {
+    public ApiResponse<PhieunhapResponse> nhapHang(@RequestBody @Valid PhieunhapRequest request) {
         return ApiResponse.<PhieunhapResponse>builder()
                 .code(200)
                 .message("Nhập hàng thành công")

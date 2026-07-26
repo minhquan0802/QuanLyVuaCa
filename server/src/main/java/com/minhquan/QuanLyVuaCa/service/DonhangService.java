@@ -14,6 +14,8 @@ import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.DonhangMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
+import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -84,7 +89,7 @@ public class DonhangService {
         if (request.getIdthongtinkhachhang() != null) {
             var khachOpt = taikhoanRepository.findById(request.getIdthongtinkhachhang());
             if (khachOpt.isPresent()) {
-                isWholesale = "CUSTOMER".equals(khachOpt.get().getVaitro()) || "WHOLESALE_CUSTOMER".equals(khachOpt.get().getVaitro());
+                isWholesale = ChinhSachGiaUtils.laKhachSi(khachOpt.get().getVaitro());
             }
         }
 
@@ -127,18 +132,13 @@ public class DonhangService {
                 // B1. Lấy đơn vị tính và hệ số quy đổi
                 String idDvtStr = ctdhRequest.getIddonvitinh();
                 Donvitinh donvitinh = idDvtStr != null
-                        ? donvitinhRepository.findById(Integer.parseInt(idDvtStr)).orElse(null)
-                        : donvitinhRepository.findById(1).orElse(null);
+                        ? donvitinhRepository.findById(Integer.parseInt(idDvtStr))
+                            .orElseThrow(() -> new AppExceptions(ErrorCode.DONVITINH_NOT_EXISTED))
+                        : donvitinhRepository.findById(1)
+                            .orElseThrow(() -> new AppExceptions(ErrorCode.DONVITINH_NOT_EXISTED));
                 ct.setIddonvitinh(donvitinh);
 
-                BigDecimal heSoQuyDoi;
-                if (donvitinh != null && donvitinh.getHesokg() != null && donvitinh.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
-                    heSoQuyDoi = donvitinh.getHesokg(); // Kg hoặc Bao: dùng hesokg cố định
-                } else {
-                    heSoQuyDoi = finalChitietcaban.getSokgtuongung() != null
-                            ? finalChitietcaban.getSokgtuongung()
-                            : BigDecimal.ONE;
-                }
+                BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(donvitinh, finalChitietcaban);
 
                 // B2. Lấy giá bán hiện tại
                 Banggia banggia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(finalChitietcaban)
@@ -148,7 +148,9 @@ public class DonhangService {
                 // B3. Xác định giá áp dụng (Sỉ hay Lẻ)
                 BigDecimal donGiaApDung = isWholesale ? banggia.getGiabansi() : banggia.getGiabanle();
                 if (donGiaApDung == null) donGiaApDung = banggia.getGiabanle();
-                if (donGiaApDung == null) donGiaApDung = BigDecimal.ZERO;
+                if (donGiaApDung == null || donGiaApDung.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new AppExceptions(ErrorCode.BANGGIA_CHUA_AP_DUNG);
+                }
 
                 // B4. Tính toán
                 BigDecimal soLuongDat = new BigDecimal(ct.getSoluong());
@@ -313,6 +315,37 @@ public class DonhangService {
 //                    return donhangMapper.toDonhangResponse(donhang, tenKhach, sdtKhach);
 //                })
 //                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public Page<DonhangResponse> searchDonhangs(
+            LocalDateTime from,
+            LocalDateTime to,
+            int page,
+            int size) {
+        return donhangRepository.findByNgaydatBetween(
+                        from,
+                        to,
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngaydat")))
+                .map(this::mapDonhangResponse);
+    }
+
+    private DonhangResponse mapDonhangResponse(Donhang donhang) {
+        if (donhang.getIdthongtinkhachhang() != null) {
+            Optional<Taikhoan> customer = taikhoanRepository.findById(donhang.getIdthongtinkhachhang());
+            if (customer.isPresent()) {
+                Taikhoan account = customer.get();
+                return donhangMapper.toDonhangResponse(
+                        donhang,
+                        account.getHo() + " " + account.getTen(),
+                        account.getSodienthoai());
+            }
+        }
+        String guestName = donhang.getTenKhachLe() != null && !donhang.getTenKhachLe().isBlank()
+                ? donhang.getTenKhachLe() : "Khách vãng lai";
+        String guestPhone = donhang.getSdtKhachLe() != null ? donhang.getSdtKhachLe() : "";
+        return donhangMapper.toDonhangResponse(donhang, guestName, guestPhone);
     }
 
     // --- 3. LẤY CHI TIẾT ĐƠN HÀNG ---

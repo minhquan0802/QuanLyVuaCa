@@ -1,30 +1,32 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Slf4j
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PhieunhapRequest {
-    @NotNull(message = "Vui lòng chọn loại cá")
-    private Integer idloaica;
 
-    @NotNull(message = "Vui lòng chọn nhà cung cấp")
-    private Integer idncc;
+    @NotNull(message = "LOAICA_NOT_EXISTED")
+    Integer idloaica;
 
-    private LocalDate ngaynhap;
-    private String ghichu;
-    private String trangthaithanhtoan;
+    @NotNull(message = "NHACUNGCAP_NOT_EXISTED")
+    Integer idncc;
 
-    @NotNull(message = "Danh sách chi tiết không được trống")
-    private List<ChitietPhieunhapRequest> listChiTiet;
+    LocalDate ngaynhap;
+    String ghichu;
+    String trangthaithanhtoan;
+
+    @NotEmpty(message = "CHITIET_PHIEUNHAP_EMPTY")
+    @Valid
+    List<ChitietPhieunhapRequest> listChiTiet;
 }

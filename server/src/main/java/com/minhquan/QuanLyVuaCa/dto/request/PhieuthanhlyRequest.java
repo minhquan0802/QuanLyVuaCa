@@ -16,7 +16,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PhieuthanhlyRequest {
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "LYDO_THANHLY_EMPTY")
     String lydothanhly;
 
     String ghichu;

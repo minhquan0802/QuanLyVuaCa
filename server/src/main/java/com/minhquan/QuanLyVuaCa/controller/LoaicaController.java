@@ -4,29 +4,24 @@ import com.minhquan.QuanLyVuaCa.dto.request.LoaicaCeationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.LoaicaResponse;
-import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
-import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.service.LoaicaService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/Loaicas")
+@RequiredArgsConstructor
 public class LoaicaController {
-    @Autowired
-    private LoaicaService loaicaService;
-
+    private final LoaicaService loaicaService;
 
     @GetMapping
-    ApiResponse<List<LoaicaResponse>> danhSachLoaiCa(){
+    public ApiResponse<List<LoaicaResponse>> danhSachLoaiCa() {
         return ApiResponse.<List<LoaicaResponse>>builder()
                 .code(200)
                 .message("OK")
@@ -34,18 +29,20 @@ public class LoaicaController {
                 .build();
     }
 
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<LoaicaResponse>> danhSachLoaiCaChoAdmin() {
+        return ApiResponse.<List<LoaicaResponse>>builder()
+                .code(200)
+                .message("OK")
+                .result(loaicaService.getTatCaLoaiCa())
+                .build();
+    }
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<LoaicaResponse> themLoaiCa(
-            @RequestParam("tenloaica") String tenloaica,
-            @RequestParam("mieuta") String mieuta,
-            @RequestParam(value = "hinhanh", required = false) MultipartFile file) {
-
-        LoaicaCeationRequest request = new LoaicaCeationRequest();
-        request.setTenloaica(tenloaica);
-        request.setMieuta(mieuta);
-        request.setHinhanh(file);
-
+            @Valid @ModelAttribute LoaicaCeationRequest request) {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("OK")
@@ -53,22 +50,11 @@ public class LoaicaController {
                 .build();
     }
 
-    // ======================== UPDATE (ĐÃ SỬA) ========================
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    ApiResponse<LoaicaResponse> capNhatLoaica(
+    public ApiResponse<LoaicaResponse> capNhatLoaica(
             @PathVariable("id") Integer id,
-            @RequestParam("tenloaica") String tenloaica,
-            @RequestParam("mieuta") String mieuta,
-            @RequestParam(value = "hinhanh", required = false) MultipartFile file) {
-
-        // 1. Tạo đối tượng Request từ các tham số nhận được
-        LoaicaUpdateRequest request = new LoaicaUpdateRequest();
-        request.setTenloaica(tenloaica);
-        request.setMieuta(mieuta);
-        request.setHinhanh(file); // Nếu người dùng không gửi file, nó sẽ là null
-
-        // 2. Gọi Service để xử lý (Service sẽ tự kiểm tra file có null hay không)
+            @Valid @ModelAttribute LoaicaUpdateRequest request) {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("OK")
@@ -76,11 +62,8 @@ public class LoaicaController {
                 .build();
     }
 
-
-
-
     @GetMapping("/{id}")
-    ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
+    public ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("OK")
@@ -88,11 +71,9 @@ public class LoaicaController {
                 .build();
     }
 
-
-    // ======================== SOFT DELETE ========================
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
+    public ApiResponse<String> xoaLoaica(@PathVariable("id") Integer id) {
         loaicaService.xoaLoaica(id);
         return ApiResponse.<String>builder()
                 .code(200)
@@ -103,12 +84,12 @@ public class LoaicaController {
 
     @PatchMapping("/{id}/khoi-phuc")
     @PreAuthorize("hasRole('ADMIN')")
-    ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
+    public ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
         loaicaService.khoiPhucLoaica(id);
         return ApiResponse.<String>builder()
                 .code(200)
                 .message("OK")
-                .result("Đã mở lại loại cá")
+                .result("Đã mở lại loại cá; vui lòng thiết lập bảng giá mới")
                 .build();
     }
 }

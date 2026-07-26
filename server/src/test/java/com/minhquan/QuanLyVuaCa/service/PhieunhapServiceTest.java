@@ -6,6 +6,8 @@ import com.minhquan.QuanLyVuaCa.dto.response.PhieunhapResponse;
 import com.minhquan.QuanLyVuaCa.entity.*;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.ChitietphieunhapMapper;
 import com.minhquan.QuanLyVuaCa.mapper.PhieunhapMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
@@ -77,6 +79,8 @@ class PhieunhapServiceTest {
                         .idsizeca(2)
                         .soluongnhap(soLuong)
                         .gianhap(new BigDecimal("30000"))
+                        .giabanletaithoidiemnhap(new BigDecimal("50000"))
+                        .giabansitaithoidiemnhap(new BigDecimal("45000"))
                         .build()))
                 .build();
     }
@@ -115,6 +119,19 @@ class PhieunhapServiceTest {
         assertEquals(0, new BigDecimal("10.50").compareTo(loMoi.getSoluongconlai()));
         assertEquals(TrangThaiCa.CON_HANG, loMoi.getTrangthaica());
         assertEquals(LocalDate.of(2026, 7, 25), loMoi.getNgaythanhly());
+    }
+
+    @Test
+    void thieuMotTrongHaiGiaBan_tuChoiTruocKhiLuuPhieu() {
+        PhieunhapRequest request = request(new BigDecimal("10"), "CHUA_THANH_TOAN");
+        request.getListChiTiet().getFirst().setGiabansitaithoidiemnhap(null);
+
+        AppExceptions exception = assertThrows(
+                AppExceptions.class,
+                () -> phieunhapService.nhapHang(request));
+
+        assertEquals(ErrorCode.BANGGIA_BOTH_PRICES_REQUIRED, exception.getErrorCode());
+        verifyNoInteractions(phieunhapRepository);
     }
 
     @Test

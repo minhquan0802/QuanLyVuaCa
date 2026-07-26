@@ -22,7 +22,7 @@ export default function QuanLyLoaiCa() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const { data: { result } } = await api.get("/Loaicas");
+            const { data: { result } } = await api.get("/Loaicas/admin/all");
             setCategories(result || []);
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);

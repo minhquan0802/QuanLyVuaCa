@@ -384,7 +384,6 @@ API liên quan:
 ```txt
 GET  /Loaicas/{product_id}
 GET  /Banggias
-GET  /Quydois
 GET  /Chitietcabans
 GET  /Donvitinhs
 POST /gio-hang/items
@@ -438,7 +437,7 @@ Luồng tổng quát:
 
 ```txt
 Admin mở Tạo đơn hàng POS
-  -> FE load khách hàng, sản phẩm kho, đơn vị tính, bảng giá, quy đổi
+  -> FE load khách hàng, sản phẩm kho, đơn vị tính và bảng giá
   -> admin chọn khách lẻ hoặc khách sỉ
   -> nhập/chọn thông tin khách
   -> chọn loại cá, size, đơn vị tính, số lượng
@@ -456,7 +455,6 @@ GET  /tai-khoan
 GET  /Chitietcabans
 GET  /Donvitinhs
 GET  /Banggias
-GET  /Quydois
 POST /Donhangs
 ```
 
@@ -649,8 +647,6 @@ POST   /Sizecas
 GET    /Chitietcabans
 POST   /Chitietcabans
 DELETE /Chitietcabans/{id}
-GET    /Quydois
-POST   /Quydois
 GET    /Banggias
 POST   /Banggias
 ```
@@ -771,23 +767,23 @@ PUT /ThongBao/da-xem-tat-ca
 
 | Màn hình/file | API chính |
 |---|---|
-| `AdminDashboard.jsx` | `GET /Thongke?range=...` |
+| `AdminDashboard.jsx` | `GET /Thongke/tong-quan`, `GET /Thongke/luan-chuyen-hang-hoa`, `GET /Donhangs/search` |
 | `QuanLyDonHang.jsx` | `GET /Donhangs` |
 | `ChiTietDonHang.jsx` | `GET /Donhangs`, `GET /Donhangs/{id}/chitiet`, `PUT /Donhangs/{id}/status`, `PUT /Donhangs/{id}/cap-nhat-can-nang` |
-| `TaoDonHang.jsx` | `GET /tai-khoan`, `GET /Chitietcabans`, `GET /Donvitinhs`, `GET /Banggias`, `GET /Quydois`, `POST /Donhangs` |
+| `TaoDonHang.jsx` | `GET /tai-khoan`, `GET /Chitietcabans`, `GET /Donvitinhs`, `GET /Banggias`, `POST /Donhangs` |
 | `QuanLyKho.jsx` | `GET /Chitietcabans` |
 | `NhapHang.jsx` | `GET /Chitietcabans`, `GET /Nhacungcaps`, `GET /Banggias`, `POST /Phieunhaps` |
 | `QuanLyCongNo.jsx` | `GET /CongNo`, `GET /tai-khoan`, `GET /CongNo/{id}/lich-su`, `PUT /CongNo/{id}/han-muc`, `PUT /CongNo/{id}/dieu-chinh`, `PUT /CongNo/{id}/mo-khoa` |
 | `QuanLyThanhLy.jsx` | `GET /Phieuthanhlys`, `GET /Phieuthanhlys/tat-ca-lo-con-hang`, `POST /Phieuthanhlys` |
 | `TaoPhieuThanhLy.jsx` | `GET /Chitietcabans`, `GET /Phieuthanhlys/lo-con-hang`, `POST /Phieuthanhlys` |
-| `QuanLyLoaiCa.jsx` | `GET /Loaicas` |
-| `ThemSuaLoaiCa.jsx` | `GET /Loaicas`, `GET /Sizecas`, `POST/PUT /Loaicas`, `POST /Sizecas`, `POST /Chitietcabans`, `POST /Quydois` |
-| `KichCoLoaiCa.jsx` | `GET /Chitietcabans`, `GET /Sizecas`, `GET /Quydois`, `GET /Loaicas`, `POST /Sizecas`, `POST /Chitietcabans`, `POST /Quydois`, `DELETE /Chitietcabans/{id}` |
-| `QuanLyBangGia.jsx` | `GET /Banggias` |
+| `QuanLyLoaiCa.jsx` | `GET /Loaicas/admin/all` |
+| `ThemSuaLoaiCa.jsx` | `GET /Loaicas/admin/all`, `GET /Sizecas`, `POST/PUT /Loaicas`, `POST /Sizecas`, `POST /Chitietcabans` |
+| `KichCoLoaiCa.jsx` | `GET /Chitietcabans`, `GET /Sizecas`, `GET /Loaicas/admin/all`, `POST /Sizecas`, `POST /Chitietcabans`, `DELETE /Chitietcabans/{id}` |
+| `QuanLyBangGia.jsx` | `GET /Banggias/history` |
 | `ThemBangGia.jsx` | `GET /Chitietcabans`, `POST /Banggias` |
 | `QuanLyTaiKhoan.jsx` | `GET /tai-khoan`, `PUT /tai-khoan/{id}`, `PUT /tai-khoan/duyet/{id}` |
 | `ThemSuaTaiKhoan.jsx` | `GET /tai-khoan`, `POST /tai-khoan`, `PUT /tai-khoan/{id}` |
-| `product-detail.jsx` | `GET /Loaicas/{id}`, `GET /Banggias`, `GET /Quydois`, `GET /Chitietcabans`, `GET /Donvitinhs`, `POST /gio-hang/items` qua context |
+| `product-detail.jsx` | `GET /Loaicas/{id}`, `GET /Banggias`, `GET /Chitietcabans`, `GET /Donvitinhs`, `POST /gio-hang/items` qua context |
 | `cart.jsx` | Dùng `CartContext`: giỏ hàng, update, delete |
 | `checkout.jsx` | `POST /Donhangs`, `POST /payment/create-payment` |
 | `ThongTinDonHang.jsx` | `GET /Donhangs/my-orders`, `GET /Donhangs/{id}/chitiet`, `PUT /Donhangs/{id}/xac-nhan-nhan-hang`, `PUT /Donhangs/{id}/huy`, `GET /Thanhtoan/{id}/tinh-trang`, `POST /payment/create-payment` |
@@ -991,7 +987,7 @@ Customer
 ```txt
 Admin
   -> TaoDonHang.jsx
-  -> GET /tai-khoan, /Chitietcabans, /Donvitinhs, /Banggias, /Quydois
+  -> GET /tai-khoan, /Chitietcabans, /Donvitinhs, /Banggias
   -> chọn khách + sản phẩm
   -> POST /Donhangs
   -> hiển thị ManHinhHoanTatDonHang

@@ -4,6 +4,7 @@ import com.minhquan.QuanLyVuaCa.dto.request.BanggiaRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.BanggiaResponse;
 import com.minhquan.QuanLyVuaCa.service.BanggiaService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -22,7 +23,7 @@ public class BanggiaController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<BanggiaResponse> create(@RequestBody BanggiaRequest request) {
+    public ApiResponse<BanggiaResponse> create(@RequestBody @Valid BanggiaRequest request) {
         return ApiResponse.<BanggiaResponse>builder()
                 .result(banggiaService.create(request))
                 .message("Thiết lập giá thành công")
@@ -36,12 +37,20 @@ public class BanggiaController {
                 .build();
     }
 
+    @GetMapping("/history")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ApiResponse<List<BanggiaResponse>> getHistory() {
+        return ApiResponse.<List<BanggiaResponse>>builder()
+                .result(banggiaService.getHistory())
+                .build();
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> delete(@PathVariable Integer id) {
         banggiaService.delete(id);
         return ApiResponse.<String>builder()
-                .result("Đã xóa giá")
+                .result("Đã ngừng áp dụng giá")
                 .build();
     }
 }

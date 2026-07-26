@@ -9,6 +9,8 @@ import com.minhquan.QuanLyVuaCa.enums.TrangThaiGioHang;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
+import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -61,18 +63,12 @@ public class GioHangService {
             Chitietcaban sanpham = item.getIdchitietcaban();
             Donvitinh dvt = item.getIddonvitinh();
 
-            BigDecimal heSoQuyDoi;
-            if (dvt != null && dvt.getHesokg() != null && dvt.getHesokg().compareTo(BigDecimal.ZERO) > 0) {
-                heSoQuyDoi = dvt.getHesokg(); // Kg hoặc Bao: dùng hesokg cố định
-            } else {
-                heSoQuyDoi = sanpham.getSokgtuongung() != null
-                        ? sanpham.getSokgtuongung()
-                        : BigDecimal.ONE;
-            }
+            BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(dvt, sanpham);
 
             BigDecimal giaBan = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(sanpham)
                     .map(bg -> isWholesale && bg.getGiabansi() != null ? bg.getGiabansi() : bg.getGiabanle())
-                    .orElse(BigDecimal.ZERO);
+                    .filter(gia -> gia != null && gia.compareTo(BigDecimal.ZERO) > 0)
+                    .orElseThrow(() -> new AppExceptions(ErrorCode.BANGGIA_CHUA_AP_DUNG));
 
             BigDecimal khoiluong = heSoQuyDoi.multiply(new BigDecimal(item.getSoluong()));
             BigDecimal thanhTien = khoiluong.multiply(giaBan);
@@ -115,7 +111,7 @@ public class GioHangService {
         Taikhoan user = layUserHienTai();
         return gioHangRepository
                 .findByIdtaikhoan_IdtaikhoanAndTrangthai(user.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
-                .map(gh -> mapToResponse(gh, "CUSTOMER".equals(user.getVaitro())))
+                .map(gh -> mapToResponse(gh, ChinhSachGiaUtils.laKhachSi(user.getVaitro())))
                 .orElse(GioHangResponse.builder().items(List.of()).tongTien(BigDecimal.ZERO).build());
     }
 
@@ -147,7 +143,7 @@ public class GioHangService {
                         }
                 );
 
-        boolean isWholesale = "CUSTOMER".equals(user.getVaitro()) || "WHOLESALE_CUSTOMER".equals(user.getVaitro());
+        boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
         return mapToResponse(gioHang, isWholesale);
     }
 
@@ -165,7 +161,7 @@ public class GioHangService {
         }
 
         Taikhoan user = layUserHienTai();
-        boolean isWholesale = "CUSTOMER".equals(user.getVaitro()) || "WHOLESALE_CUSTOMER".equals(user.getVaitro());
+        boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
         return mapToResponse(item.getIdgiohang(), isWholesale);
     }
 
@@ -180,7 +176,7 @@ public class GioHangService {
         chitietGioHangRepository.delete(item);
 
         Taikhoan user = layUserHienTai();
-        boolean isWholesale = "CUSTOMER".equals(user.getVaitro()) || "WHOLESALE_CUSTOMER".equals(user.getVaitro());
+        boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
         return mapToResponse(gioHang, isWholesale);
     }
 

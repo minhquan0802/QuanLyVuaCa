@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface NhacungcapRepository extends JpaRepository<Nhacungcap, Integer> {
+    boolean existsByTennccIgnoreCase(String tenncc);
+    boolean existsBySodienthoai(String sodienthoai);
 }
