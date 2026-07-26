@@ -83,6 +83,7 @@ class PhieunhapServiceTest {
 
     private void mockDuLieuChung(PhieunhapRequest request) {
         Phieunhap phieu = new Phieunhap();
+        phieu.setNgaynhap(request.getNgaynhap());
         when(phieunhapMapper.toEntity(request)).thenReturn(phieu);
         when(phieunhapRepository.save(phieu)).thenAnswer(invocation -> invocation.getArgument(0));
         when(nhacungcapRepository.findById(3)).thenReturn(Optional.of(nhaCungCap));
