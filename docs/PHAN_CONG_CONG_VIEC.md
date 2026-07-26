@@ -96,15 +96,11 @@ client/src/pages/admin/ChiTietDonHang.jsx
 client/src/pages/admin/QuanLyCongNo.jsx
 ```
 
-### Thư mục hỗ trợ đã tách/refactor
+### Ghi chú cấu trúc màn hình tạo đơn POS
 
 ```txt
-client/src/pages/admin/tao-don-hang/
-  constants.js
-  components/BangSanPhamDaChon.jsx
-  components/ManHinhHoanTatDonHang.jsx
-  utils/dinhDangTien.js
-  utils/xuLyDonHang.js
+Logic tải dữ liệu, chọn khách hàng, chọn sản phẩm, tính giá và gửi đơn
+hiện được triển khai trực tiếp trong client/src/pages/admin/TaoDonHang.jsx.
 ```
 
 ---
@@ -358,7 +354,7 @@ Hồng Quân phụ trách các nhóm chức năng sau:
 6. Quản lý loại cá
 7. Quản lý size cá
 8. Quản lý chi tiết cá bán theo loại cá và size
-9. Quản lý đơn vị tính và quy đổi khối lượng
+9. Quản lý đơn vị tính và số kg tương ứng của chi tiết cá bán
 10. Quản lý bảng giá bán lẻ/bán sỉ
 11. Quản lý tồn kho
 12. Tạo phiếu nhập hàng
@@ -434,12 +430,12 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/controller/LoaicaController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/SizecaController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ChitietCabanController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/BanggiaController.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/controller/QuydoiController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/DonvitinhController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/NhacungcapController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/PhieunhapController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/PhieuthanhlyController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ThongBaoController.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ThongKeController.java
 ```
 
 ---
@@ -454,11 +450,11 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/service/LoaicaService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/SizecaService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/ChitietCabanService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/BanggiaService.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/service/QuydoiService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/NhacungcapService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/PhieunhapService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/PhieuthanhlyService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThongBaoService.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThongKeService.java
 ```
 
 ---
@@ -473,7 +469,6 @@ Loaica
 Sizeca
 Chitietcaban
 Banggia
-Quydoi
 Donvitinh
 Nhacungcap
 Phieunhap
@@ -500,7 +495,6 @@ LoaicaRepository
 SizecaRepository
 ChitietcabanRepository
 BanggiaRepository
-QuydoiRepository
 DonvitinhRepository
 NhacungcapRepository
 PhieunhapRepository
@@ -521,7 +515,6 @@ ThongbaoRepository
 /Sizecas
 /Chitietcabans
 /Banggias
-/Quydois
 /Donvitinhs
 /Nhacungcaps
 /Phieunhaps
@@ -558,12 +551,10 @@ POST   /Sizecas
 GET    /Chitietcabans
 POST   /Chitietcabans
 DELETE /Chitietcabans/{id}
+PUT    /Chitietcabans/{id}/so-kg-tuong-ung
 
 GET    /Banggias
 POST   /Banggias
-
-GET    /Quydois
-POST   /Quydois
 
 GET    /Phieunhaps
 POST   /Phieunhaps
@@ -577,6 +568,9 @@ GET    /ThongBao
 GET    /ThongBao/chua-xem
 PUT    /ThongBao/{id}/da-xem
 PUT    /ThongBao/da-xem-tat-ca
+
+GET    /Thongke/tong-quan
+GET    /Thongke/luan-chuyen-hang-hoa
 ```
 
 ---
@@ -610,7 +604,8 @@ Admin xem danh sách tài khoản
 Admin tạo loại cá
   -> tạo size cá
   -> tạo chi tiết cá bán theo loại cá và size
-  -> thiết lập quy đổi đơn vị tính
+  -> thiết lập số kg tương ứng cho từng chi tiết cá bán
+  -> sử dụng hệ số kg của đơn vị tính khi bán hàng
   -> thiết lập bảng giá bán lẻ/bán sỉ
 ```
 
@@ -645,6 +640,20 @@ Hệ thống hoặc scheduler phát hiện sự kiện cần cảnh báo
   -> admin đánh dấu đã xem từng thông báo hoặc tất cả
 ```
 
+### 5.8.7 Luồng Dashboard/thống kê
+
+```txt
+Admin/Staff truy cập Dashboard (mặc định Hôm nay)
+  -> chọn Hôm nay/Tuần/Tháng/Quý/Năm hoặc khoảng ngày tùy chọn
+  -> hệ thống hiển thị doanh thu đơn hàng, thu từ bán thanh lý,
+     chi phí nhập hàng và số đơn hoàn thành trong kỳ
+  -> riêng Hôm nay hiển thị thêm số lô quá hạn và tồn kho hiện tại
+  -> hiển thị bảng/biểu đồ luân chuyển nhập - bán - bán thanh lý - tiêu hủy
+  -> hiển thị danh sách đơn hàng trong kỳ và cho phép xem chi tiết
+```
+
+Dashboard không còn chức năng đề xuất nhập hàng.
+
 ---
 
 ## 5.9 Sơ đồ phụ trách
@@ -661,10 +670,12 @@ Hồng Quân phụ trách chuẩn bị và giải thích các sơ đồ sau:
 7. Activity diagram - Nhập hàng
 8. Activity diagram - Thanh lý lô cá
 9. Activity diagram - Xử lý thông báo
-10. Sequence diagram - Đăng nhập
-11. Sequence diagram - Nhập hàng
-12. Sequence diagram - Thanh lý
-13. ERD nhóm danh mục, kho, nhập hàng, thanh lý
+10. Activity diagram - Dashboard/thống kê
+11. Sequence diagram - Đăng nhập
+12. Sequence diagram - Nhập hàng
+13. Sequence diagram - Thanh lý
+14. Sequence diagram - Dashboard/thống kê
+15. ERD nhóm danh mục, kho, nhập hàng, thanh lý
 ```
 
 ---
@@ -677,13 +688,14 @@ Hồng Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 - Mô tả module xác thực và phân quyền
 - Mô tả module quản lý tài khoản
 - Mô tả module quản lý loại cá, size cá
-- Mô tả module bảng giá và quy đổi
+- Mô tả module bảng giá, đơn vị tính và số kg tương ứng
 - Mô tả module quản lý kho
 - Mô tả module nhập hàng
 - Mô tả module thanh lý
 - Mô tả module thông báo
-- Thiết kế API nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý
-- Test case nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý
+- Mô tả module Dashboard/thống kê
+- Thiết kế API nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý, thông báo và thống kê
+- Test case nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý, thông báo và thống kê
 ```
 
 ---
@@ -704,13 +716,15 @@ Hồng Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 11. Cập nhật loại cá
 12. Thêm size cá
 13. Tạo chi tiết cá bán
-14. Tạo quy đổi khối lượng
+14. Cập nhật số kg tương ứng của chi tiết cá bán
 15. Tạo bảng giá
 16. Xem tồn kho
 17. Tạo phiếu nhập hàng
 18. Tạo phiếu thanh lý
 19. Xem thông báo
 20. Đánh dấu thông báo đã xem
+21. Lọc Dashboard theo mốc thời gian
+22. Xem luân chuyển hàng hóa và đơn hàng trong kỳ
 ```
 
 ---
@@ -740,7 +754,7 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 | Thành viên | Kết quả bàn giao chính | Minh chứng |
 |---|---|---|
 | Minh Quân | Nhóm chức năng đặt hàng, đơn hàng, thanh toán, công nợ | Màn hình đặt hàng, giỏ hàng, checkout, đơn hàng của tôi, quản lý đơn, tạo đơn POS, quản lý công nợ; API `/gio-hang`, `/Donhangs`, `/payment`, `/Thanhtoan`, `/CongNo`; sơ đồ activity/sequence/state; test case |
-| Hồng Quân | Nhóm chức năng tài khoản, danh mục, kho, nhập hàng, thanh lý, thông báo | Màn hình đăng nhập, đăng ký, tài khoản, loại cá, size, bảng giá, kho, nhập hàng, thanh lý, dashboard/thông báo; API `/auth`, `/tai-khoan`, `/Loaicas`, `/Sizecas`, `/Chitietcabans`, `/Banggias`, `/Phieunhaps`, `/Phieuthanhlys`, `/ThongBao`; sơ đồ activity/sequence/ERD; test case |
+| Hồng Quân | Nhóm chức năng tài khoản, danh mục, kho, nhập hàng, thanh lý, thông báo, thống kê | Màn hình đăng nhập, đăng ký, tài khoản, loại cá, size, bảng giá, kho, nhập hàng, thanh lý, dashboard/thông báo; API `/auth`, `/tai-khoan`, `/Loaicas`, `/Sizecas`, `/Chitietcabans`, `/Banggias`, `/Phieunhaps`, `/Phieuthanhlys`, `/ThongBao`, `/Thongke`; sơ đồ activity/sequence/ERD; test case |
 
 ---
 
@@ -774,9 +788,11 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 - Activity tạo bảng giá
 - Activity nhập hàng
 - Activity thanh lý
+- Activity Dashboard/thống kê
 - Sequence đăng nhập
 - Sequence nhập hàng
 - Sequence thanh lý
+- Sequence Dashboard/thống kê
 - ERD nhóm danh mục, kho, nhập hàng, thanh lý
 ```
 
@@ -837,6 +853,7 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 6. Admin tạo phiếu nhập hàng.
 7. Admin tạo phiếu thanh lý.
 8. Admin xem thông báo.
+9. Admin xem Dashboard, thay đổi kỳ thống kê và mở chi tiết đơn hàng trong kỳ.
 ```
 
 ---
