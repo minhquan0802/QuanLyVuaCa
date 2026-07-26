@@ -57,7 +57,7 @@ export default function ProductList({ searchTerm }) {
         const pricesForFish = priceList.filter(p => Number(p.idLoaiCa) === fishIdNum);
         if (pricesForFish.length === 0) return null;
 
-        if (user?.vaitro === "CUSTOMER" || user?.vaitro === "WHOLESALE_CUSTOMER") {
+        if (user?.vaitro === "CUSTOMER") {
             const validPrices = pricesForFish.map(p => Number(p.giaBanSi)).filter(v => v > 0);
             if (validPrices.length === 0) return null;
             return { price: Math.min(...validPrices), label: "Giá sỉ từ" };

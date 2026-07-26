@@ -33,7 +33,7 @@ export default function KichCoLoaiCa() {
     };
 
     useEffect(() => {
-        api.get("/Loaicas")
+        api.get("/Loaicas/admin/all")
             .then(({ data }) => {
                 const list = data.result || data.data || (Array.isArray(data) ? data : []);
                 const fish = list.find(c => String(c.id) === String(loaicaId));

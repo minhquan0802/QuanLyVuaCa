@@ -11,7 +11,7 @@ export default function Checkout() {
     const { cart, totalPrice, clearCart } = useCart();
     const { showToast } = useToast();
 
-    const isWholesale = user?.vaitro === "CUSTOMER" || user?.vaitro === "WHOLESALE_CUSTOMER";
+    const isWholesale = user?.vaitro === "CUSTOMER";
 
     const [paymentMethod, setPaymentMethod] = useState("vnpay");
     const [loading, setLoading] = useState(false);

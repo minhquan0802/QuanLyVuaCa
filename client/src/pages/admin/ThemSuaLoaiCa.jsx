@@ -28,7 +28,7 @@ export default function ThemSuaLoaiCa() {
                 setCurrentCategory({ ...location.state.category, hinhanhFile: null });
                 return;
             }
-            api.get("/Loaicas")
+            api.get("/Loaicas/admin/all")
                 .then(({ data }) => {
                     const list = data.result || data.data || (Array.isArray(data) ? data : []);
                     const item = list.find(c => String(c.id) === String(id));

@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.repository;
 
 import com.minhquan.QuanLyVuaCa.entity.ChitietGioHang;
+import com.minhquan.QuanLyVuaCa.entity.Donvitinh;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,7 @@ import java.util.Optional;
 public interface ChitietGioHangRepository extends JpaRepository<ChitietGioHang, String> {
 
     List<ChitietGioHang> findByIdgiohang_Idgiohang(String idgiohang);
+    boolean existsByIddonvitinh(Donvitinh iddonvitinh);
 
     @Query("SELECT c FROM ChitietGioHang c WHERE c.idgiohang.idgiohang = :idGioHang AND c.idchitietcaban.id = :idChitietCaban AND c.iddonvitinh.id = :idDonViTinh")
     Optional<ChitietGioHang> findItem(

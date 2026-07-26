@@ -6,6 +6,7 @@ import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhLy;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.repository.projection.ThongKeLoaiCaProjection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,19 +49,19 @@ class ThongKeServiceTest {
         loaiCa.setTenloaica("Cá lóc");
         loaiCa.setDeleted(false);
         when(loaicaRepository.findAll()).thenReturn(List.of(loaiCa));
-        when(chitietphieunhapRepository.tongSoLuongNhapTheoLoaiCa(eq(loaiCa), any(), any()))
-                .thenReturn(new BigDecimal("20"));
-        when(chitietdonhangRepository.tongSoLuongBanTheoLoaiCa(eq(loaiCa), eq(TrangThaiDonHang.GIAO_HANG_THANH_CONG), any(), any()))
-                .thenReturn(new BigDecimal("7"));
-        when(chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCaVaTrangThai(
-                eq(loaiCa), eq(TrangThaiThanhLy.DA_BAN_THANH_LY), any(Instant.class), any(Instant.class)))
-                .thenReturn(new BigDecimal("2"));
-        when(chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCaVaTrangThai(
-                eq(loaiCa), eq(TrangThaiThanhLy.DA_TIEU_HUY), any(Instant.class), any(Instant.class)))
-                .thenReturn(new BigDecimal("1"));
-        when(chitietcabanRepository.findByIdloaica(loaiCa)).thenReturn(List.of(
-                Chitietcaban.builder().soluongton(new BigDecimal("4.5")).build(),
-                Chitietcaban.builder().soluongton(new BigDecimal("5.5")).build()));
+        when(chitietphieunhapRepository.tongSoLuongNhapTheoTatCaLoaiCa(any(), any()))
+                .thenReturn(List.of(projection(1, "20")));
+        when(chitietdonhangRepository.tongSoLuongBanTheoTatCaLoaiCa(
+                eq(TrangThaiDonHang.GIAO_HANG_THANH_CONG), any(), any()))
+                .thenReturn(List.of(projection(1, "7")));
+        when(chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoTatCaLoaiCa(
+                eq(TrangThaiThanhLy.DA_BAN_THANH_LY), any(Instant.class), any(Instant.class)))
+                .thenReturn(List.of(projection(1, "2")));
+        when(chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoTatCaLoaiCa(
+                eq(TrangThaiThanhLy.DA_TIEU_HUY), any(Instant.class), any(Instant.class)))
+                .thenReturn(List.of(projection(1, "1")));
+        when(chitietcabanRepository.tongTonKhoTheoTatCaLoaiCaDangHoatDong())
+                .thenReturn(List.of(projection(1, "10.0")));
 
         List<LuanChuyenHangHoaResponse> result = service.tinhLuanChuyenHangHoa("TODAY", null, null);
 
@@ -71,6 +72,20 @@ class ThongKeServiceTest {
         assertEquals(0, new BigDecimal("2").compareTo(row.getBanThanhLy()));
         assertEquals(0, new BigDecimal("1").compareTo(row.getTieuHuy()));
         assertEquals(0, new BigDecimal("10.0").compareTo(row.getTonKho()));
+    }
+
+    private ThongKeLoaiCaProjection projection(Integer id, String total) {
+        return new ThongKeLoaiCaProjection() {
+            @Override
+            public Integer getIdLoaiCa() {
+                return id;
+            }
+
+            @Override
+            public BigDecimal getTong() {
+                return new BigDecimal(total);
+            }
+        };
     }
 
     @Test

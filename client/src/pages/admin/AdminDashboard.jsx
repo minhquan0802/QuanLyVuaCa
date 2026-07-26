@@ -34,7 +34,14 @@ export default function SalesDashboard() {
     const [viewMode, setViewMode] = useState("TABLE"); // "TABLE" hoặc "CHART"
 
     // --- CHỈ SỐ TÀI CHÍNH & BÁN HÀNG ---
-    const [stats, setStats] = useState({ tongDoanhThu: 0, chiPhiNhapHang: 0, thuTuBanThanhLy: 0, donHoanThanh: 0, soLoQuaHan: 0 });
+    const [stats, setStats] = useState({
+        tongDoanhThu: 0,
+        chiPhiNhapHang: 0,
+        chiPhiNhapDaThanhToan: 0,
+        thuTuBanThanhLy: 0,
+        donHoanThanh: 0,
+        soLoQuaHan: 0
+    });
 
     // --- KHỐI LƯỢNG NHẬP - BÁN - HAO HỤT THEO LOẠI CÁ ---
     const [fishVolumeData, setFishVolumeData] = useState([]);
@@ -46,6 +53,8 @@ export default function SalesDashboard() {
     const loadingOrderDetailIdsRef = useRef(new Set());
     const [ordersLoading, setOrdersLoading] = useState(true);
     const [ordersPage, setOrdersPage] = useState(1);
+    const [ordersTotalElements, setOrdersTotalElements] = useState(0);
+    const [ordersTotalPages, setOrdersTotalPages] = useState(0);
     const ordersPageSize = 5;
 
     // KPI và bảng luân chuyển phụ thuộc khoảng thời gian đang chọn, tải lại mỗi khi đổi
@@ -66,13 +75,6 @@ export default function SalesDashboard() {
 
     // Chỉ tải danh sách đơn ở bước đầu. Chi tiết được tải theo trang đang hiển thị
     // ở effect phía dưới để tránh gọi một API cho mọi đơn hàng cùng lúc.
-    useEffect(() => {
-        api.get("/Donhangs")
-            .then(res => setOrders(res.data.result || []))
-            .catch(() => setOrders([]))
-            .finally(() => setOrdersLoading(false));
-    }, []);
-
     const showTonKho = timeRange === "TODAY";
 
     // Tồn kho do backend lấy trực tiếp từ kho hiện tại, không tự suy ra từ số phát sinh trong kỳ.
@@ -105,20 +107,44 @@ export default function SalesDashboard() {
         return { start, end: now };
     };
 
-    const filteredOrders = orders
-        .filter(order => {
-            if (!order.ngaydat) return false;
-            const ngayDat = new Date(order.ngaydat);
-            const { start, end } = getRangeBounds();
-            return ngayDat >= start && ngayDat <= end;
-        })
-        .sort((a, b) => new Date(b.ngaydat) - new Date(a.ngaydat));
+    const toLocalDateParam = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    };
 
-    const ordersTotalPages = Math.ceil(filteredOrders.length / ordersPageSize);
-    const paginatedOrders = filteredOrders.slice(
-        (ordersPage - 1) * ordersPageSize,
-        ordersPage * ordersPageSize
-    );
+    useEffect(() => {
+        if (timeRange === "CUSTOM" && (!customFrom || !customTo || customFrom > customTo)) return;
+        const { start, end } = getRangeBounds();
+        setOrdersLoading(true);
+        api.get("/Donhangs/search", {
+            params: {
+                from: toLocalDateParam(start),
+                to: toLocalDateParam(end),
+                page: ordersPage - 1,
+                size: ordersPageSize
+            }
+        })
+            .then(res => {
+                const result = res.data.result || {};
+                setOrders(result.content || []);
+                setOrdersTotalElements(result.totalElements || 0);
+                setOrdersTotalPages(result.totalPages || 0);
+            })
+            .catch(() => {
+                setOrders([]);
+                setOrdersTotalElements(0);
+                setOrdersTotalPages(0);
+            })
+            .finally(() => setOrdersLoading(false));
+    }, [timeRange, customFrom, customTo, ordersPage]);
+
+    useEffect(() => {
+        setOrdersPage(1);
+    }, [timeRange, customFrom, customTo]);
+
+    const paginatedOrders = orders;
     const visibleOrderIdsKey = paginatedOrders.map(order => order.iddonhang).join("|");
 
     // Chỉ tải chi tiết của tối đa 5 đơn trên trang hiện tại. Kết quả được cache theo
@@ -239,7 +265,7 @@ export default function SalesDashboard() {
                 <p className="-mt-5 mb-6 text-right text-sm font-medium text-red-600">Ngày bắt đầu không được lớn hơn ngày kết thúc.</p>
             )}
 
-            {/* --- KHU VỰC 1: 4 THẺ KPI TÀI CHÍNH --- */}
+            {/* --- KHU VỰC 1: KPI TÀI CHÍNH VÀ VẬN HÀNH --- */}
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 ${timeRange === "TODAY" ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
                 <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-lg text-white flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4"><div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl"><DollarSign size={28} className="text-white" /></div></div>
@@ -262,6 +288,9 @@ export default function SalesDashboard() {
                     <div>
                         <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Chi Phí Nhập Hàng</p>
                         <h3 className="text-2xl lg:text-3xl font-black text-slate-800">{formatCurrency(stats.chiPhiNhapHang)}</h3>
+                        <p className="mt-2 text-xs font-semibold text-slate-500">
+                            Đã thanh toán: {formatCurrency(stats.chiPhiNhapDaThanhToan)}
+                        </p>
                     </div>
                 </div>
 
@@ -406,7 +435,7 @@ export default function SalesDashboard() {
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-sm font-bold">
-                            {filteredOrders.length} đơn
+                            {ordersTotalElements} đơn
                         </span>
                         <button
                             type="button"
@@ -467,10 +496,10 @@ export default function SalesDashboard() {
                         </tbody>
                     </table>
 
-                    {!ordersLoading && filteredOrders.length > 0 && (
+                    {!ordersLoading && ordersTotalElements > 0 && (
                         <div className="px-5 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
                             <span className="text-xs text-slate-500">
-                                Hiển thị {(ordersPage - 1) * ordersPageSize + 1}–{Math.min(ordersPage * ordersPageSize, filteredOrders.length)} trong {filteredOrders.length} đơn
+                                Hiển thị {(ordersPage - 1) * ordersPageSize + 1}–{Math.min(ordersPage * ordersPageSize, ordersTotalElements)} trong {ordersTotalElements} đơn
                             </span>
                             <div className="flex items-center gap-1">
                                 <button

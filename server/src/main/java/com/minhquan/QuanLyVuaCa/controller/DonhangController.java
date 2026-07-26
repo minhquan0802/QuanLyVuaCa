@@ -12,11 +12,18 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@Validated
 @RequestMapping("/Donhangs")
 @CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
@@ -32,6 +39,24 @@ public class DonhangController {
                 .code(200)
                 .message("OK")
                 .result(donhangService.getAllDonhangs())
+                .build();
+    }
+
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ApiResponse<Page<DonhangResponse>> timDonhangs(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int size) {
+        return ApiResponse.<Page<DonhangResponse>>builder()
+                .code(200)
+                .message("OK")
+                .result(donhangService.searchDonhangs(
+                        from.atStartOfDay(),
+                        to.plusDays(1).atStartOfDay().minusNanos(1),
+                        page,
+                        size))
                 .build();
     }
 

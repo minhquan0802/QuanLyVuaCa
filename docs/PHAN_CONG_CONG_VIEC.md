@@ -434,7 +434,6 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/controller/LoaicaController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/SizecaController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ChitietCabanController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/BanggiaController.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/controller/QuydoiController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/DonvitinhController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/NhacungcapController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/PhieunhapController.java
@@ -454,7 +453,6 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/service/LoaicaService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/SizecaService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/ChitietCabanService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/BanggiaService.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/service/QuydoiService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/NhacungcapService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/PhieunhapService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/PhieuthanhlyService.java
@@ -473,7 +471,6 @@ Loaica
 Sizeca
 Chitietcaban
 Banggia
-Quydoi
 Donvitinh
 Nhacungcap
 Phieunhap
@@ -500,7 +497,6 @@ LoaicaRepository
 SizecaRepository
 ChitietcabanRepository
 BanggiaRepository
-QuydoiRepository
 DonvitinhRepository
 NhacungcapRepository
 PhieunhapRepository
@@ -521,7 +517,6 @@ ThongbaoRepository
 /Sizecas
 /Chitietcabans
 /Banggias
-/Quydois
 /Donvitinhs
 /Nhacungcaps
 /Phieunhaps
@@ -561,9 +556,6 @@ DELETE /Chitietcabans/{id}
 
 GET    /Banggias
 POST   /Banggias
-
-GET    /Quydois
-POST   /Quydois
 
 GET    /Phieunhaps
 POST   /Phieunhaps
@@ -704,7 +696,7 @@ Hồng Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 11. Cập nhật loại cá
 12. Thêm size cá
 13. Tạo chi tiết cá bán
-14. Tạo quy đổi khối lượng
+14. Cấu hình hệ số kg trên đơn vị tính hoặc chi tiết sản phẩm
 15. Tạo bảng giá
 16. Xem tồn kho
 17. Tạo phiếu nhập hàng

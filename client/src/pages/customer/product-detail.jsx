@@ -15,7 +15,7 @@ export default function ProductDetail() {
     const { addToCart } = useCart();
     const { showToast } = useToast();
 
-    const isWholesale = user?.vaitro === "CUSTOMER" || user?.vaitro === "WHOLESALE_CUSTOMER";
+    const isWholesale = user?.vaitro === "CUSTOMER";
 
     const [priceList, setPriceList] = useState([]);
     const [stockList, setStockList] = useState([]);

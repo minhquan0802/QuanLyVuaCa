@@ -48,35 +48,7 @@ public class PhieunhapService {
     public List<PhieunhapResponse> getDanhSach() {
         return phieunhapRepository.findAll(Sort.by(Sort.Direction.DESC, "ngaynhap"))
                 .stream()
-                .map(phieunhap -> {
-                    PhieunhapResponse resp = phieunhapMapper.toResponse(phieunhap);
-
-                    List<Chitietphieunhap> chiTiets = chitietphieunhapRepository.findByIdphieunhap(phieunhap);
-
-                    List<ChiTietPhieunhapInResponse> listChiTiet = chiTiets.stream()
-                            .map(d -> {
-                                String tenSize = (d.getIdchitietcaban() != null && d.getIdchitietcaban().getIdsizeca() != null)
-                                        ? d.getIdchitietcaban().getIdsizeca().getSizeca()
-                                        : "?";
-                                BigDecimal sl = d.getSoluongnhap() != null ? d.getSoluongnhap() : BigDecimal.ZERO;
-                                BigDecimal gia = d.getGianhap() != null ? d.getGianhap() : BigDecimal.ZERO;
-                                return ChiTietPhieunhapInResponse.builder()
-                                        .tenSize(tenSize)
-                                        .soluongnhap(sl)
-                                        .gianhap(gia)
-                                        .thanhtien(sl.multiply(gia))
-                                        .build();
-                            })
-                            .toList();
-
-                    BigDecimal tongtien = listChiTiet.stream()
-                            .map(ChiTietPhieunhapInResponse::getThanhtien)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    resp.setTongtien(tongtien);
-                    resp.setListChiTiet(listChiTiet);
-                    return resp;
-                })
+                .map(this::toFullResponse)
                 .toList();
     }
 
@@ -90,6 +62,8 @@ public class PhieunhapService {
 
     @Transactional
     public PhieunhapResponse nhapHang(PhieunhapRequest request) {
+        request.getListChiTiet().forEach(this::validateSalePrices);
+
         // --- 1. TẠO PHIẾU NHẬP ---
         Phieunhap phieunhap = phieunhapMapper.toEntity(request);
 
@@ -105,10 +79,13 @@ public class PhieunhapService {
         // Tìm và Set Loại cá
         Loaica loaica = loaicaRepository.findById(request.getIdloaica())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
+        if (Boolean.TRUE.equals(loaica.getDeleted())) {
+            throw new AppExceptions(ErrorCode.LOAICA_NOT_ACTIVE);
+        }
         phieunhap.setIdloaica(loaica);
 
         // Set mặc định ngày nhập
-        if (phieunhap.getNgaynhap() == null) phieunhap.setNgaynhap(LocalDate.now());
+        phieunhap.setNgaynhap(request.getNgaynhap() != null ? request.getNgaynhap() : LocalDate.now());
 
         // Xử lý Enum Trạng thái thanh toán — chỉ ADMIN mới được đặt DA_THANH_TOAN lúc tạo
         boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
@@ -171,6 +148,8 @@ public class PhieunhapService {
                     khoItem.setIdloaica(loaica);
                     khoItem.setIdsizeca(sizeca);
                     khoItem.setSoluongton(BigDecimal.ZERO);
+                } else if (Boolean.TRUE.equals(khoItem.getDeleted())) {
+                    khoItem.setDeleted(false);
                 }
 
                 // Cộng dồn tồn kho
@@ -188,16 +167,63 @@ public class PhieunhapService {
             chitietphieunhapRepository.saveAll(listEntities);
         }
 
-        return phieunhapMapper.toResponse(savedPhieu);
+        return toFullResponse(savedPhieu);
     }
 
     // Hàm phụ trợ để xử lý Bảng giá
+    private void validateSalePrices(ChitietPhieunhapRequest detail) {
+        BigDecimal retailPrice = detail.getGiabanletaithoidiemnhap();
+        BigDecimal wholesalePrice = detail.getGiabansitaithoidiemnhap();
+        if (retailPrice == null || wholesalePrice == null) {
+            throw new AppExceptions(ErrorCode.BANGGIA_BOTH_PRICES_REQUIRED);
+        }
+        if (retailPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppExceptions(ErrorCode.GIABANLE_INVALID);
+        }
+        if (wholesalePrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppExceptions(ErrorCode.GIABANSI_INVALID);
+        }
+        if (wholesalePrice.compareTo(retailPrice) > 0) {
+            throw new AppExceptions(ErrorCode.BANGGIA_RELATION_INVALID);
+        }
+    }
+
+    private PhieunhapResponse toFullResponse(Phieunhap phieunhap) {
+        PhieunhapResponse response = phieunhapMapper.toResponse(phieunhap);
+        List<ChiTietPhieunhapInResponse> details = chitietphieunhapRepository.findByIdphieunhap(phieunhap)
+                .stream()
+                .map(detail -> {
+                    BigDecimal quantity = detail.getSoluongnhap() != null
+                            ? detail.getSoluongnhap() : BigDecimal.ZERO;
+                    BigDecimal importPrice = detail.getGianhap() != null
+                            ? detail.getGianhap() : BigDecimal.ZERO;
+                    return ChiTietPhieunhapInResponse.builder()
+                            .tenSize(detail.getIdchitietcaban() != null
+                                    && detail.getIdchitietcaban().getIdsizeca() != null
+                                    ? detail.getIdchitietcaban().getIdsizeca().getSizeca()
+                                    : "?")
+                            .soluongnhap(quantity)
+                            .gianhap(importPrice)
+                            .thanhtien(quantity.multiply(importPrice))
+                            .build();
+                })
+                .toList();
+        response.setListChiTiet(details);
+        response.setTongtien(details.stream()
+                .map(ChiTietPhieunhapInResponse::getThanhtien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        return response;
+    }
+
     private void updateBanggia(Chitietcaban kho, BigDecimal giaLeMoi, BigDecimal giaSiMoi) {
         // Nếu không nhập giá dự kiến thì không cập nhật bảng giá
         if (giaLeMoi == null && giaSiMoi == null) return;
+        if (giaLeMoi == null || giaSiMoi == null) {
+            throw new AppExceptions(ErrorCode.BANGGIA_BOTH_PRICES_REQUIRED);
+        }
 
-        BigDecimal giaLeInput = giaLeMoi != null ? giaLeMoi : BigDecimal.ZERO;
-        BigDecimal giaSiInput = giaSiMoi != null ? giaSiMoi : BigDecimal.ZERO;
+        BigDecimal giaLeInput = giaLeMoi;
+        BigDecimal giaSiInput = giaSiMoi;
 
         // 1. Tìm giá đang áp dụng hiện tại (ngayketthuc = null)
         // Bạn cần đảm bảo Repository có hàm này: findByChitietcabanAndNgayketthucIsNull(Chitietcaban ct)
@@ -215,8 +241,14 @@ public class PhieunhapService {
             BigDecimal oldSi = giaHienTai.getGiabansi() != null ? giaHienTai.getGiabansi() : BigDecimal.ZERO;
 
             if (oldLe.compareTo(giaLeInput) != 0 || oldSi.compareTo(giaSiInput) != 0) {
+                if (LocalDate.now().equals(giaHienTai.getNgaybatdau())) {
+                    giaHienTai.setGiabanle(giaLeInput);
+                    giaHienTai.setGiabansi(giaSiInput);
+                    banggiaRepository.save(giaHienTai);
+                    return;
+                }
                 // Giá thay đổi -> Đóng giá cũ lại (Set ngày kết thúc là hôm nay hoặc hôm qua tùy logic)
-                giaHienTai.setNgayketthuc(LocalDate.now());
+                giaHienTai.setNgayketthuc(LocalDate.now().minusDays(1));
                 banggiaRepository.save(giaHienTai);
 
                 canCreateNew = true;

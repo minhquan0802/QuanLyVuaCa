@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DonvitinhRepository extends JpaRepository<Donvitinh, Integer> {
+    boolean existsByTendvtIgnoreCase(String tendvt);
+    boolean existsByTendvtIgnoreCaseAndIdNot(String tendvt, Integer id);
 }

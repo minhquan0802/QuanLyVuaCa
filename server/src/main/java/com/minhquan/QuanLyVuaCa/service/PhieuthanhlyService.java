@@ -27,6 +27,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -72,6 +74,11 @@ public class PhieuthanhlyService {
                 throw new AppExceptions(ErrorCode.SOLUONG_THANHLY_VUOT_QUA_TON_LO);
             }
 
+            Chitietcaban kho = lo.getIdchitietcaban();
+            if (kho.getSoluongton() == null || kho.getSoluongton().compareTo(soLuongThanhLy) < 0) {
+                throw new AppExceptions(ErrorCode.LO_KHONG_KHOP_TON_KHO);
+            }
+
             // Trừ lô
             lo.setSoluongconlai(lo.getSoluongconlai().subtract(soLuongThanhLy));
             if (lo.getSoluongconlai().compareTo(BigDecimal.ZERO) == 0) {
@@ -82,9 +89,8 @@ public class PhieuthanhlyService {
             // Trừ kho tổng (sản phẩm kho mà lô này thuộc về). Check chuẩn đã nằm ở lô (soluongconlai) phía trên;
             // kho.soluongton là số tổng hợp nên có thể lệch thấp hơn (do đường phụ điều chỉnh cân thực tế COD
             // không đồng bộ lại từng lô) — không chặn bằng exception nữa, chỉ chặn ở 0 để không bị âm.
-            Chitietcaban kho = lo.getIdchitietcaban();
             BigDecimal soluongTonMoi = kho.getSoluongton().subtract(soLuongThanhLy);
-            kho.setSoluongton(soluongTonMoi.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : soluongTonMoi);
+            kho.setSoluongton(soluongTonMoi);
             chitietcabanRepository.save(kho);
 
             // Tạo dòng chi tiết phiếu thanh lý
@@ -182,19 +188,31 @@ public class PhieuthanhlyService {
 
     @Transactional(readOnly = true)
     public List<PhieuthanhlyResponse> layDanhSachPhieuThanhLy() {
-        return phieuthanhlyRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .sorted((a, b) -> b.getNgaythanhly().compareTo(a.getNgaythanhly()))
+        List<Phieuthanhly> phieus = phieuthanhlyRepository.findAllByOrderByNgaythanhlyDesc();
+        if (phieus.isEmpty()) {
+            return List.of();
+        }
+        Map<String, List<Chitietphieuthanhly>> detailsByReceipt =
+                chitietphieuthanhlyRepository.findAllByPhieusWithProduct(phieus).stream()
+                        .collect(Collectors.groupingBy(
+                                detail -> detail.getIdphieuthanhly().getIdphieuthanhly()));
+        return phieus.stream()
+                .map(phieu -> toResponse(
+                        phieu,
+                        detailsByReceipt.getOrDefault(phieu.getIdphieuthanhly(), List.of())))
                 .toList();
     }
 
     private PhieuthanhlyResponse toResponse(Phieuthanhly phieu) {
+        return toResponse(phieu, chitietphieuthanhlyRepository.findByIdphieuthanhly(phieu));
+    }
+
+    private PhieuthanhlyResponse toResponse(
+            Phieuthanhly phieu,
+            List<Chitietphieuthanhly> details) {
         Taikhoan nguoiTao = phieu.getIdnguoitaophieu();
 
-        List<ChitietPhieuthanhlyResponse> listChiTietResponse = chitietphieuthanhlyRepository
-                .findByIdphieuthanhly(phieu)
-                .stream()
+        List<ChitietPhieuthanhlyResponse> listChiTietResponse = details.stream()
                 .map(chitietphieuthanhlyMapper::toResponse)
                 .toList();
 

@@ -1,16 +1,19 @@
 package com.minhquan.QuanLyVuaCa.service;
 
+import com.minhquan.QuanLyVuaCa.dto.request.NhacungcapRequest;
+import com.minhquan.QuanLyVuaCa.dto.response.NhacungcapResponse;
 import com.minhquan.QuanLyVuaCa.entity.Nhacungcap;
+import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.NhacungcapRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -18,11 +21,31 @@ public class NhacungcapService {
 
     NhacungcapRepository nhacungcapRepository;
 
-    public List<Nhacungcap> getAll() {
-        return nhacungcapRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<NhacungcapResponse> getAll() {
+        return nhacungcapRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    public Nhacungcap create(Nhacungcap ncc) {
-        return nhacungcapRepository.save(ncc);
+    @Transactional
+    public NhacungcapResponse create(NhacungcapRequest request) {
+        String name = request.getTenncc().trim();
+        String phone = request.getSodienthoai().trim();
+        if (nhacungcapRepository.existsByTennccIgnoreCase(name)
+                || nhacungcapRepository.existsBySodienthoai(phone)) {
+            throw new AppExceptions(ErrorCode.NHACUNGCAP_EXISTED);
+        }
+
+        Nhacungcap supplier = new Nhacungcap();
+        supplier.setTenncc(name);
+        supplier.setSodienthoai(phone);
+        return toResponse(nhacungcapRepository.save(supplier));
+    }
+
+    private NhacungcapResponse toResponse(Nhacungcap supplier) {
+        return NhacungcapResponse.builder()
+                .id(supplier.getId())
+                .tenncc(supplier.getTenncc())
+                .sodienthoai(supplier.getSodienthoai())
+                .build();
     }
 }

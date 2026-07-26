@@ -174,6 +174,14 @@ export default function NhapHang() {
     const handleSubmitImport = async () => {
         if (!importForm.idloaica || !importForm.idncc) { showToast("Vui lòng chọn Loại cá và Nhà cung cấp!", "error"); return; }
         if (addedDetails.length === 0) { showToast("Phiếu nhập chưa có chi tiết lô hàng nào!", "error"); return; }
+        if (addedDetails.some(detail =>
+            Number(detail.giabanledukien) <= 0
+            || Number(detail.giabansidukien) <= 0
+            || Number(detail.giabansidukien) > Number(detail.giabanledukien)
+        )) {
+            showToast("Mỗi dòng nhập phải có đủ giá lẻ, giá sỉ và giá sỉ không được lớn hơn giá lẻ!", "error");
+            return;
+        }
 
         const payload = {
             idloaica: parseInt(importForm.idloaica),

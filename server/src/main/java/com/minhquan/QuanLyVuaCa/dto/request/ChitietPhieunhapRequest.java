@@ -1,31 +1,35 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 
-@Slf4j
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChitietPhieunhapRequest {
-    @NotNull(message = "Vui lòng chọn Size")
+
+    @NotNull(message = "SIZECA_NOT_EXISTED")
     Integer idsizeca;
 
-    @NotNull(message = "Số lượng nhập không được để trống")
-    @Min(value = 0, message = "Số lượng nhập phải lớn hơn 0")
+    @NotNull(message = "SOLUONG_NHAP_INVALID")
+    @DecimalMin(value = "0.01", message = "SOLUONG_NHAP_INVALID")
     BigDecimal soluongnhap;
 
-    @NotNull(message = "Giá nhập không được để trống")
-    @Min(value = 0, message = "Giá nhập phải lớn hơn 0")
+    @NotNull(message = "GIANHAP_INVALID")
+    @DecimalMin(value = "0.01", message = "GIANHAP_INVALID")
     BigDecimal gianhap;
 
+    @NotNull(message = "BANGGIA_BOTH_PRICES_REQUIRED")
+    @DecimalMin(value = "0.01", message = "GIABANLE_INVALID")
     BigDecimal giabanletaithoidiemnhap;
+
+    @NotNull(message = "BANGGIA_BOTH_PRICES_REQUIRED")
+    @DecimalMin(value = "0.01", message = "GIABANSI_INVALID")
     BigDecimal giabansitaithoidiemnhap;
 }

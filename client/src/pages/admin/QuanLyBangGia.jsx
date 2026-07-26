@@ -22,7 +22,7 @@ export default function QuanLyBangGia() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const { data } = await api.get("/Banggias");
+            const { data } = await api.get("/Banggias/history");
             // Lưu dữ liệu gốc, việc sắp xếp sẽ nhường lại cho useMemo bên dưới
             setPriceList(data.result || []);
         } catch (error) {

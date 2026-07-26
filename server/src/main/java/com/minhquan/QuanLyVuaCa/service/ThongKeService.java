@@ -2,11 +2,12 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.response.LuanChuyenHangHoaResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.ThongKeTongQuanResponse;
-import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhLy;
+import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.repository.projection.ThongKeLoaiCaProjection;
 import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 // Tính toán số liệu cho trang Dashboard admin (AdminDashboard.jsx)
 @Service
@@ -36,7 +38,7 @@ public class ThongKeService {
     ChitietphieuthanhlyRepository chitietphieuthanhlyRepository;
     DonhangRepository donhangRepository;
 
-    // --- KHU VỰC 1: 4 THẺ KPI TÀI CHÍNH ---
+    // --- KHU VỰC 1: KPI TÀI CHÍNH VÀ VẬN HÀNH ---
     @Transactional(readOnly = true)
     public ThongKeTongQuanResponse tinhTongQuan(String range, LocalDate from, LocalDate to) {
         KhoangThoiGian khoang = tinhKhoangThoiGian(range, from, to);
@@ -48,6 +50,11 @@ public class ThongKeService {
 
         BigDecimal chiPhiNhapHang = chitietphieunhapRepository.tongTienNhapTrongKhoang(
                 tuNgay.toLocalDate(), denNgay.toLocalDate());
+        BigDecimal chiPhiNhapDaThanhToan =
+                chitietphieunhapRepository.tongTienNhapDaThanhToanTrongKhoang(
+                        tuNgay.toLocalDate(),
+                        denNgay.toLocalDate(),
+                        TrangThaiThanhToan.DA_THANH_TOAN);
 
         BigDecimal thuTuBanThanhLy = chitietphieuthanhlyRepository.tongTienThanhLyTrongKhoang(
                 toInstant(tuNgay), toInstant(denNgay));
@@ -63,6 +70,7 @@ public class ThongKeService {
         return ThongKeTongQuanResponse.builder()
                 .tongDoanhThu(tongDoanhThu)
                 .chiPhiNhapHang(chiPhiNhapHang)
+                .chiPhiNhapDaThanhToan(chiPhiNhapDaThanhToan)
                 .thuTuBanThanhLy(thuTuBanThanhLy)
                 .donHoanThanh(donHoanThanh)
                 .soLoQuaHan(soLoQuaHan)
@@ -76,26 +84,40 @@ public class ThongKeService {
         LocalDateTime tuNgay = khoang.tuNgay();
         LocalDateTime denNgay = khoang.denNgay();
 
+        Map<Integer, BigDecimal> imported = toMap(
+                chitietphieunhapRepository.tongSoLuongNhapTheoTatCaLoaiCa(
+                        tuNgay.toLocalDate(), denNgay.toLocalDate()));
+        Map<Integer, BigDecimal> sold = toMap(
+                chitietdonhangRepository.tongSoLuongBanTheoTatCaLoaiCa(
+                        TrangThaiDonHang.GIAO_HANG_THANH_CONG, tuNgay, denNgay));
+        Map<Integer, BigDecimal> liquidated = toMap(
+                chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoTatCaLoaiCa(
+                        TrangThaiThanhLy.DA_BAN_THANH_LY, toInstant(tuNgay), toInstant(denNgay)));
+        Map<Integer, BigDecimal> destroyed = toMap(
+                chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoTatCaLoaiCa(
+                        TrangThaiThanhLy.DA_TIEU_HUY, toInstant(tuNgay), toInstant(denNgay)));
+        Map<Integer, BigDecimal> inventory = toMap(
+                chitietcabanRepository.tongTonKhoTheoTatCaLoaiCaDangHoatDong());
+
         List<LuanChuyenHangHoaResponse> ketQua = new ArrayList<>();
-        for (Loaica loaica : layDanhSachLoaiCaChuaXoa()) {
-            BigDecimal nhap = chitietphieunhapRepository.tongSoLuongNhapTheoLoaiCa(
-                    loaica, tuNgay.toLocalDate(), denNgay.toLocalDate());
+        for (Loaica loaica : loaicaRepository.findAll()) {
+            Integer fishTypeId = loaica.getId();
+            boolean hasActivity = imported.containsKey(fishTypeId)
+                    || sold.containsKey(fishTypeId)
+                    || liquidated.containsKey(fishTypeId)
+                    || destroyed.containsKey(fishTypeId);
+            if (Boolean.TRUE.equals(loaica.getDeleted()) && !hasActivity) {
+                continue;
+            }
 
-            BigDecimal ban = chitietdonhangRepository.tongSoLuongBanTheoLoaiCa(
-                    loaica, TrangThaiDonHang.GIAO_HANG_THANH_CONG, tuNgay, denNgay);
-
-            BigDecimal banThanhLy = chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCaVaTrangThai(
-                    loaica, TrangThaiThanhLy.DA_BAN_THANH_LY, toInstant(tuNgay), toInstant(denNgay));
-
-            BigDecimal tieuHuy = chitietphieuthanhlyRepository.tongSoLuongThanhLyTheoLoaiCaVaTrangThai(
-                    loaica, TrangThaiThanhLy.DA_TIEU_HUY, toInstant(tuNgay), toInstant(denNgay));
+            BigDecimal nhap = imported.getOrDefault(fishTypeId, BigDecimal.ZERO);
+            BigDecimal ban = sold.getOrDefault(fishTypeId, BigDecimal.ZERO);
+            BigDecimal banThanhLy = liquidated.getOrDefault(fishTypeId, BigDecimal.ZERO);
+            BigDecimal tieuHuy = destroyed.getOrDefault(fishTypeId, BigDecimal.ZERO);
 
             // Tồn kho là số lượng thực tế đang có tại thời điểm xem Dashboard,
             // không được suy ra từ nhập - bán - hao hụt trong khoảng thời gian lọc.
-            BigDecimal tonKho = chitietcabanRepository.findByIdloaica(loaica).stream()
-                    .map(Chitietcaban::getSoluongton)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal tonKho = inventory.getOrDefault(fishTypeId, BigDecimal.ZERO);
 
             ketQua.add(LuanChuyenHangHoaResponse.builder()
                     .name(loaica.getTenloaica())
@@ -111,10 +133,11 @@ public class ThongKeService {
 
     // --- HÀM PHỤ ---
 
-    private List<Loaica> layDanhSachLoaiCaChuaXoa() {
-        return loaicaRepository.findAll().stream()
-                .filter(loaica -> !Boolean.TRUE.equals(loaica.getDeleted()))
-                .toList();
+    private Map<Integer, BigDecimal> toMap(List<ThongKeLoaiCaProjection> values) {
+        return values.stream().collect(Collectors.toMap(
+                ThongKeLoaiCaProjection::getIdLoaiCa,
+                value -> value.getTong() != null ? value.getTong() : BigDecimal.ZERO,
+                BigDecimal::add));
     }
 
     // Quy đổi bộ lọc nhanh hoặc khoảng ngày tùy chọn thành mốc đầu/cuối đầy đủ.
@@ -140,6 +163,6 @@ public class ThongKeService {
     private record KhoangThoiGian(LocalDateTime tuNgay, LocalDateTime denNgay) {}
 
     private Instant toInstant(LocalDateTime thoiGian) {
-        return thoiGian.atZone(ZoneId.systemDefault()).toInstant();
+        return thoiGian.atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
     }
 }

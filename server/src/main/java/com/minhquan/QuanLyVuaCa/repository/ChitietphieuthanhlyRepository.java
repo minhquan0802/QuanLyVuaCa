@@ -4,6 +4,7 @@ import com.minhquan.QuanLyVuaCa.entity.Chitietphieuthanhly;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.entity.Phieuthanhly;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhLy;
+import com.minhquan.QuanLyVuaCa.repository.projection.ThongKeLoaiCaProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,17 @@ import java.util.List;
 @Repository
 public interface ChitietphieuthanhlyRepository extends JpaRepository<Chitietphieuthanhly, String> {
     List<Chitietphieuthanhly> findByIdphieuthanhly(Phieuthanhly idphieuthanhly);
+
+    @Query("""
+        SELECT ct
+        FROM Chitietphieuthanhly ct
+        JOIN FETCH ct.idchitietcaban kho
+        JOIN FETCH kho.idloaica
+        JOIN FETCH kho.idsizeca
+        WHERE ct.idphieuthanhly IN :phieus
+    """)
+    List<Chitietphieuthanhly> findAllByPhieusWithProduct(
+            @Param("phieus") List<Phieuthanhly> phieus);
 
     // --- Dùng cho Dashboard thống kê ---
 
@@ -42,4 +54,17 @@ public interface ChitietphieuthanhlyRepository extends JpaRepository<Chitietphie
     """)
     BigDecimal tongTienThanhLyTrongKhoang(@Param("tuNgay") Instant tuNgay,
                                           @Param("denNgay") Instant denNgay);
+
+    @Query("""
+        SELECT ct.idchitietcaban.idloaica.id AS idLoaiCa,
+               COALESCE(SUM(ct.soluongthanhly), 0) AS tong
+        FROM Chitietphieuthanhly ct
+        WHERE ct.idphieuthanhly.trangthai = :trangThai
+          AND ct.idphieuthanhly.ngaythanhly BETWEEN :tuNgay AND :denNgay
+        GROUP BY ct.idchitietcaban.idloaica.id
+    """)
+    List<ThongKeLoaiCaProjection> tongSoLuongThanhLyTheoTatCaLoaiCa(
+            @Param("trangThai") TrangThaiThanhLy trangThai,
+            @Param("tuNgay") Instant tuNgay,
+            @Param("denNgay") Instant denNgay);
 }
