@@ -1,303 +1,529 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
+const formatKg = (value) =>
+    Number(value || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+
+const formatCurrency = (value) =>
+    value == null ? "Chưa có" : `${Number(value).toLocaleString("vi-VN")}đ`;
+
 export default function TaoPhieuThanhLy() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { showToast } = useToast();
 
-    // 1. STATE QUẢN LÝ TỒN KHO & LÔ HÀNG
-    // Lưu danh sách tất cả các "Sản phẩm" (Loại cá + Size) đang có trong kho
-    const [inventory, setInventory] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // Lưu danh sách các Lô Nhập Hàng cụ thể của một sản phẩm (chỉ load khi đã chọn xong loại & size)
-    const [lots, setLots] = useState([]);
-
-    // 2. STATE QUẢN LÝ THÔNG TIN CHUNG CỦA PHIẾU
+    const [allLots, setAllLots] = useState([]);
+    const [addedDetails, setAddedDetails] = useState([]);
+    const [filterFishId, setFilterFishId] = useState("");
+    const [filterSize, setFilterSize] = useState("");
+    const [filterExpiry, setFilterExpiry] = useState("");
+    const [commonPrice, setCommonPrice] = useState("");
     const [headerForm, setHeaderForm] = useState({
         lydothanhly: "",
-        trangthai: "DA_TIEU_HUY", // Mặc định là đem đi tiêu hủy (đơn giá = 0)
+        trangthai: "DA_TIEU_HUY",
         ghichu: "",
     });
 
-    // 3. STATE QUẢN LÝ VIỆC CHỌN SẢN PHẨM Ở CỘT PHẢI
-    const [idloaica, setIdloaica] = useState("");
-    const [idsizeca, setIdsizeca] = useState("");
-
-    // 4. STATE QUẢN LÝ THÔNG TIN CHI TIẾT ĐANG NHẬP (LÔ ĐƯỢC CHỌN)
-    const [currentDetail, setCurrentDetail] = useState({
-        idchitietphieunhap: "", // Lưu trữ ID của lô đang chọn
-        soluongthanhly: 0,
-        dongia: 0,
-    });
-
-    // 5. STATE QUẢN LÝ DANH SÁCH CHI TIẾT ĐÃ THÊM VÀO BẢNG
-    const [addedDetails, setAddedDetails] = useState([]);
-
-    // --- EFFECT LẤY DỮ LIỆU ---
-    // Gọi API lấy danh sách tổng hợp sản phẩm trong kho khi vừa vào trang
     useEffect(() => {
-        api.get("/Chitietcabans")
-            .then(res => setInventory(res.data.result || []))
-            .catch(() => showToast("Không thể tải danh sách sản phẩm kho!", "error"))
+        Promise.all([
+            api.get("/Chitietcabans"),
+            api.get("/Phieuthanhlys/tat-ca-lo-con-hang"),
+            api.get("/Phieuthanhlys/lo-qua-han"),
+        ])
+            .then(([inventoryResponse, allLotsResponse, overdueLotsResponse]) => {
+                const inventory = inventoryResponse.data.result || [];
+                const lots = allLotsResponse.data.result || [];
+                const overdueIds = new Set(
+                    (overdueLotsResponse.data.result || []).map(lot => lot.idchitietphieunhap)
+                );
+                const productsById = new Map(inventory.map(item => [Number(item.id), item]));
+
+                const enrichedLots = lots
+                    .map(lot => {
+                        const product = productsById.get(Number(lot.idchitietcaban));
+                        return {
+                            ...lot,
+                            idLoaiCa: product?.idLoaiCa,
+                            tenLoaiCa: product?.tenLoaiCa || lot.tenLoaiCa,
+                            tenSize: product?.tenSize || lot.tenSize,
+                            isOverdue: overdueIds.has(lot.idchitietphieunhap),
+                        };
+                    })
+                    .sort((a, b) => {
+                        if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+                        return String(a.ngaynhap).localeCompare(String(b.ngaynhap));
+                    });
+
+                setAllLots(enrichedLots);
+
+                const requestedIds = new Set(location.state?.selectedLotIds || []);
+                if (requestedIds.size > 0) {
+                    setAddedDetails(
+                        enrichedLots
+                            .filter(lot => requestedIds.has(lot.idchitietphieunhap))
+                            .map(lot => ({
+                                idchitietphieunhap: lot.idchitietphieunhap,
+                                tenLoaiCa: lot.tenLoaiCa,
+                                tenSize: lot.tenSize,
+                                ngaynhap: lot.ngaynhap,
+                                soluongconlai: Number(lot.soluongconlai || 0),
+                                soluongthanhly: Number(lot.soluongconlai || 0),
+                                dongia: 0,
+                                isOverdue: lot.isOverdue,
+                            }))
+                    );
+                }
+            })
+            .catch(() => showToast("Không thể tải danh sách lô hàng!", "error"))
             .finally(() => setLoading(false));
     }, []);
 
-    // --- CÁC HÀM TIỆN ÍCH LỌC DỮ LIỆU TỪ INVENTORY ---
-    // Lọc ra các "Loại cá" duy nhất từ danh sách tồn kho (không để bị trùng lặp)
-    const fishTypes = inventory.reduce((acc, item) => {
-        if (!acc.some(f => f.id === item.idLoaiCa)) {
-            acc.push({ id: item.idLoaiCa, tenloaica: item.tenLoaiCa });
+    const fishOptions = useMemo(() => {
+        const uniqueFish = new Map();
+        allLots.forEach(lot => {
+            if (lot.idLoaiCa != null) uniqueFish.set(String(lot.idLoaiCa), lot.tenLoaiCa);
+        });
+        return [...uniqueFish.entries()]
+            .map(([value, label]) => ({ value, label }))
+            .sort((a, b) => a.label.localeCompare(b.label, "vi"));
+    }, [allLots]);
+
+    const sizeOptions = useMemo(() =>
+        [...new Set(
+            allLots
+                .filter(lot => !filterFishId || String(lot.idLoaiCa) === filterFishId)
+                .map(lot => lot.tenSize)
+                .filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, "vi")), [allLots, filterFishId]);
+
+    const filteredLots = useMemo(() =>
+        allLots.filter(lot => {
+            if (filterFishId && String(lot.idLoaiCa) !== filterFishId) return false;
+            if (filterSize && lot.tenSize !== filterSize) return false;
+            if (filterExpiry === "QUA_HAN" && !lot.isOverdue) return false;
+            if (filterExpiry === "CON_HAN" && lot.isOverdue) return false;
+            return true;
+        }), [allLots, filterFishId, filterSize, filterExpiry]);
+
+    const selectedIds = useMemo(
+        () => new Set(addedDetails.map(detail => detail.idchitietphieunhap)),
+        [addedDetails]
+    );
+
+    const allVisibleSelected = filteredLots.length > 0
+        && filteredLots.every(lot => selectedIds.has(lot.idchitietphieunhap));
+
+    const toDetail = (lot) => ({
+        idchitietphieunhap: lot.idchitietphieunhap,
+        tenLoaiCa: lot.tenLoaiCa,
+        tenSize: lot.tenSize,
+        ngaynhap: lot.ngaynhap,
+        soluongconlai: Number(lot.soluongconlai || 0),
+        soluongthanhly: Number(lot.soluongconlai || 0),
+        dongia: 0,
+        isOverdue: lot.isOverdue,
+    });
+
+    const toggleLot = (lot) => {
+        setAddedDetails(previous =>
+            previous.some(detail => detail.idchitietphieunhap === lot.idchitietphieunhap)
+                ? previous.filter(detail => detail.idchitietphieunhap !== lot.idchitietphieunhap)
+                : [...previous, toDetail(lot)]
+        );
+    };
+
+    const toggleAllVisible = () => {
+        const visibleIds = new Set(filteredLots.map(lot => lot.idchitietphieunhap));
+        setAddedDetails(previous => {
+            if (allVisibleSelected) {
+                return previous.filter(detail => !visibleIds.has(detail.idchitietphieunhap));
+            }
+
+            const existingIds = new Set(previous.map(detail => detail.idchitietphieunhap));
+            return [
+                ...previous,
+                ...filteredLots
+                    .filter(lot => !existingIds.has(lot.idchitietphieunhap))
+                    .map(toDetail),
+            ];
+        });
+    };
+
+    const updateDetail = (lotId, field, value) => {
+        setAddedDetails(previous => previous.map(detail =>
+            detail.idchitietphieunhap === lotId
+                ? { ...detail, [field]: value }
+                : detail
+        ));
+    };
+
+    const handleStatusChange = (trangthai) => {
+        setHeaderForm(previous => ({ ...previous, trangthai }));
+        if (trangthai === "DA_TIEU_HUY") {
+            setCommonPrice("");
+            setAddedDetails(previous => previous.map(detail => ({ ...detail, dongia: 0 })));
         }
-        return acc;
-    }, []);
-
-    // Tìm các "Size cá" tương ứng với "Loại cá" mà người dùng vừa chọn
-    const availableSizes = idloaica
-        ? inventory.filter(item => item.idLoaiCa == idloaica).map(item => ({ id: item.idSizeCa, sizeca: item.tenSize }))
-        : [];
-
-    // Tìm ra record "Chi Tiết Cá Bán" (idchitietcaban) cụ thể khớp với loại và size người dùng đã chọn
-    const selectedProduct = inventory.find(i => i.idLoaiCa == idloaica && i.idSizeCa == idsizeca);
-    const productId = selectedProduct?.id || "";
-
-    // Effect: Khi productId thay đổi (nghĩa là đã chọn xong Loại + Size), 
-    // tiến hành gọi API để lấy danh sách CÁC LÔ HÀNG (chỉ lấy lô có số lượng > 0) thuộc sản phẩm này.
-    useEffect(() => {
-        if (!productId) { setLots([]); return; }
-        api.get(`/Phieuthanhlys/lo-con-hang?idchitietcaban=${productId}`)
-            .then(res => setLots(res.data.result || []))
-            .catch(() => showToast("Không thể tải danh sách lô!", "error"));
-    }, [productId]);
-
-    // --- CÁC HÀM XỬ LÝ SỰ KIỆN GIAO DIỆN ---
-    // Đổi loại cá -> reset size và lô đang chọn
-    const handleSelectFish = (fishId) => {
-        setIdloaica(fishId);
-        setIdsizeca("");
-        setCurrentDetail(prev => ({ ...prev, idchitietphieunhap: "" }));
     };
 
-    // Đổi size -> reset lô đang chọn
-    const handleSelectSize = (sizeId) => {
-        setIdsizeca(sizeId);
-        setCurrentDetail(prev => ({ ...prev, idchitietphieunhap: "" }));
+    const applyCommonPrice = () => {
+        const price = Number(commonPrice);
+        if (addedDetails.length === 0) {
+            showToast("Vui lòng chọn ít nhất một lô trước khi áp dụng đơn giá!", "error");
+            return;
+        }
+        if (!Number.isFinite(price) || price <= 0) {
+            showToast("Đơn giá chung phải lớn hơn 0!", "error");
+            return;
+        }
+        setAddedDetails(previous => previous.map(detail => ({ ...detail, dongia: price })));
     };
 
-    // Lấy thông tin chi tiết (ngày nhập, số lượng tồn...) của lô đang được focus trên Dropdown
-    const selectedLot = lots.find(l => l.idchitietphieunhap === currentDetail.idchitietphieunhap);
+    const totalQuantity = addedDetails.reduce(
+        (sum, detail) => sum + Number(detail.soluongthanhly || 0),
+        0
+    );
+    const totalMoney = addedDetails.reduce(
+        (sum, detail) => sum + Number(detail.soluongthanhly || 0) * Number(detail.dongia || 0),
+        0
+    );
 
-    // Hàm xử lý khi bấm nút "Thêm dòng"
-    const handleAddDetail = () => {
-        // Validate dữ liệu đầu vào
-        if (!selectedProduct) { showToast("Vui lòng chọn Loại cá và Size!", "error"); return; }
-        if (!selectedLot) { showToast("Vui lòng chọn lô hàng!", "error"); return; }
-
-        const soLuong = Number(currentDetail.soluongthanhly);
-        if (soLuong <= 0) { showToast("Số lượng thanh lý phải > 0", "error"); return; }
-
-        // Cực kì quan trọng: Số lượng mang đi thanh lý không được vượt quá số lượng cá còn tồn trong lô đó
-        if (soLuong > Number(selectedLot.soluongconlai)) { showToast(`Lô này chỉ còn ${selectedLot.soluongconlai}kg!`, "error"); return; }
-        const donGia = Number(currentDetail.dongia);
-        if (!Number.isFinite(donGia) || donGia < 0) { showToast("Đơn giá không được âm", "error"); return; }
-        if (headerForm.trangthai === "DA_BAN_THANH_LY" && donGia <= 0) { showToast("Bán thanh lý phải có đơn giá lớn hơn 0", "error"); return; }
-        if (headerForm.trangthai === "DA_TIEU_HUY" && donGia !== 0) { showToast("Tiêu hủy phải có đơn giá bằng 0", "error"); return; }
-
-        // Đẩy thông tin lô vào mảng tạm `addedDetails`
-        setAddedDetails(prev => [...prev, {
-            idTemp: Date.now(), // Tạo key ảo để có thể xóa dòng sau này
-            idchitietphieunhap: selectedLot.idchitietphieunhap,
-            tenLoaiCa: selectedProduct.tenLoaiCa,
-            tenSize: selectedProduct.tenSize,
-            ngaynhap: selectedLot.ngaynhap,
-            soluongthanhly: soLuong,
-            dongia: donGia,
-        }]);
-
-        // Reset form nhập chi tiết lô sau khi thêm thành công
-        setCurrentDetail({ idchitietphieunhap: "", soluongthanhly: 0, dongia: 0 });
-    };
-
-    // Xóa một dòng trong bảng chi tiết dựa vào idTemp
-    const handleRemoveDetail = (idTemp) => setAddedDetails(prev => prev.filter(item => item.idTemp !== idTemp));
-
-    // Tính toán tổng số kg cá thanh lý trong toàn bộ phiếu
-    const calculateTotalQuantity = () => addedDetails.reduce((sum, item) => sum + Number(item.soluongthanhly), 0);
-
-    // Tính tổng tiền thu về (nếu trạng thái là Đã bán thanh lý)
-    const calculateTotalMoney = () => addedDetails.reduce((sum, item) => sum + item.soluongthanhly * item.dongia, 0);
-
-    // --- HÀM GỬI DỮ LIỆU LÊN SERVER ---
     const handleSubmit = async () => {
-        // Validate phần Header (Thông tin chung)
-        if (!headerForm.lydothanhly.trim()) { showToast("Vui lòng nhập lý do thanh lý!", "error"); return; }
-        // Validate phần Body (Chi tiết)
-        if (addedDetails.length === 0) { showToast("Phiếu thanh lý chưa có chi tiết lô hàng nào!", "error"); return; }
+        if (!headerForm.lydothanhly.trim()) {
+            showToast("Vui lòng nhập lý do thanh lý!", "error");
+            return;
+        }
+        if (addedDetails.length === 0) {
+            showToast("Vui lòng chọn ít nhất một lô hàng!", "error");
+            return;
+        }
 
-        // Định dạng lại Payload theo cấu trúc API yêu cầu
-        const payload = {
-            lydothanhly: headerForm.lydothanhly,
-            trangthai: headerForm.trangthai,
-            ghichu: headerForm.ghichu,
-            listChiTiet: addedDetails.map(d => ({
-                idchitietphieunhap: d.idchitietphieunhap,
-                soluongthanhly: parseFloat(d.soluongthanhly),
-                dongia: parseFloat(d.dongia),
-            })),
-        };
+        for (const detail of addedDetails) {
+            const quantity = Number(detail.soluongthanhly);
+            const price = Number(detail.dongia);
+            if (!Number.isFinite(quantity) || quantity <= 0 || quantity > detail.soluongconlai) {
+                showToast(
+                    `Số lượng thanh lý của ${detail.tenLoaiCa} (${detail.tenSize}) phải lớn hơn 0 và không vượt quá ${formatKg(detail.soluongconlai)} kg!`,
+                    "error"
+                );
+                return;
+            }
+            if (!Number.isFinite(price) || price < 0) {
+                showToast("Đơn giá không được âm!", "error");
+                return;
+            }
+            if (headerForm.trangthai === "DA_BAN_THANH_LY" && price <= 0) {
+                showToast("Bán thanh lý yêu cầu đơn giá của mọi lô lớn hơn 0!", "error");
+                return;
+            }
+            if (headerForm.trangthai === "DA_TIEU_HUY" && price !== 0) {
+                showToast("Tiêu hủy yêu cầu đơn giá bằng 0!", "error");
+                return;
+            }
+        }
 
         try {
-            await api.post("/Phieuthanhlys", payload); // Gọi API tạo phiếu mới
+            await api.post("/Phieuthanhlys", {
+                ...headerForm,
+                listChiTiet: addedDetails.map(detail => ({
+                    idchitietphieunhap: detail.idchitietphieunhap,
+                    soluongthanhly: Number(detail.soluongthanhly),
+                    dongia: Number(detail.dongia),
+                })),
+            });
             showToast("Lập phiếu thanh lý thành công!", "success");
-            navigate("/admin/QuanLyThanhLy"); // Trở về danh sách sau khi tạo xong
-        } catch {
-            showToast("Lỗi hệ thống hoặc kết nối thất bại!", "error");
+            navigate("/admin/QuanLyThanhLy?tab=phieu");
+        } catch (error) {
+            showToast(error.response?.data?.message || "Không thể lập phiếu thanh lý!", "error");
         }
     };
 
-    if (loading) return <AdminLayout title="Lập Phiếu Thanh Lý"><div className="p-8 text-center text-slate-400">Đang tải dữ liệu...</div></AdminLayout>;
+    if (loading) {
+        return (
+            <AdminLayout title="Lập Phiếu Thanh Lý">
+                <div className="p-8 text-center text-slate-400">Đang tải dữ liệu...</div>
+            </AdminLayout>
+        );
+    }
 
     return (
         <AdminLayout title="Lập Phiếu Thanh Lý">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Cột trái: Thông tin chung */}
-                <div className="lg:col-span-4 space-y-5 bg-white rounded-2xl ring-1 ring-slate-200 p-5">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <div className="xl:col-span-4 space-y-5 bg-white rounded-2xl border border-slate-200 p-5 h-fit">
                     <h4 className="font-bold text-slate-700 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
                         <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">1</span>
                         Thông tin chung
                     </h4>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Lý do thanh lý</label>
-                        <input type="text" className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none" placeholder="Cá chết, hao hụt lúc nhập, sự cố..." value={headerForm.lydothanhly} onChange={e => setHeaderForm({ ...headerForm, lydothanhly: e.target.value })} />
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                            Lý do thanh lý
+                        </label>
+                        <input
+                            type="text"
+                            value={headerForm.lydothanhly}
+                            onChange={event => setHeaderForm({ ...headerForm, lydothanhly: event.target.value })}
+                            placeholder="Cá chết, hao hụt, lô quá hạn..."
+                            className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none focus:border-cyan-500"
+                        />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Trạng thái xử lý</label>
-                        <select className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none" value={headerForm.trangthai} onChange={e => {
-                            const trangthai = e.target.value;
-                            setHeaderForm({ ...headerForm, trangthai });
-                            if (trangthai === "DA_TIEU_HUY") setCurrentDetail(prev => ({ ...prev, dongia: 0 }));
-                        }}>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                            Trạng thái xử lý
+                        </label>
+                        <select
+                            value={headerForm.trangthai}
+                            onChange={event => handleStatusChange(event.target.value)}
+                            className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none focus:border-cyan-500"
+                        >
                             <option value="DA_TIEU_HUY">Đã tiêu hủy</option>
                             <option value="DA_BAN_THANH_LY">Đã bán thanh lý</option>
                         </select>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Ghi chú</label>
-                        <textarea className="w-full p-2.5 border border-slate-200 rounded-xl resize-none h-20 text-sm outline-none" placeholder="Ghi chú thêm..." value={headerForm.ghichu} onChange={e => setHeaderForm({ ...headerForm, ghichu: e.target.value })} />
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                            Ghi chú
+                        </label>
+                        <textarea
+                            value={headerForm.ghichu}
+                            onChange={event => setHeaderForm({ ...headerForm, ghichu: event.target.value })}
+                            placeholder="Ghi chú thêm..."
+                            className="w-full p-2.5 border border-slate-200 rounded-xl resize-none h-20 text-sm outline-none focus:border-cyan-500"
+                        />
+                    </div>
+
+                    {headerForm.trangthai === "DA_BAN_THANH_LY" && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                                Đơn giá chung
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    step="1000"
+                                    value={commonPrice}
+                                    onChange={event => setCommonPrice(event.target.value)}
+                                    placeholder="Nhập giá áp dụng"
+                                    className="min-w-0 flex-1 p-2 border border-slate-200 rounded-lg bg-white text-sm text-right outline-none focus:border-cyan-500"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={applyCommonPrice}
+                                    className="shrink-0 px-3 py-2 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
+                                >
+                                    Áp dụng
+                                </button>
+                            </div>
+                            <p className="mt-1.5 text-xs text-slate-400">
+                                Áp dụng cho mọi lô đã chọn; vẫn có thể chỉnh riêng từng dòng.
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 space-y-1">
+                        <p className="text-sm text-cyan-800">
+                            Đã chọn: <strong>{addedDetails.length} lô</strong>
+                        </p>
+                        <p className="text-sm text-cyan-800">
+                            Tổng thanh lý: <strong>{formatKg(totalQuantity)} kg</strong>
+                        </p>
+                        <p className="text-sm text-cyan-800">
+                            Tổng tiền: <strong>{totalMoney.toLocaleString("vi-VN")}đ</strong>
+                        </p>
                     </div>
                 </div>
 
-                {/* Cột phải: Chọn lô và thêm chi tiết */}
-                <div className="lg:col-span-8 flex flex-col bg-white rounded-2xl ring-1 ring-slate-200 overflow-hidden">
-                    <div className="p-4 border-b border-slate-200 flex justify-between items-center">
+                <div className="xl:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="p-4 border-b border-slate-200">
                         <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">2</span>
-                            Chi Tiết Lô Thanh Lý
+                            Chọn các lô cần thanh lý
                         </h4>
-                        <div className="text-sm font-bold text-cyan-700 bg-cyan-50 px-3 py-1.5 rounded-lg border border-cyan-100">
-                            Tổng: <span className="text-lg ml-1">{calculateTotalQuantity()}</span> kg
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50 border-b border-slate-200">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Tên loại cá</label>
+                            <select
+                                value={filterFishId}
+                                onChange={event => {
+                                    setFilterFishId(event.target.value);
+                                    setFilterSize("");
+                                }}
+                                className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none"
+                            >
+                                <option value="">Tất cả loại cá</option>
+                                {fishOptions.map(option => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Kích thước</label>
+                            <select
+                                value={filterSize}
+                                onChange={event => setFilterSize(event.target.value)}
+                                className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none"
+                            >
+                                <option value="">Tất cả kích thước</option>
+                                {sizeOptions.map(size => <option key={size} value={size}>{size}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Hạn lô</label>
+                            <select
+                                value={filterExpiry}
+                                onChange={event => setFilterExpiry(event.target.value)}
+                                className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none"
+                            >
+                                <option value="">Tất cả</option>
+                                <option value="QUA_HAN">Đã quá hạn</option>
+                                <option value="CON_HAN">Còn hạn</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div className="p-4 bg-slate-50 border-b border-slate-200 space-y-3">
-                        <div className="grid grid-cols-12 gap-3 items-end">
-                            <div className="col-span-4">
-                                <label className="text-xs font-bold text-slate-500 block mb-1.5">Loại cá</label>
-                                <select className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" value={idloaica} onChange={e => handleSelectFish(e.target.value)}>
-                                    <option value="">-- Chọn Loại Cá --</option>
-                                    {fishTypes.map(f => <option key={f.id} value={f.id}>{f.tenloaica}</option>)}
-                                </select>
-                            </div>
-                            <div className="col-span-3">
-                                <label className="text-xs font-bold text-slate-500 block mb-1.5">Size</label>
-                                <select className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" value={idsizeca} onChange={e => handleSelectSize(e.target.value)} disabled={!idloaica}>
-                                    <option value="">{!idloaica ? "Chọn cá trước" : "Chọn Size"}</option>
-                                    {availableSizes.map(s => <option key={s.id} value={s.id}>{s.sizeca}</option>)}
-                                </select>
-                            </div>
-                            <div className="col-span-5">
-                                <label className="text-xs font-bold text-slate-500 block mb-1.5">Lô hàng</label>
-                                <select className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" value={currentDetail.idchitietphieunhap} onChange={e => setCurrentDetail({ ...currentDetail, idchitietphieunhap: e.target.value })} disabled={!productId}>
-                                    <option value="">{!productId ? "Chọn sản phẩm trước" : (lots.length > 0 ? "Chọn lô" : "Không có lô còn hàng")}</option>
-                                    {lots.map(l => (
-                                        <option key={l.idchitietphieunhap} value={l.idchitietphieunhap}>
-                                            Nhập ngày {l.ngaynhap} — còn {l.soluongconlai}kg
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-12 gap-3 items-end">
-                            <div className="col-span-4">
-                                <label className="text-xs font-bold text-slate-500 block mb-1.5">SL Thanh Lý (kg)</label>
-                                <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" value={currentDetail.soluongthanhly} onChange={e => setCurrentDetail({ ...currentDetail, soluongthanhly: e.target.value })} />
-                            </div>
-                            <div className="col-span-4">
-                                <label className="text-xs font-bold text-slate-500 block mb-1.5">Đơn giá (0 nếu tiêu hủy)</label>
-                                <input type="number" min="0" disabled={headerForm.trangthai === "DA_TIEU_HUY"} className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none disabled:bg-slate-100 disabled:text-slate-500" value={currentDetail.dongia} onChange={e => setCurrentDetail({ ...currentDetail, dongia: e.target.value })} />
-                            </div>
-                            <div className="col-span-4">
-                                <button onClick={handleAddDetail} className="w-full p-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 flex justify-center items-center gap-1.5 cursor-pointer text-sm font-bold">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-4.5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                    </svg>
-                                    Thêm dòng
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-100 text-slate-500 font-bold text-xs uppercase shadow-xs">
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[1120px] text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase border-b border-slate-200">
                                 <tr>
-                                    <th className="p-3">Sản phẩm</th>
-                                    <th className="p-3">Lô (ngày nhập)</th>
-                                    <th className="p-3 text-right">SL (kg)</th>
+                                    <th className="p-3 w-12 text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={allVisibleSelected}
+                                            onChange={toggleAllVisible}
+                                            aria-label="Chọn tất cả lô đang hiển thị"
+                                            className="size-4 accent-cyan-600"
+                                        />
+                                    </th>
+                                    <th className="p-3">Tên loại cá</th>
+                                    <th className="p-3">Kích thước</th>
+                                    <th className="p-3">Ngày nhập</th>
+                                    <th className="p-3 text-right">Còn lại</th>
+                                    <th className="p-3 text-center">Hạn lô</th>
+                                    <th className="p-3">Giá tham khảo</th>
+                                    <th className="p-3 text-right">SL thanh lý</th>
                                     <th className="p-3 text-right">Đơn giá</th>
                                     <th className="p-3 text-right">Thành tiền</th>
-                                    <th className="p-3 text-center">Xóa</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {addedDetails.map(item => (
-                                    <tr key={item.idTemp} className="hover:bg-slate-50/50">
-                                        <td className="p-3 font-bold text-slate-700">{item.tenLoaiCa} ({item.tenSize})</td>
-                                        <td className="p-3 text-slate-500">{item.ngaynhap}</td>
-                                        <td className="p-3 text-right font-medium">{item.soluongthanhly}</td>
-                                        <td className="p-3 text-right text-slate-500">{Number(item.dongia).toLocaleString()}</td>
-                                        <td className="p-3 text-right font-bold text-slate-800">{(item.soluongthanhly * item.dongia).toLocaleString()}</td>
-                                        <td className="p-3 text-center">
-                                            <button onClick={() => handleRemoveDetail(item.idTemp)} className="text-slate-400 hover:text-red-600 p-1.5 rounded-md mx-auto flex items-center justify-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.34 6m-4.74 0-.34-6M4.5 6.75h15m-1.5 0a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25" />
-                                                </svg>
-                                            </button>
+                                {filteredLots.map(lot => {
+                                    const detail = addedDetails.find(
+                                        item => item.idchitietphieunhap === lot.idchitietphieunhap
+                                    );
+                                    return (
+                                        <tr
+                                            key={lot.idchitietphieunhap}
+                                            className={detail ? "bg-cyan-50/30" : "hover:bg-slate-50/50"}
+                                        >
+                                            <td className="p-3 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={Boolean(detail)}
+                                                    onChange={() => toggleLot(lot)}
+                                                    aria-label={`Chọn lô ${lot.tenLoaiCa} ${lot.tenSize}`}
+                                                    className="size-4 accent-cyan-600"
+                                                />
+                                            </td>
+                                            <td className="p-3 font-bold text-slate-800">{lot.tenLoaiCa}</td>
+                                            <td className="p-3 text-slate-600">{lot.tenSize}</td>
+                                            <td className="p-3 text-slate-500">{lot.ngaynhap}</td>
+                                            <td className="p-3 text-right font-bold text-slate-700">
+                                                {formatKg(lot.soluongconlai)} kg
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold border ${
+                                                    lot.isOverdue
+                                                        ? "bg-red-50 text-red-600 border-red-200"
+                                                        : "bg-green-50 text-green-700 border-green-200"
+                                                }`}>
+                                                    {lot.isOverdue ? "Đã quá hạn" : "Còn hạn"}
+                                                </span>
+                                            </td>
+                                            <td className="p-3 text-xs text-slate-500 whitespace-nowrap">
+                                                <div>Nhập: <strong className="text-slate-700">{formatCurrency(lot.gianhap)}</strong></div>
+                                                <div>Lẻ: <strong className="text-slate-700">{formatCurrency(lot.giabanleHienTai)}</strong></div>
+                                                <div>Sỉ: <strong className="text-slate-700">{formatCurrency(lot.giabansiHienTai)}</strong></div>
+                                            </td>
+                                            <td className="p-3 text-right">
+                                                {detail ? (
+                                                    <input
+                                                        type="number"
+                                                        min="0.01"
+                                                        step="0.01"
+                                                        max={detail.soluongconlai}
+                                                        value={detail.soluongthanhly}
+                                                        onChange={event => updateDetail(
+                                                            lot.idchitietphieunhap,
+                                                            "soluongthanhly",
+                                                            event.target.value
+                                                        )}
+                                                        className="w-24 p-2 border border-slate-200 rounded-lg text-right outline-none focus:border-cyan-500"
+                                                    />
+                                                ) : "—"}
+                                            </td>
+                                            <td className="p-3 text-right">
+                                                {detail ? (
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1000"
+                                                        disabled={headerForm.trangthai === "DA_TIEU_HUY"}
+                                                        value={detail.dongia}
+                                                        onChange={event => updateDetail(
+                                                            lot.idchitietphieunhap,
+                                                            "dongia",
+                                                            event.target.value
+                                                        )}
+                                                        className="w-28 p-2 border border-slate-200 rounded-lg text-right outline-none focus:border-cyan-500 disabled:bg-slate-100 disabled:text-slate-400"
+                                                    />
+                                                ) : "—"}
+                                            </td>
+                                            <td className="p-3 text-right font-bold text-slate-800">
+                                                {detail
+                                                    ? `${(
+                                                        Number(detail.soluongthanhly || 0)
+                                                        * Number(detail.dongia || 0)
+                                                    ).toLocaleString("vi-VN")}đ`
+                                                    : "—"}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {filteredLots.length === 0 && (
+                                    <tr>
+                                        <td colSpan="10" className="p-10 text-center text-slate-400 italic">
+                                            Không có lô hàng phù hợp với bộ lọc.
                                         </td>
                                     </tr>
-                                ))}
-                                {addedDetails.length === 0 && <tr><td colSpan="6" className="p-12 text-center text-slate-400 italic">Chưa có chi tiết lô hàng nào được thêm.</td></tr>}
+                                )}
                             </tbody>
                         </table>
                     </div>
 
-                    <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="text-slate-500 font-medium text-sm">
-                            Tổng tiền thanh lý: <span className="text-xl font-bold text-slate-800 ml-1">{calculateTotalMoney().toLocaleString()} VNĐ</span>
-                        </div>
-                        <div className="flex gap-3 w-full sm:w-auto">
-                            <button onClick={() => navigate("/admin/QuanLyThanhLy")} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm">Hủy</button>
-                            <button onClick={handleSubmit} disabled={addedDetails.length === 0} className={`px-6 py-3 font-bold rounded-xl shadow-md text-sm ${addedDetails.length > 0 ? "bg-cyan-600 text-white hover:bg-cyan-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`}>
-                                Hoàn tất lập phiếu
-                            </button>
-                        </div>
+                    <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/admin/QuanLyThanhLy")}
+                            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm cursor-pointer"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={addedDetails.length === 0}
+                            className="px-6 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-sm cursor-pointer"
+                        >
+                            Hoàn tất lập phiếu ({addedDetails.length} lô)
+                        </button>
                     </div>
                 </div>
             </div>

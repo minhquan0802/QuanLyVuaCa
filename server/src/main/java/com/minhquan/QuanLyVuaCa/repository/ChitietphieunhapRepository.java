@@ -26,12 +26,12 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     // Tất cả lô còn hàng, không phân biệt sản phẩm — dùng cho màn hình thanh lý nhanh
     List<Chitietphieunhap> findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal soluong);
 
-    // Lô còn hàng nhưng đã nhập quá lâu (ngaynhap <= ngưỡng) — dùng cho scheduler cảnh báo quá hạn
-    List<Chitietphieunhap> findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(
+    // Lô còn hàng nhưng đã nhập quá lâu (ngaynhap < ngưỡng) — dùng cho scheduler cảnh báo quá hạn
+    List<Chitietphieunhap> findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThan(
             BigDecimal soluong, LocalDate ngaynhap);
 
     // Đếm số lô quá hạn (cùng điều kiện ở trên) — dùng cho ô cảnh báo trên Dashboard
-    long countBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(
+    long countBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThan(
             BigDecimal soluong, LocalDate ngaynhap);
 
     // Lô mới nhất trước — dùng để hoàn trả tồn kho (LIFO ngược lại với FIFO lúc trừ)

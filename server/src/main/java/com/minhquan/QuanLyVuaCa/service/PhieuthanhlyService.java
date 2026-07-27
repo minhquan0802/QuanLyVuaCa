@@ -40,6 +40,7 @@ public class PhieuthanhlyService {
     ChitietphieuthanhlyRepository chitietphieuthanhlyRepository;
     ChitietphieunhapRepository chitietphieunhapRepository;
     ChitietcabanRepository chitietcabanRepository;
+    BanggiaRepository banggiaRepository;
     TaiKhoanRepository taiKhoanRepository;
 
     PhieuthanhlyMapper phieuthanhlyMapper;
@@ -144,35 +145,55 @@ public class PhieuthanhlyService {
         Chitietcaban kho = chitietcabanRepository.findById(idchitietcaban)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
 
-        return chitietphieunhapRepository
-                .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(kho, BigDecimal.ZERO)
-                .stream()
-                .map(this::toLoHangResponse)
-                .toList();
+        return toLoHangResponses(chitietphieunhapRepository
+                .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
+                        kho, BigDecimal.ZERO));
     }
 
     // Tất cả lô còn hàng (mọi loại cá/size) — cho màn hình thanh lý nhanh theo lô
     @Transactional(readOnly = true)
     public List<LoHangResponse> layTatCaLoConHang() {
-        return chitietphieunhapRepository
-                .findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal.ZERO)
-                .stream()
-                .map(this::toLoHangResponse)
-                .toList();
+        return toLoHangResponses(chitietphieunhapRepository
+                .findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal.ZERO));
     }
 
-    // Lô còn hàng nhưng đã quá hạn (cùng ngưỡng với LoHangQuaHanScheduler) — cho tab cảnh báo
+    // Lô còn hàng và có tuổi hàng lớn hơn ngưỡng quy định — cho tab cảnh báo
     @Transactional(readOnly = true)
     public List<LoHangResponse> layDanhSachLoQuaHan() {
         LocalDate nguong = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
-        return chitietphieunhapRepository
-                .findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(BigDecimal.ZERO, nguong)
-                .stream()
-                .map(this::toLoHangResponse)
+        return toLoHangResponses(chitietphieunhapRepository
+                .findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThan(
+                        BigDecimal.ZERO, nguong));
+    }
+
+    private List<LoHangResponse> toLoHangResponses(List<Chitietphieunhap> lots) {
+        List<Chitietcaban> products = lots.stream()
+                .map(Chitietphieunhap::getIdchitietcaban)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<Integer, Banggia> activePrices = products.isEmpty()
+                ? Map.of()
+                : banggiaRepository.findByChitietcabanInAndNgayketthucIsNull(products)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                price -> price.getChitietcaban().getId(),
+                                price -> price,
+                                (first, second) -> first.getId() >= second.getId() ? first : second
+                        ));
+
+        return lots.stream()
+                .map(lot -> toLoHangResponse(
+                        lot,
+                        lot.getIdchitietcaban() == null
+                                ? null
+                                : activePrices.get(lot.getIdchitietcaban().getId())
+                ))
                 .toList();
     }
 
-    private LoHangResponse toLoHangResponse(Chitietphieunhap lo) {
+    private LoHangResponse toLoHangResponse(Chitietphieunhap lo, Banggia activePrice) {
         Chitietcaban kho = lo.getIdchitietcaban();
         return LoHangResponse.builder()
                 .idchitietphieunhap(lo.getIdchitietphieunhap())
@@ -182,6 +203,9 @@ public class PhieuthanhlyService {
                 .ngaynhap(lo.getIdphieunhap().getNgaynhap())
                 .soluongnhap(lo.getSoluongnhap())
                 .soluongconlai(lo.getSoluongconlai())
+                .gianhap(lo.getGianhap())
+                .giabanleHienTai(activePrice != null ? activePrice.getGiabanle() : null)
+                .giabansiHienTai(activePrice != null ? activePrice.getGiabansi() : null)
                 .trangthaica(lo.getTrangthaica() != null ? lo.getTrangthaica().name() : null)
                 .build();
     }
