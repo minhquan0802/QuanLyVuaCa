@@ -31,7 +31,7 @@ public class LoHangQuaHanScheduler {
         LocalDate nguong = LocalDate.now().minusDays(SO_NGAY_QUA_HAN);
 
         List<Chitietphieunhap> loQuaHan = chitietphieunhapRepository
-                .findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(BigDecimal.ZERO, nguong);
+                .findBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThan(BigDecimal.ZERO, nguong);
 
         if (loQuaHan.isEmpty()) return;
 
@@ -46,14 +46,14 @@ public class LoHangQuaHanScheduler {
             String tenSanPham = kho.getIdloaica().getTenloaica() + " (" + kho.getIdsizeca().getSizeca() + ")";
 
             noidung = String.format(
-                    "Lô %s nhập ngày %s còn %skg chưa bán, đã quá hạn %d ngày. Gợi ý lập phiếu thanh lý.",
+                    "Lô %s nhập ngày %s còn %skg chưa bán, đã quá %d ngày. Gợi ý lập phiếu thanh lý.",
                     tenSanPham, lo.getIdphieunhap().getNgaynhap(), lo.getSoluongconlai(), SO_NGAY_QUA_HAN
             );
             // Chỉ 1 lô -> trỏ thẳng vào trang thanh lý của đúng lô đó
             link = "/admin/QuanLyThanhLy/thanh-ly/" + lo.getIdchitietphieunhap();
         } else {
             noidung = String.format(
-                    "Có %d lô hàng quá hạn %d ngày chưa bán, cần lập phiếu thanh lý.",
+                    "Có %d lô hàng đã quá %d ngày chưa bán, cần lập phiếu thanh lý.",
                     loQuaHan.size(), SO_NGAY_QUA_HAN
             );
             // Nhiều lô -> trỏ vào tab "Lô hàng đã quá hạn" để admin tự chọn xử lý

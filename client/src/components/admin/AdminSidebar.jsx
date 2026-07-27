@@ -11,11 +11,11 @@ export default function AdminSidebar() {
     const menuItems = [
         { label: "Dashboard",          path: "/admin",                adminOnly: true  },
         { label: "Quản lý Loại Cá",   path: "/admin/QuanLyLoaiCa",  adminOnly: true  },
-        { label: "Quản lý Tài Khoản", path: "/admin/QuanLyTaiKhoan", adminOnly: true  },
-        { label: "Quản lý Đơn Hàng",  path: "/admin/QuanLyDonHang",  adminOnly: false },
         { label: "Quản lý Bảng Giá",  path: "/admin/QuanLyBangGia",  adminOnly: true  },
         { label: "Quản lý Kho Hàng",  path: "/admin/QuanLyKho",      adminOnly: false },
         { label: "Quản lý Thanh Lý",  path: "/admin/QuanLyThanhLy", adminOnly: true  },
+        { label: "Quản lý Tài Khoản", path: "/admin/QuanLyTaiKhoan", adminOnly: true  },
+        { label: "Quản lý Đơn Hàng",  path: "/admin/QuanLyDonHang",  adminOnly: false },
         { label: "Quản lý Công Nợ",   path: "/admin/QuanLyCongNo",   adminOnly: false },
     ].filter(item => isAdmin || !item.adminOnly);
 

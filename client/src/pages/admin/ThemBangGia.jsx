@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
 export default function ThemBangGia() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { showToast } = useToast();
 
     const [products, setProducts] = useState([]);
-    const [formData, setFormData] = useState({ idchitietcaban: "", giabanle: "", gibansi: "" });
+    const [formData, setFormData] = useState({
+        idchitietcaban: location.state?.idchitietcaban
+            ? String(location.state.idchitietcaban)
+            : "",
+        giabanle: "",
+        gibansi: ""
+    });
 
     useEffect(() => {
         api.get("/Chitietcabans")
@@ -47,7 +54,7 @@ export default function ThemBangGia() {
                         >
                             <option value="">-- Chọn sản phẩm --</option>
                             {products.map(p => (
-                                <option key={p.id} value={p.id}>{p.tenLoaiCa} - {p.tenSize} (Mã kho: #{p.id})</option>
+                                <option key={p.id} value={p.id}>{p.tenLoaiCa} - {p.tenSize}</option>
                             ))}
                         </select>
                     </div>

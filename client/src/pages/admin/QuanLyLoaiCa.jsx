@@ -1,8 +1,140 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+
+function ColumnFilter({ label, options, selectedValues, onChange }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const buttonRef = useRef(null);
+    const popoverRef = useRef(null);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        const handleClickOutside = (event) => {
+            if (!buttonRef.current?.contains(event.target)
+                && !popoverRef.current?.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        const handleEscape = (event) => {
+            if (event.key === "Escape") setIsOpen(false);
+        };
+        const handleResize = () => setIsOpen(false);
+
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleEscape);
+        window.addEventListener("resize", handleResize);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleEscape);
+            window.removeEventListener("resize", handleResize);
+        };
+    }, [isOpen]);
+
+    const togglePopover = () => {
+        if (!isOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            const width = 256;
+            const padding = 12;
+            setPosition({
+                top: rect.bottom + 8,
+                left: Math.max(
+                    padding,
+                    Math.min(rect.right - width, window.innerWidth - width - padding)
+                )
+            });
+        }
+        setIsOpen(previous => !previous);
+    };
+
+    const toggleValue = (value) => {
+        onChange(
+            selectedValues.includes(value)
+                ? selectedValues.filter(item => item !== value)
+                : [...selectedValues, value]
+        );
+    };
+
+    return (
+        <>
+            <button
+                ref={buttonRef}
+                type="button"
+                onClick={togglePopover}
+                title={`Lọc theo ${label.toLowerCase()}`}
+                aria-label={`Lọc theo ${label.toLowerCase()}`}
+                aria-expanded={isOpen}
+                className={`relative size-8 shrink-0 inline-flex items-center justify-center rounded-lg border transition-colors ${
+                    selectedValues.length > 0
+                        ? "border-cyan-300 bg-cyan-100 text-cyan-700"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-cyan-300 hover:text-cyan-700"
+                }`}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h18M6.75 9.75h10.5M10.5 15h3M12 15v4.5" />
+                </svg>
+                {selectedValues.length > 0 && (
+                    <span className="absolute -right-2 -top-2 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-cyan-600 text-[10px] font-bold text-white shadow-sm">
+                        {selectedValues.length}
+                    </span>
+                )}
+            </button>
+
+            {isOpen && typeof document !== "undefined" && createPortal(
+                <div
+                    ref={popoverRef}
+                    className="fixed z-50 w-64 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden normal-case"
+                    style={{ top: position.top, left: position.left }}
+                >
+                    <div className="flex items-center justify-between gap-2 p-3 border-b border-slate-100 bg-slate-50">
+                        <span className="text-xs font-bold text-slate-700">{label}</span>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => onChange(options.map(option => option.value))}
+                                className="text-xs font-bold text-cyan-700 hover:text-cyan-900"
+                            >
+                                Tất cả
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onChange([])}
+                                disabled={selectedValues.length === 0}
+                                className="text-xs font-bold text-slate-500 hover:text-slate-700 disabled:opacity-40"
+                            >
+                                Bỏ chọn
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto p-2">
+                        {options.map(option => (
+                            <label
+                                key={String(option.value)}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-cyan-50"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedValues.includes(option.value)}
+                                    onChange={() => toggleValue(option.value)}
+                                    className="size-4 accent-cyan-600"
+                                />
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
+                                    {option.label}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                </div>,
+                document.body
+            )}
+        </>
+    );
+}
 
 export default function QuanLyLoaiCa() {
     const navigate = useNavigate();
@@ -13,8 +145,7 @@ export default function QuanLyLoaiCa() {
     const [loading, setLoading] = useState(true);
 
     // --- STATE ĐIỀU KHIỂN TÍNH NĂNG ---
-    const [searchTerm, setSearchTerm] = useState("");
-    const [sortConfig, setSortConfig] = useState({ key: "id", direction: "desc" }); // Mặc định ID giảm dần (mới nhất lên đầu)
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10; // Số lượng loại cá hiển thị trên 1 trang
 
@@ -36,39 +167,22 @@ export default function QuanLyLoaiCa() {
         fetchData();
     }, []);
 
-    // --- XỬ LÝ DỮ LIỆU KẾT HỢP (TÌM KIẾM -> SẮP XẾP) ---
+    // --- XỬ LÝ DỮ LIỆU LỌC ---
     const processedData = useMemo(() => {
-        // 1. Tìm kiếm (Filter)
-        let filtered = categories;
-        if (searchTerm.trim() !== "") {
-            const lowerCaseSearch = searchTerm.toLowerCase();
-            filtered = categories.filter(item => 
-                item.tenloaica?.toLowerCase().includes(lowerCaseSearch) ||
-                item.mieuta?.toLowerCase().includes(lowerCaseSearch) ||
-                item.id.toString().includes(lowerCaseSearch)
-            );
+        if (selectedCategoryIds.length > 0) {
+            return categories.filter(item => selectedCategoryIds.includes(item.id));
         }
 
-        // 2. Sắp xếp (Sort)
-        const sorted = [...filtered].sort((a, b) => {
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
+        return categories;
+    }, [categories, selectedCategoryIds]);
 
-            // Xử lý so sánh chuỗi (có dấu tiếng Việt)
-            if (typeof valA === 'string' && typeof valB === 'string') {
-                return sortConfig.direction === "asc"
-                    ? valA.localeCompare(valB)
-                    : valB.localeCompare(valA);
-            }
-
-            // Xử lý so sánh số
-            if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
-            return 0;
-        });
-
-        return sorted;
-    }, [categories, searchTerm, sortConfig]);
+    const categoryFilterOptions = useMemo(() =>
+        [...categories]
+            .sort((a, b) => (a.tenloaica || "").localeCompare(b.tenloaica || "", "vi"))
+            .map(item => ({
+                value: item.id,
+                label: item.deleted ? `${item.tenloaica} (Ngừng bán)` : item.tenloaica
+            })), [categories]);
 
     // --- XỬ LÝ PHÂN TRANG (PAGINATION) ---
     const paginatedCategories = useMemo(() => {
@@ -79,18 +193,9 @@ export default function QuanLyLoaiCa() {
     const totalPages = Math.ceil(processedData.length / pageSize);
 
     // --- HANDLERS (HÀM BẮT SỰ KIỆN) ---
-    const handleSearch = (e) => {
-        setSearchTerm(e.target.value);
-        setCurrentPage(1); // Gõ tìm kiếm thì luôn quay về trang 1
-    };
-
-    const requestSort = (key) => {
-        let direction = "asc";
-        if (sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc";
-        }
-        setSortConfig({ key, direction });
-        setCurrentPage(1); // Bấm sắp xếp cũng quay về trang 1 để tránh lỗi hiển thị
+    const updateCategoryFilter = (values) => {
+        setSelectedCategoryIds(values);
+        setCurrentPage(1);
     };
 
     const handleEdit = (category) => {
@@ -124,21 +229,7 @@ export default function QuanLyLoaiCa() {
     return (
         <AdminLayout title="Quản Lý Loại Cá & Kích Thước">
             {/* TOOLBAR */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="relative w-full sm:max-w-md flex items-center">
-                    <div className="absolute left-3.5 text-slate-400 flex items-center justify-center pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.604 10.604Z" />
-                        </svg>
-                    </div>
-                    <input 
-                        type="text" 
-                        placeholder="Tìm kiếm loại cá theo ID, tên hoặc miêu tả..." 
-                        value={searchTerm}
-                        onChange={handleSearch}
-                        className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white" 
-                    />
-                </div>
+            <div className="flex justify-end mb-6">
                 <button onClick={() => navigate("/admin/QuanLyLoaiCa/them")} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md shadow-cyan-100 transition-all active:scale-95 w-full sm:w-auto text-sm cursor-pointer">
                     Thêm Loại Cá
                 </button>
@@ -150,26 +241,21 @@ export default function QuanLyLoaiCa() {
                     <table className="w-full text-left min-w-[750px]">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                             <tr>
-                                <th 
-                                    className="p-4 w-24 text-center cursor-pointer hover:bg-slate-100 transition-colors"
-                                    onClick={() => requestSort("id")}
-                                >
-                                    ID {sortConfig.key === "id" && (sortConfig.direction === "asc" ? "↑" : "↓")}
-                                </th>
+                                <th className="p-4 w-24 text-center">ID</th>
                                 <th className="p-4 w-24">Hình ảnh</th>
-                                <th 
-                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                                    onClick={() => requestSort("tenloaica")}
-                                >
-                                    Tên Loại Cá {sortConfig.key === "tenloaica" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                <th className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="flex-1 text-left">Tên Loại Cá</span>
+                                        <ColumnFilter
+                                            label="Tên loại cá"
+                                            options={categoryFilterOptions}
+                                            selectedValues={selectedCategoryIds}
+                                            onChange={updateCategoryFilter}
+                                        />
+                                    </div>
                                 </th>
-                                <th 
-                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                                    onClick={() => requestSort("mieuta")}
-                                >
-                                    Miêu tả {sortConfig.key === "mieuta" && (sortConfig.direction === "asc" ? "↑" : "↓")}
-                                </th>
-                                <th className="p-4 text-center w-40">Thao tác</th>
+                                <th className="p-4">Miêu tả</th>
+                                <th className="p-4 text-center w-36">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
@@ -194,26 +280,28 @@ export default function QuanLyLoaiCa() {
                                             {item.deleted && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-200 text-slate-500 font-normal">Ngừng bán</span>}
                                         </td>
                                         <td className="p-4 text-slate-500 max-w-xs truncate">{item.mieuta || "---"}</td>
-                                        <td className="p-4 flex items-center justify-center gap-2 flex-wrap">
-                                            {!item.deleted && (
-                                                <button onClick={() => handleOpenSize(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">
-                                                    Kích cỡ
-                                                </button>
-                                            )}
-                                            {!item.deleted && (
-                                                <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer">
-                                                    Sửa
-                                                </button>
-                                            )}
-                                            {!item.deleted ? (
-                                                <button onClick={() => handleNgungBan(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold hover:bg-red-100 border border-red-200 transition-colors text-xs cursor-pointer">
-                                                    Ngừng bán
-                                                </button>
-                                            ) : (
-                                                <button onClick={() => handleMoLai(item)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer">
-                                                    Mở lại
-                                                </button>
-                                            )}
+                                        <td className="p-4">
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                {!item.deleted && (
+                                                    <button onClick={() => handleOpenSize(item)} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">
+                                                        Kích cỡ
+                                                    </button>
+                                                )}
+                                                {!item.deleted && (
+                                                    <button onClick={() => handleEdit(item)} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer">
+                                                        Sửa
+                                                    </button>
+                                                )}
+                                                {!item.deleted ? (
+                                                    <button onClick={() => handleNgungBan(item)} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold hover:bg-red-100 border border-red-200 transition-colors text-xs cursor-pointer">
+                                                        Ngừng bán
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => handleMoLai(item)} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer">
+                                                        Mở lại
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -264,6 +352,7 @@ export default function QuanLyLoaiCa() {
                     </div>
                 )}
             </div>
+
         </AdminLayout>
     );
 }

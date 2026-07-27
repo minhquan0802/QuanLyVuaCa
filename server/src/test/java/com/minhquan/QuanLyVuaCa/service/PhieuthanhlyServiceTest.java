@@ -36,6 +36,7 @@ class PhieuthanhlyServiceTest {
     @Mock ChitietphieuthanhlyRepository chitietphieuthanhlyRepository;
     @Mock ChitietphieunhapRepository chitietphieunhapRepository;
     @Mock ChitietcabanRepository chitietcabanRepository;
+    @Mock BanggiaRepository banggiaRepository;
     @Mock TaiKhoanRepository taiKhoanRepository;
     @Mock PhieuthanhlyMapper phieuthanhlyMapper;
     @Mock ChitietphieuthanhlyMapper chitietphieuthanhlyMapper;
@@ -45,7 +46,7 @@ class PhieuthanhlyServiceTest {
     @BeforeEach
     void setUp() {
         service = new PhieuthanhlyService(phieuthanhlyRepository, chitietphieuthanhlyRepository,
-                chitietphieunhapRepository, chitietcabanRepository, taiKhoanRepository,
+                chitietphieunhapRepository, chitietcabanRepository, banggiaRepository, taiKhoanRepository,
                 phieuthanhlyMapper, chitietphieuthanhlyMapper);
     }
 
