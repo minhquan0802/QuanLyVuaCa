@@ -18,5 +18,8 @@ public class LoHangResponse {
     LocalDate ngaynhap;
     BigDecimal soluongnhap;
     BigDecimal soluongconlai;
+    BigDecimal gianhap;
+    BigDecimal giabanleHienTai;
+    BigDecimal giabansiHienTai;
     String trangthaica;
 }

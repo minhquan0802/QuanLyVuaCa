@@ -64,7 +64,7 @@ public class ThongKeService {
 
         // Không phụ thuộc range (TODAY/THIS_WEEK/...) - đây là trạng thái tồn kho hiện tại,
         // không phải KPI phát sinh trong khoảng thời gian đang lọc.
-        long soLoQuaHan = chitietphieunhapRepository.countBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThanEqual(
+        long soLoQuaHan = chitietphieunhapRepository.countBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThan(
                 BigDecimal.ZERO, LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN));
 
         return ThongKeTongQuanResponse.builder()

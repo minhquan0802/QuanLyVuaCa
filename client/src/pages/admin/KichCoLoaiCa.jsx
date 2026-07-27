@@ -119,6 +119,15 @@ export default function KichCoLoaiCa() {
 
                     {/* FORM THÊM SIZE */}
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/70 space-y-3">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                                Tên loại cá
+                            </label>
+                            <div className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-cyan-950">
+                                {selectedFish?.tenloaica || "Đang tải..."}
+                            </div>
+                        </div>
+
                         <label className="block text-xs font-bold text-slate-500 uppercase">Thêm size áp dụng</label>
 
                         {/* Chọn / tạo mới size */}
