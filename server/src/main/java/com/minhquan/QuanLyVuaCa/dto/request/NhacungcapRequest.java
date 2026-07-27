@@ -16,4 +16,7 @@ public class NhacungcapRequest {
     @Size(max = 15, message = "NHACUNGCAP_PHONE_INVALID")
     @Pattern(regexp = "^(0|\\+84)[0-9]{9,10}$", message = "NHACUNGCAP_PHONE_INVALID")
     private String sodienthoai;
+
+
+    //nha cung cap
 }
