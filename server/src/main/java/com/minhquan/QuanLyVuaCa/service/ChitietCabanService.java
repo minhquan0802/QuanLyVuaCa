@@ -10,8 +10,10 @@ import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.ChitietCabanMapper;
 import com.minhquan.QuanLyVuaCa.repository.ChitietcabanRepository;
+import com.minhquan.QuanLyVuaCa.repository.ChitietphieunhapRepository;
 import com.minhquan.QuanLyVuaCa.repository.LoaicaRepository;
 import com.minhquan.QuanLyVuaCa.repository.SizecaRepository;
+import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -19,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +32,7 @@ import java.util.stream.Collectors;
 public class ChitietCabanService {
 
     ChitietcabanRepository chitietcabanRepository;
+    ChitietphieunhapRepository chitietphieunhapRepository;
     LoaicaRepository loaicaRepository;
     SizecaRepository sizecaRepository;
     ChitietCabanMapper chitietCabanMapper;
@@ -35,8 +40,22 @@ public class ChitietCabanService {
     // Chỉ trả về các size chưa bị xóa mềm
     @Transactional(readOnly = true)
     public List<ChitietCabanResponse> getAll() {
+        LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
+        Map<Integer, BigDecimal> tonConHanTheoSanPham = chitietphieunhapRepository
+                .tongTonConHanTheoTatCaSanPham(nguongConHan)
+                .stream()
+                .collect(Collectors.toMap(
+                        projection -> projection.getIdChitietcaban(),
+                        projection -> projection.getTong() != null ? projection.getTong() : BigDecimal.ZERO
+                ));
+
         return chitietcabanRepository.findAllByDeletedFalse().stream()
-                .map(chitietCabanMapper::toResponse)
+                .map(entity -> {
+                    ChitietCabanResponse response = chitietCabanMapper.toResponse(entity);
+                    response.setSoluongtonconhan(
+                            tonConHanTheoSanPham.getOrDefault(entity.getId(), BigDecimal.ZERO));
+                    return response;
+                })
                 .collect(Collectors.toList());
     }
 

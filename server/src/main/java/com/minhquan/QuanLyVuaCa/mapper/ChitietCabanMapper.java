@@ -14,6 +14,7 @@ public interface ChitietCabanMapper {
     @Mapping(source = "idsizeca.sizeca", target = "tenSize")       // Lấy tên size
     @Mapping(source = "idloaica.id", target = "idLoaiCa")          // Lấy ID cá (Integer)
     @Mapping(source = "idsizeca.id", target = "idSizeCa")    // Lấy ID size (Integer)
+    @Mapping(target = "soluongtonconhan", ignore = true)
         // -----------------------------
 
     ChitietCabanResponse toResponse(Chitietcaban entity);

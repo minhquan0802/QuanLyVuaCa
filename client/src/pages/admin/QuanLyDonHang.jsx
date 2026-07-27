@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
+import ColumnFilter from "../../components/admin/ColumnFilter";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
@@ -13,11 +14,10 @@ const ORDER_STATUS = {
     "HUY": { label: "Đã hủy", dot: "bg-red-500", badge: "bg-red-50 text-red-700 border-red-200" }
 };
 
-// Trọng số ưu tiên hiển thị mặc định
-const STATUS_PRIORITY = {
-    "CHO_XAC_NHAN": 1, "DANG_DONG_HANG": 2, "DANG_VAN_CHUYEN": 3,
-    "GIAO_HANG_THANH_CONG": 4, "HUY": 5
-};
+const PAYMENT_STATUS = [
+    { value: "DA_THANH_TOAN", label: "Đã thanh toán" },
+    { value: "CHUA_THANH_TOAN", label: "Chưa thanh toán" },
+];
 
 export default function QuanLyDonHang() {
     const navigate = useNavigate();
@@ -28,10 +28,9 @@ export default function QuanLyDonHang() {
     const [loading, setLoading] = useState(true);
 
     // --- 2. STATE ĐIỀU KHIỂN TÍNH NĂNG ---
-    const [filterStatus, setFilterStatus] = useState("ALL");
-    const [filterPayment, setFilterPayment] = useState("ALL");
+    const [selectedStatuses, setSelectedStatuses] = useState([]);
+    const [selectedPayments, setSelectedPayments] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortConfig, setSortConfig] = useState({ key: "trangthaidonhang", direction: "asc" });
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
 
@@ -46,14 +45,13 @@ export default function QuanLyDonHang() {
     // Reset về trang 1 khi thay đổi bất kỳ bộ lọc nào
     useEffect(() => {
         setCurrentPage(1);
-    }, [filterStatus, filterPayment, searchTerm]);
+    }, [selectedStatuses, selectedPayments, searchTerm]);
 
-    // --- 4. XỬ LÝ LỌC & SẮP XẾP ---
+    // --- 4. XỬ LÝ LỌC ---
     const processedOrders = useMemo(() => {
-        // Bước 1: Lọc theo Tab (Trạng thái đơn & Thanh toán)
         let result = orders.filter(o =>
-            (filterStatus === "ALL" || o.trangthaidonhang === filterStatus) &&
-            (filterPayment === "ALL" || o.trangthaithanhtoan === filterPayment)
+            (selectedStatuses.length === 0 || selectedStatuses.includes(o.trangthaidonhang)) &&
+            (selectedPayments.length === 0 || selectedPayments.includes(o.trangthaithanhtoan))
         );
 
         // Bước 2: Lọc theo Từ khóa tìm kiếm (Mã đơn, Tên KH, SĐT)
@@ -66,37 +64,8 @@ export default function QuanLyDonHang() {
             );
         }
 
-        // Bước 3: Sắp xếp
-        result.sort((a, b) => {
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
-
-            // Kịch bản A: Sắp xếp theo mức độ ưu tiên trạng thái
-            if (sortConfig.key === "trangthaidonhang") {
-                const pA = STATUS_PRIORITY[valA] || 99;
-                const pB = STATUS_PRIORITY[valB] || 99;
-                if (pA !== pB) return sortConfig.direction === "asc" ? pA - pB : pB - pA;
-                // Nếu cùng trạng thái, xếp theo ngày đặt mới nhất
-                return new Date(b.ngaydat) - new Date(a.ngaydat);
-            }
-
-            // Kịch bản B: Sắp xếp theo thời gian (Ngày đặt)
-            if (sortConfig.key === "ngaydat") {
-                const dA = new Date(valA || 0).getTime();
-                const dB = new Date(valB || 0).getTime();
-                return sortConfig.direction === "asc" ? dA - dB : dB - dA;
-            }
-
-            // Kịch bản C: So sánh chuỗi (Tên khách, ID)
-            if (typeof valA === 'string' && typeof valB === 'string') {
-                return sortConfig.direction === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            }
-
-            return 0;
-        });
-
         return result;
-    }, [orders, filterStatus, filterPayment, searchTerm, sortConfig]);
+    }, [orders, selectedStatuses, selectedPayments, searchTerm]);
 
     // --- 5. XỬ LÝ PHÂN TRANG ---
     const paginatedOrders = useMemo(() => {
@@ -106,21 +75,11 @@ export default function QuanLyDonHang() {
 
     const totalPages = Math.ceil(processedOrders.length / pageSize);
 
-    // --- 6. HÀM BẮT SỰ KIỆN ---
-    const requestSort = (key) => {
-        let direction = "asc";
-        if (sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc";
-        }
-        setSortConfig({ key, direction });
-        setCurrentPage(1);
-    };
-
     return (
         <AdminLayout title="Quản Lý Đơn Hàng">
 
             {/* THANH CÔNG CỤ: TÌM KIẾM & TẠO ĐƠN */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="relative w-full sm:max-w-md flex items-center">
                     <div className="absolute left-3.5 pointer-events-none text-slate-400 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-5">
@@ -137,85 +96,10 @@ export default function QuanLyDonHang() {
                 </div>
                 <button
                     onClick={() => navigate("/admin/QuanLyDonHang/tao-don")}
-                    className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md transition-all active:scale-95 text-sm w-full sm:w-auto"
+                    className="admin-primary-action"
                 >
                     Tạo đơn hàng
                 </button>
-            </div>
-
-            {/* KHUNG BỘ LỌC ĐƠN HÀNG */}
-            <div className="bg-slate-50/50 border border-slate-200 p-4 rounded-2xl mb-6 flex flex-col gap-4 shadow-sm">
-
-                {/* 1. Nhóm bộ lọc: Trạng thái đơn hàng */}
-                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                    <div className="text-xs font-bold text-slate-500 uppercase lg:w-36 shrink-0 flex items-center gap-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                        </svg>
-                        Trạng thái đơn
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            onClick={() => setFilterStatus("ALL")}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${filterStatus === "ALL"
-                                    ? "bg-slate-800 text-white border-slate-800 shadow-md"
-                                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                                }`}
-                        >
-                            Tất cả
-                        </button>
-                        {Object.keys(ORDER_STATUS).map(status => {
-                            const isCurrent = filterStatus === status;
-                            return (
-                                <button
-                                    key={status}
-                                    onClick={() => setFilterStatus(status)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 border ${isCurrent
-                                            ? "bg-white border-cyan-500 text-cyan-700 ring-2 ring-cyan-500/20 shadow-sm"
-                                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                                        }`}
-                                >
-                                    <span className={`size-2 rounded-full ${ORDER_STATUS[status].dot}`}></span>
-                                    {ORDER_STATUS[status].label}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Dải phân cách mờ */}
-                <div className="h-px w-full bg-slate-200/80 hidden lg:block"></div>
-
-                {/* 2. Nhóm bộ lọc: Trạng thái thanh toán */}
-                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                    <div className="text-xs font-bold text-slate-500 uppercase lg:w-36 shrink-0 flex items-center gap-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                        </svg>
-                        Thanh toán
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {[
-                            { value: "ALL", label: "Tất cả" },
-                            { value: "DA_THANH_TOAN", label: "Đã thanh toán" },
-                            { value: "CHUA_THANH_TOAN", label: "Chưa thanh toán" },
-                        ].map(({ value, label }) => {
-                            const isCurrent = filterPayment === value;
-                            return (
-                                <button
-                                    key={value}
-                                    onClick={() => setFilterPayment(value)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${isCurrent
-                                            ? "bg-slate-800 text-white border-slate-800 shadow-md"
-                                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                                        }`}
-                                >
-                                    {label}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
             </div>
 
             {/* BẢNG HIỂN THỊ DANH SÁCH ĐƠN HÀNG */}
@@ -224,22 +108,35 @@ export default function QuanLyDonHang() {
                     <table className="w-full text-left min-w-[850px] border-collapse">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                             <tr>
-                                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort("iddonhang")}>
-                                    Mã Đơn {sortConfig.key === "iddonhang" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                <th className="p-4">Mã Đơn</th>
+                                <th className="p-4">Khách Hàng</th>
+                                <th className="p-4">Ngày Đặt</th>
+                                <th className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span>Trạng thái</span>
+                                        <ColumnFilter
+                                            label="Trạng thái đơn"
+                                            options={Object.entries(ORDER_STATUS).map(([value, config]) => ({
+                                                value,
+                                                label: config.label,
+                                            }))}
+                                            selectedValues={selectedStatuses}
+                                            onChange={setSelectedStatuses}
+                                        />
+                                    </div>
                                 </th>
-                                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort("tenKhachHang")}>
-                                    Khách Hàng {sortConfig.key === "tenKhachHang" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                <th className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span>Thanh toán</span>
+                                        <ColumnFilter
+                                            label="Thanh toán"
+                                            options={PAYMENT_STATUS}
+                                            selectedValues={selectedPayments}
+                                            onChange={setSelectedPayments}
+                                        />
+                                    </div>
                                 </th>
-                                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort("ngaydat")}>
-                                    Ngày Đặt {sortConfig.key === "ngaydat" && (sortConfig.direction === "asc" ? "↑" : "↓")}
-                                </th>
-                                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort("trangthaidonhang")}>
-                                    Trạng thái {sortConfig.key === "trangthaidonhang" && (sortConfig.direction === "asc" ? "↑" : "↓")}
-                                </th>
-                                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort("trangthaithanhtoan")}>
-                                    Thanh toán {sortConfig.key === "trangthaithanhtoan" && (sortConfig.direction === "asc" ? "↑" : "↓")}
-                                </th>
-                                <th className="p-4 text-center">Hành động</th>
+                                <th className="p-4 text-center w-40">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
@@ -273,13 +170,15 @@ export default function QuanLyDonHang() {
                                                     : <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-slate-50 text-slate-500 border-slate-200">Chưa thanh toán</span>
                                                 }
                                             </td>
-                                            <td className="p-4 text-center">
-                                                <button
-                                                    onClick={() => navigate(`/admin/QuanLyDonHang/chi-tiet/${item.iddonhang}`)}
-                                                    className="px-4 py-2 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
-                                                >
-                                                    Xử lý đơn
-                                                </button>
+                                            <td className="p-4">
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <button
+                                                        onClick={() => navigate(`/admin/QuanLyDonHang/chi-tiet/${item.iddonhang}`)}
+                                                        className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
+                                                    >
+                                                        Xử lý đơn
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );

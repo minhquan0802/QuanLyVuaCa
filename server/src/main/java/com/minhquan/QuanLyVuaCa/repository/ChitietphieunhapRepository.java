@@ -6,6 +6,7 @@ import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.entity.Phieunhap;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
 import com.minhquan.QuanLyVuaCa.repository.projection.ThongKeLoaiCaProjection;
+import com.minhquan.QuanLyVuaCa.repository.projection.TonKhoConHanProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,6 +24,10 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     List<Chitietphieunhap> findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
             Chitietcaban idchitietcaban, BigDecimal soluong);
 
+    // FIFO chỉ gồm các lô đủ điều kiện bán: còn hàng và chưa quá hạn.
+    List<Chitietphieunhap> findByIdchitietcabanAndSoluongconlaiGreaterThanAndIdphieunhap_NgaynhapGreaterThanEqualOrderByIdphieunhap_NgaynhapAsc(
+            Chitietcaban idchitietcaban, BigDecimal soluong, LocalDate ngaynhap);
+
     // Tất cả lô còn hàng, không phân biệt sản phẩm — dùng cho màn hình thanh lý nhanh
     List<Chitietphieunhap> findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal soluong);
 
@@ -33,6 +38,27 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     // Đếm số lô quá hạn (cùng điều kiện ở trên) — dùng cho ô cảnh báo trên Dashboard
     long countBySoluongconlaiGreaterThanAndIdphieunhap_NgaynhapLessThan(
             BigDecimal soluong, LocalDate ngaynhap);
+
+    // Tổng tồn còn hạn theo từng sản phẩm kho, dùng cho các màn hình bán hàng.
+    @Query("""
+        SELECT ct.idchitietcaban.id AS idChitietcaban,
+               COALESCE(SUM(ct.soluongconlai), 0) AS tong
+        FROM Chitietphieunhap ct
+        WHERE ct.soluongconlai > 0
+          AND ct.idphieunhap.ngaynhap >= :nguong
+        GROUP BY ct.idchitietcaban.id
+    """)
+    List<TonKhoConHanProjection> tongTonConHanTheoTatCaSanPham(@Param("nguong") LocalDate nguong);
+
+    @Query("""
+        SELECT COALESCE(SUM(ct.soluongconlai), 0)
+        FROM Chitietphieunhap ct
+        WHERE ct.idchitietcaban = :sanpham
+          AND ct.soluongconlai > 0
+          AND ct.idphieunhap.ngaynhap >= :nguong
+    """)
+    BigDecimal tongTonConHanTheoSanPham(@Param("sanpham") Chitietcaban sanpham,
+                                        @Param("nguong") LocalDate nguong);
 
     // Lô mới nhất trước — dùng để hoàn trả tồn kho (LIFO ngược lại với FIFO lúc trừ)
     List<Chitietphieunhap> findByIdchitietcabanOrderByIdphieunhap_NgaynhapDesc(Chitietcaban idchitietcaban);

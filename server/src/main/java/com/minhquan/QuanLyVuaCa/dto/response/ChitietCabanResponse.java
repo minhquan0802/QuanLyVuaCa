@@ -19,5 +19,6 @@ public class ChitietCabanResponse {
     String tenLoaiCa;
     String tenSize;
     BigDecimal soluongton;
+    BigDecimal soluongtonconhan;
     BigDecimal sokgtuongung;
 }
