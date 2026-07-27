@@ -9,6 +9,7 @@ import com.minhquan.QuanLyVuaCa.enums.TrangThaiGioHang;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
 import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,7 @@ public class GioHangService {
     ChitietGioHangRepository chitietGioHangRepository;
     TaiKhoanRepository taikhoanRepository;
     ChitietcabanRepository chitietcabanRepository;
+    ChitietphieunhapRepository chitietphieunhapRepository;
     DonvitinhRepository donvitinhRepository;
     BanggiaRepository banggiaRepository;
 
@@ -130,18 +133,24 @@ public class GioHangService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONVITINH_NOT_EXISTED,
                         "Không tìm thấy đơn vị tính ID: " + request.getIddonvitinh()));
 
-        chitietGioHangRepository.findItem(gioHang.getIdgiohang(), sanpham.getId(), dvt.getId())
-                .ifPresentOrElse(
-                        existing -> existing.setSoluong(existing.getSoluong() + request.getSoluong()),
-                        () -> {
-                            ChitietGioHang moi = new ChitietGioHang();
-                            moi.setIdgiohang(gioHang);
-                            moi.setIdchitietcaban(sanpham);
-                            moi.setIddonvitinh(dvt);
-                            moi.setSoluong(request.getSoluong());
-                            chitietGioHangRepository.save(moi);
-                        }
-                );
+        var existingItem = chitietGioHangRepository
+                .findItem(gioHang.getIdgiohang(), sanpham.getId(), dvt.getId());
+        int tongSoLuong = existingItem
+                .map(existing -> existing.getSoluong() + request.getSoluong())
+                .orElse(request.getSoluong());
+        kiemTraTonConHan(sanpham, dvt, tongSoLuong);
+
+        existingItem.ifPresentOrElse(
+                existing -> existing.setSoluong(tongSoLuong),
+                () -> {
+                    ChitietGioHang moi = new ChitietGioHang();
+                    moi.setIdgiohang(gioHang);
+                    moi.setIdchitietcaban(sanpham);
+                    moi.setIddonvitinh(dvt);
+                    moi.setSoluong(request.getSoluong());
+                    chitietGioHangRepository.save(moi);
+                }
+        );
 
         boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
         return mapToResponse(gioHang, isWholesale);
@@ -157,6 +166,7 @@ public class GioHangService {
         if (request.getSoluong() == 0) {
             chitietGioHangRepository.delete(item);
         } else {
+            kiemTraTonConHan(item.getIdchitietcaban(), item.getIddonvitinh(), request.getSoluong());
             item.setSoluong(request.getSoluong());
         }
 
@@ -187,5 +197,22 @@ public class GioHangService {
         Taikhoan user = layUserHienTai();
         gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai(user.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
                 .ifPresent(gioHang -> chitietGioHangRepository.deleteByIdgiohang(gioHang.getIdgiohang()));
+    }
+
+    private void kiemTraTonConHan(Chitietcaban sanpham, Donvitinh donvitinh, int soluong) {
+        BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(donvitinh, sanpham);
+        BigDecimal khoiLuongCan = heSoQuyDoi.multiply(BigDecimal.valueOf(soluong));
+        LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
+        BigDecimal tonConHan = chitietphieunhapRepository
+                .tongTonConHanTheoSanPham(sanpham, nguongConHan);
+        BigDecimal tonTong = sanpham.getSoluongton() != null ? sanpham.getSoluongton() : BigDecimal.ZERO;
+        BigDecimal tonCoTheBan = (tonConHan != null ? tonConHan : BigDecimal.ZERO).min(tonTong);
+
+        if (tonCoTheBan.compareTo(khoiLuongCan) < 0) {
+            throw new AppExceptions(
+                    ErrorCode.INVENTORY_NOT_ENOUGH,
+                    "Sản phẩm " + sanpham.getIdloaica().getTenloaica()
+                            + " chỉ còn " + tonCoTheBan + " kg còn hạn");
+        }
     }
 }

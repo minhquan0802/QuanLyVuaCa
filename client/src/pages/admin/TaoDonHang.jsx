@@ -204,7 +204,7 @@ export default function TaoDonHang() {
         const isSi = customerType === "SI";
         return (
             <AdminLayout title="Đơn hàng hoàn tất">
-                <div className="max-w-sm mx-auto bg-white rounded-2xl border border-slate-200 text-center p-6">
+                <div className="max-w-sm mx-auto bg-white rounded-2xl border border-black text-center p-6">
                     <h3 className="font-bold text-lg text-emerald-700">
                         {isSi ? "Đặt đơn hàng thành công!" : "Đơn hàng thành công!"}
                     </h3>
@@ -220,8 +220,8 @@ export default function TaoDonHang() {
                         </>
                     ) : (
                         <div className="grid grid-cols-2 gap-4 my-6">
-                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Tiền mặt</button>
-                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-sm">Quét QR</button>
+                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-black bg-cyan-600 text-white font-bold hover:bg-cyan-700 text-sm">Tiền mặt</button>
+                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-black bg-cyan-600 text-white font-bold hover:bg-cyan-700 text-sm">Quét QR</button>
                         </div>
                     )}
                 </div>
@@ -234,11 +234,11 @@ export default function TaoDonHang() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-sm">
 
                 {/* BÊN TRÁI: CẤU HÌNH THÔNG TIN */}
-                <div className="lg:col-span-4 space-y-5 bg-white rounded-2xl border border-slate-200 p-5">
+                <div className="lg:col-span-4 space-y-5 bg-white rounded-2xl border border-black p-5">
 
                     {/* KHÓA CHỌN KHÁCH HÀNG */}
-                    <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                        <span className="text-xs font-bold text-slate-400 uppercase">1. Chọn loại khách</span>
+                    <div className="space-y-3 p-3 bg-cyan-50 border border-black rounded-xl">
+                        <span className="text-xs font-bold text-cyan-800 uppercase">1. Chọn loại khách</span>
                         <div className="flex gap-4">
                             <label className="flex items-center gap-1.5 font-medium">
                                 <input type="radio" checked={customerType === "LE"} disabled={customerConfirmed} onChange={() => setCustomerType("LE")} /> Khách lẻ
@@ -278,7 +278,7 @@ export default function TaoDonHang() {
 
                     {/* FORM CHỌN SẢN PHẨM */}
                     <div className={`space-y-4 ${!customerConfirmed ? "opacity-30 pointer-events-none" : ""}`}>
-                        <span className="text-xs font-bold text-slate-400 uppercase block border-b pb-1">2. Thêm mặt hàng</span>
+                        <span className="text-xs font-bold text-cyan-800 uppercase block border-b border-black pb-1">2. Thêm mặt hàng</span>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="text-xs font-bold text-slate-500 block mb-1">Loại cá</label>
@@ -302,7 +302,7 @@ export default function TaoDonHang() {
                             </div>
                         )}
 
-                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3">
+                        <div className="bg-cyan-50 p-3 rounded-xl border border-black space-y-3">
                             <div>
                                 <label className="text-xs font-bold text-slate-500 block mb-1">Đơn vị tính</label>
                                 <select className="w-full p-2 border border-slate-200 rounded-lg bg-white" value={currentItem.unitId} onChange={(e) => handleUnitChange(e.target.value)}>
@@ -329,17 +329,17 @@ export default function TaoDonHang() {
                             </div>
                         </div>
 
-                        <button onClick={handleAddItem} className="w-full py-2.5 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700">
+                        <button onClick={handleAddItem} className="w-full py-2.5 bg-cyan-600 text-white font-bold rounded-xl border border-black hover:bg-cyan-700">
                             Thêm vào giỏ
                         </button>
                     </div>
                 </div>
 
                 {/* BÊN PHẢI: GIỎ HÀNG */}
-                <div className="lg:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                    <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                        <h4 className="font-bold text-slate-700">Giỏ hàng thanh toán</h4>
-                        <span className="bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-0.5 rounded-md text-xs font-bold">{newOrder.items.length} món</span>
+                <div className="lg:col-span-8 flex flex-col bg-white rounded-2xl border border-black overflow-hidden">
+                    <div className="p-4 border-b border-black flex justify-between items-center bg-cyan-600">
+                        <h4 className="font-bold text-white">Giỏ hàng thanh toán</h4>
+                        <span className="bg-white text-cyan-700 border border-black px-3 py-0.5 rounded-md text-xs font-bold">{newOrder.items.length} món</span>
                     </div>
                     <div className="flex-1 overflow-auto">
                         <table className="w-full text-left">
@@ -372,14 +372,14 @@ export default function TaoDonHang() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="p-4 border-t border-slate-200 bg-slate-50/50">
+                    <div className="p-4 border-t border-black bg-cyan-600">
                         <div className="flex justify-between items-center mb-4">
-                            <span className="text-slate-500 font-medium">Tổng tiền cần thu:</span>
-                            <span className="text-2xl font-bold text-cyan-700">{formatCurrency(newOrderTotal)}</span>
+                            <span className="text-cyan-50 font-medium">Tổng tiền cần thu:</span>
+                            <span className="text-2xl font-bold text-white">{formatCurrency(newOrderTotal)}</span>
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50">Hủy</button>
-                            <button onClick={handleSubmitOrder} disabled={newOrder.items.length === 0} className={`flex-1 py-3.5 font-bold rounded-xl text-center ${newOrder.items.length > 0 ? "bg-cyan-600 text-white hover:bg-cyan-700 shadow-md cursor-pointer" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`}>
+                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="px-5 py-3 rounded-xl border border-black bg-white text-slate-600 font-bold hover:bg-cyan-50">Hủy</button>
+                            <button onClick={handleSubmitOrder} disabled={newOrder.items.length === 0} className={`flex-1 py-3.5 font-bold rounded-xl border text-center ${newOrder.items.length > 0 ? "bg-cyan-800 text-white border-white hover:bg-cyan-900 shadow-md cursor-pointer" : "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed"}`}>
                                 {customerType === "SI" ? "Đặt đơn hàng" : "Hoàn tất xuất hóa đơn"}
                             </button>
                         </div>

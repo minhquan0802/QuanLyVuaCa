@@ -14,6 +14,7 @@ import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.DonhangMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
+import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
 import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -176,10 +178,11 @@ public class DonhangService {
                 // hoặc khi VNPAY callback gọi truSoluongTon().
                 if (savedDonhang.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
                     BigDecimal luongCanTru = soLuongKgQuyDoi;
+                    BigDecimal tonCoTheBan = tinhTonCoTheBan(finalChitietcaban);
 
-                    if (finalChitietcaban.getSoluongton().compareTo(luongCanTru) < 0) {
+                    if (tonCoTheBan.compareTo(luongCanTru) < 0) {
                         throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + finalChitietcaban.getIdloaica().getTenloaica()
-                                + " không đủ hàng! (Tồn: " + finalChitietcaban.getSoluongton() + ", Đặt: " + luongCanTru + ")");
+                                + " không đủ hàng còn hạn! (Có thể bán: " + tonCoTheBan + ", Đặt: " + luongCanTru + ")");
                     }
 
                     truLoFifo(finalChitietcaban, luongCanTru);
@@ -465,10 +468,11 @@ public class DonhangService {
                 BigDecimal luongCanTru = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
                 if (luongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-                // Kho không đủ: không chặn đơn nữa, giao thiếu cho khách - giảm khối lượng/tiền thực tế
+                // Chỉ khối lượng thuộc lô còn hạn mới được phép giao.
+                BigDecimal tonCoTheBan = tinhTonCoTheBan(kho);
                 // xuống đúng số tồn kho hiện có rồi trừ sạch phần tồn đó.
-                if (kho.getSoluongton().compareTo(luongCanTru) < 0) {
-                    BigDecimal luongThucGiao = kho.getSoluongton();
+                if (tonCoTheBan.compareTo(luongCanTru) < 0) {
+                    BigDecimal luongThucGiao = tonCoTheBan;
 
                     canhBaoGiaoThieu.add(String.format("%s (%s): chỉ giao được %skg (đặt %skg)",
                             kho.getIdloaica().getTenloaica(), kho.getIdsizeca().getSizeca(), luongThucGiao, luongCanTru));
@@ -656,6 +660,15 @@ public class DonhangService {
                     ? chitiet.getKhoiluongthucte() : chitiet.getKhoiluongdukien();
             if (soLuongCanTru == null || soLuongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
 
+            BigDecimal tonCoTheBan = tinhTonCoTheBan(sanphamTrongKho);
+            if (tonCoTheBan.compareTo(soLuongCanTru) < 0) {
+                throw new AppExceptions(
+                        ErrorCode.INVENTORY_NOT_ENOUGH,
+                        "Sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica()
+                                + " không đủ hàng còn hạn! (Có thể bán: " + tonCoTheBan
+                                + ", Đặt: " + soLuongCanTru + ")");
+            }
+
             // Phân bổ trừ theo từng lô (FIFO) để biết lô nào còn lại bao nhiêu
             truLoFifo(sanphamTrongKho, soLuongCanTru);
 
@@ -665,13 +678,37 @@ public class DonhangService {
         }
     }
 
-    // Trừ dần soluongconlai của các lô (Chitietphieunhap) thuộc sản phẩm kho này,
+    private BigDecimal tinhTonCoTheBan(Chitietcaban sanphamTrongKho) {
+        LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
+        BigDecimal tonConHan = chitietphieunhapRepository
+                .tongTonConHanTheoSanPham(sanphamTrongKho, nguongConHan);
+        BigDecimal tonTong = sanphamTrongKho.getSoluongton() != null
+                ? sanphamTrongKho.getSoluongton()
+                : BigDecimal.ZERO;
+        return (tonConHan != null ? tonConHan : BigDecimal.ZERO).min(tonTong);
+    }
+
+    // Trừ dần soluongconlai của các lô còn hạn thuộc sản phẩm kho này,
     // lô nhập trước (ngaynhap cũ hơn) bị trừ trước.
     private void truLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
+        LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
+        List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
+                .findByIdchitietcabanAndSoluongconlaiGreaterThanAndIdphieunhap_NgaynhapGreaterThanEqualOrderByIdphieunhap_NgaynhapAsc(
+                        sanphamTrongKho, BigDecimal.ZERO, nguongConHan);
+        truSoLuongTrongDanhSachLo(sanphamTrongKho, danhSachLo, soLuongCanTru);
+    }
+
+    private void truLoFifoTatCa(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
         List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
                 .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
                         sanphamTrongKho, BigDecimal.ZERO);
+        truSoLuongTrongDanhSachLo(sanphamTrongKho, danhSachLo, soLuongCanTru);
+    }
 
+    private void truSoLuongTrongDanhSachLo(
+            Chitietcaban sanphamTrongKho,
+            List<Chitietphieunhap> danhSachLo,
+            BigDecimal soLuongCanTru) {
         BigDecimal conLai = soLuongCanTru;
         for (Chitietphieunhap lo : danhSachLo) {
             if (conLai.compareTo(BigDecimal.ZERO) <= 0) break;
@@ -787,7 +824,7 @@ public class DonhangService {
             if (lech.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             try {
-                truLoFifo(kho, lech);
+                truLoFifoTatCa(kho, lech);
             } catch (RuntimeException e) {
                 canhBao.add("Kho ID " + kho.getId() + " (" + kho.getIdloaica().getTenloaica() + " - "
                         + kho.getIdsizeca().getSizeca() + "): " + e.getMessage());

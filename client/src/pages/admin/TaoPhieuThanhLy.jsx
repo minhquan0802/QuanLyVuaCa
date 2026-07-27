@@ -252,9 +252,9 @@ export default function TaoPhieuThanhLy() {
     return (
         <AdminLayout title="Lập Phiếu Thanh Lý">
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                <div className="xl:col-span-4 space-y-5 bg-white rounded-2xl border border-slate-200 p-5 h-fit">
-                    <h4 className="font-bold text-slate-700 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
-                        <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">1</span>
+                <div className="xl:col-span-4 space-y-5 bg-white rounded-2xl border border-black p-5 h-fit">
+                    <h4 className="font-bold text-white text-sm bg-cyan-600 border border-black rounded-xl p-3 flex items-center gap-2">
+                        <span className="size-5 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold text-xs">1</span>
                         Thông tin chung
                     </h4>
 
@@ -298,7 +298,7 @@ export default function TaoPhieuThanhLy() {
                     </div>
 
                     {headerForm.trangthai === "DA_BAN_THANH_LY" && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <div className="rounded-xl border border-black bg-cyan-50 p-3">
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
                                 Đơn giá chung
                             </label>
@@ -315,7 +315,7 @@ export default function TaoPhieuThanhLy() {
                                 <button
                                     type="button"
                                     onClick={applyCommonPrice}
-                                    className="shrink-0 px-3 py-2 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
+                                    className="shrink-0 px-3 py-2 rounded-lg bg-cyan-600 text-white border border-black font-bold hover:bg-cyan-700 transition-colors text-xs cursor-pointer"
                                 >
                                     Áp dụng
                                 </button>
@@ -326,7 +326,7 @@ export default function TaoPhieuThanhLy() {
                         </div>
                     )}
 
-                    <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 space-y-1">
+                    <div className="rounded-xl border border-black bg-cyan-50 p-4 space-y-1">
                         <p className="text-sm text-cyan-800">
                             Đã chọn: <strong>{addedDetails.length} lô</strong>
                         </p>
@@ -339,15 +339,15 @@ export default function TaoPhieuThanhLy() {
                     </div>
                 </div>
 
-                <div className="xl:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                    <div className="p-4 border-b border-slate-200">
-                        <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
-                            <span className="size-5 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">2</span>
+                <div className="xl:col-span-8 flex flex-col bg-white rounded-2xl border border-black overflow-hidden">
+                    <div className="p-4 border-b border-black bg-cyan-600">
+                        <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                            <span className="size-5 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold text-xs">2</span>
                             Chọn các lô cần thanh lý
                         </h4>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50 border-b border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-cyan-50 border-b border-black">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 mb-1">Tên loại cá</label>
                             <select
@@ -508,11 +508,11 @@ export default function TaoPhieuThanhLy() {
                         </table>
                     </div>
 
-                    <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-3">
+                    <div className="p-4 border-t border-black bg-cyan-600 flex flex-col sm:flex-row justify-end gap-3">
                         <button
                             type="button"
                             onClick={() => navigate("/admin/QuanLyThanhLy")}
-                            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm cursor-pointer"
+                            className="liquidation-action px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 text-sm cursor-pointer"
                         >
                             Hủy
                         </button>
@@ -520,7 +520,7 @@ export default function TaoPhieuThanhLy() {
                             type="button"
                             onClick={handleSubmit}
                             disabled={addedDetails.length === 0}
-                            className="px-6 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-sm cursor-pointer"
+                            className="liquidation-action px-6 py-2.5 bg-white text-cyan-800 border border-black font-bold rounded-xl hover:bg-cyan-50 shadow-sm disabled:bg-slate-200 disabled:text-slate-400 disabled:border-slate-300 disabled:cursor-not-allowed text-sm cursor-pointer"
                         >
                             Hoàn tất lập phiếu ({addedDetails.length} lô)
                         </button>

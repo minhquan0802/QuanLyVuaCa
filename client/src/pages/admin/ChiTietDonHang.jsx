@@ -197,7 +197,7 @@ export default function ChiTietDonHang() {
                         <table className="w-full text-left text-sm min-w-[700px] border-collapse">
                             <thead className="bg-cyan-50/60 border-b border-slate-200 text-cyan-900 font-bold text-xs uppercase">
                                 <tr>
-                                    <th className="p-3">Sản phẩm</th>
+                                    <th className="p-3">Tên loại cá</th>
                                     <th className="p-3">Size</th>
                                     <th className="p-3 text-center">Số lượng</th>
                                     <th className="p-3 text-center text-slate-400">Dự kiến (Kg)</th>
@@ -206,7 +206,7 @@ export default function ChiTietDonHang() {
                                             Tồn kho
                                         </th>
                                     )}
-                                    <th className="p-3 text-center bg-yellow-50 text-yellow-800 border-x border-slate-200 w-[140px]">
+                                    <th className="p-3 text-center text-yellow-800 border-x border-slate-200 w-[140px]">
                                         {isEditingMode ? "✏️ Kg thực tế" : "Kg Thực tế"}
                                     </th>
                                     <th className="p-3 text-right">Đơn giá</th>
@@ -249,7 +249,7 @@ export default function ChiTietDonHang() {
                                                 </td>
                                             );
                                         })()}
-                                        <td className={`p-1 text-center border-x border-slate-200 ${isEditingMode ? "bg-yellow-50/50" : ""}`}>
+                                        <td className="p-1 text-center border-x border-slate-200">
                                             {isEditingMode ? (
                                                 <input 
                                                     type="number" 

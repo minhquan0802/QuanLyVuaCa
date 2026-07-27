@@ -31,6 +31,7 @@ class GioHangServiceTest {
     @Mock ChitietGioHangRepository chitietGioHangRepository;
     @Mock TaiKhoanRepository taikhoanRepository;
     @Mock ChitietcabanRepository chitietcabanRepository;
+    @Mock ChitietphieunhapRepository chitietphieunhapRepository;
     @Mock DonvitinhRepository donvitinhRepository;
     @Mock BanggiaRepository banggiaRepository;
 
@@ -43,7 +44,8 @@ class GioHangServiceTest {
     @BeforeEach
     void setUp() {
         gioHangService = new GioHangService(gioHangRepository, chitietGioHangRepository,
-                taikhoanRepository, chitietcabanRepository, donvitinhRepository, banggiaRepository);
+                taikhoanRepository, chitietcabanRepository, chitietphieunhapRepository,
+                donvitinhRepository, banggiaRepository);
 
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("khach@vuaca.vn", null, List.of()));
@@ -74,6 +76,8 @@ class GioHangServiceTest {
         donViTinh.setHesokg(BigDecimal.ZERO);
 
         lenient().when(taikhoanRepository.findByEmail("khach@vuaca.vn")).thenReturn(Optional.of(user));
+        lenient().when(chitietphieunhapRepository.tongTonConHanTheoSanPham(any(), any()))
+                .thenReturn(new BigDecimal("20"));
     }
 
     @AfterEach
@@ -117,6 +121,24 @@ class GioHangServiceTest {
         gioHangService.themSanPham(new ThemVaoGioHangRequest(1, 1, 4));
 
         assertEquals(6, existing.getSoluong());
+        verify(chitietGioHangRepository, never()).save(any());
+    }
+
+    @Test
+    void themSanPhamKhiChiConLoQuaHan_biTuChoi() {
+        when(gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai("kh-1", TrangThaiGioHang.DANG_HOAT_DONG))
+                .thenReturn(Optional.of(gioHang));
+        when(chitietcabanRepository.findById(1)).thenReturn(Optional.of(sanPham));
+        when(donvitinhRepository.findById(1)).thenReturn(Optional.of(donViTinh));
+        when(chitietGioHangRepository.findItem("gh-1", 1, 1)).thenReturn(Optional.empty());
+        when(chitietphieunhapRepository.tongTonConHanTheoSanPham(eq(sanPham), any()))
+                .thenReturn(BigDecimal.ZERO);
+
+        AppExceptions exception = assertThrows(
+                AppExceptions.class,
+                () -> gioHangService.themSanPham(new ThemVaoGioHangRequest(1, 1, 1)));
+
+        assertEquals(ErrorCode.INVENTORY_NOT_ENOUGH, exception.getErrorCode());
         verify(chitietGioHangRepository, never()).save(any());
     }
 

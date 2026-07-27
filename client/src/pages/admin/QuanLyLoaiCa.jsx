@@ -230,8 +230,8 @@ export default function QuanLyLoaiCa() {
         <AdminLayout title="Quản Lý Loại Cá & Kích Thước">
             {/* TOOLBAR */}
             <div className="flex justify-end mb-6">
-                <button onClick={() => navigate("/admin/QuanLyLoaiCa/them")} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md shadow-cyan-100 transition-all active:scale-95 w-full sm:w-auto text-sm cursor-pointer">
-                    Thêm Loại Cá
+                <button onClick={() => navigate("/admin/QuanLyLoaiCa/them")} className="admin-primary-action">
+                    Thêm loại cá
                 </button>
             </div>
 
@@ -243,7 +243,7 @@ export default function QuanLyLoaiCa() {
                             <tr>
                                 <th className="p-4 w-24 text-center">ID</th>
                                 <th className="p-4 w-24">Hình ảnh</th>
-                                <th className="p-4">
+                                <th className="p-4 w-56">
                                     <div className="flex items-center justify-between gap-3">
                                         <span className="flex-1 text-left">Tên Loại Cá</span>
                                         <ColumnFilter
@@ -275,11 +275,11 @@ export default function QuanLyLoaiCa() {
                                                 />
                                             </div>
                                         </td>
-                                        <td className="p-4 font-bold text-cyan-950">
+                                        <td className="p-4 font-bold text-cyan-950 w-56">
                                             {item.tenloaica}
                                             {item.deleted && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-200 text-slate-500 font-normal">Ngừng bán</span>}
                                         </td>
-                                        <td className="p-4 text-slate-500 max-w-xs truncate">{item.mieuta || "---"}</td>
+                                        <td className="p-4 text-slate-500 whitespace-normal break-words leading-relaxed">{item.mieuta || "---"}</td>
                                         <td className="p-4">
                                             <div className="flex flex-col items-stretch gap-2">
                                                 {!item.deleted && (

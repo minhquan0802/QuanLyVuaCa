@@ -1,1 +1,86 @@
 @import "tailwindcss";
+
+/* Theme bảng dùng chung cho các trang quản lý, đồng bộ với sidebar. */
+.admin-management-content div:has(> .overflow-x-auto > table) {
+    border-color: #000;
+    border-width: 1px;
+}
+
+.admin-management-content table > thead {
+    background-color: #0891b2;
+    color: #ecfeff;
+    border: 0;
+}
+
+.admin-management-content table > thead th {
+    color: #ecfeff;
+    border: 0;
+}
+
+.admin-management-content table > thead button {
+    background-color: #0e7490;
+    color: #ecfeff;
+    border-color: #0e7490;
+}
+
+.admin-management-content table > thead button:hover {
+    background-color: #0e7490;
+    color: #ecfeff;
+}
+
+.admin-management-content div:has(> .overflow-x-auto > table) > div[class*="border-t"] {
+    background-color: #0891b2;
+    color: #ecfeff;
+    border-color: #000;
+    border-top-width: 1px;
+}
+
+.admin-management-content div:has(> .overflow-x-auto > table) > div[class*="border-t"] button:not(.liquidation-action) {
+    color: #ecfeff;
+    border-color: #0e7490;
+}
+
+.admin-management-content div:has(> .overflow-x-auto > table) > div[class*="border-t"] button:not(.liquidation-action):hover:not(:disabled) {
+    background-color: #155e75;
+}
+
+.admin-management-content table > tbody > tr {
+    border-top: 0;
+    border-bottom: 1px solid #000;
+}
+
+.admin-management-content table > tbody > tr:last-child {
+    border-bottom: 0;
+}
+
+.admin-management-content .admin-primary-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    background-color: #0891b2;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgb(8 145 178 / 20%);
+    transition: background-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.admin-management-content .admin-primary-action:hover {
+    background-color: #0e7490;
+    box-shadow: 0 6px 14px rgb(8 145 178 / 25%);
+}
+
+.admin-management-content .admin-primary-action:active {
+    transform: scale(0.95);
+}
+
+@media (min-width: 640px) {
+    .admin-management-content .admin-primary-action {
+        width: auto;
+    }
+}

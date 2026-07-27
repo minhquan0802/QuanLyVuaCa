@@ -107,14 +107,14 @@ export default function ThanhLyMotLo() {
 
     return (
         <AdminLayout title="Thanh Lý Lô Hàng">
-            <div className="max-w-2xl mx-auto bg-white rounded-2xl ring-1 ring-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                    <h3 className="font-bold text-lg text-slate-800">{lot.tenLoaiCa} ({lot.tenSize})</h3>
-                    <p className="text-xs text-slate-500">Nhập ngày {lot.ngaynhap}</p>
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-black overflow-hidden">
+                <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                    <h3 className="font-bold text-lg text-white">{lot.tenLoaiCa} ({lot.tenSize})</h3>
+                    <p className="text-xs text-cyan-50">Nhập ngày {lot.ngaynhap}</p>
                 </div>
 
                 <div className="p-5 space-y-3">
-                    <div className="flex justify-between items-center bg-cyan-50 border border-cyan-100 rounded-xl p-2.5 text-sm">
+                    <div className="flex justify-between items-center bg-cyan-50 border border-black rounded-xl p-2.5 text-sm">
                         <span className="text-slate-600">Số lượng còn lại trong lô</span>
                         <span className="font-bold text-cyan-700 text-lg">{lot.soluongconlai} kg</span>
                     </div>
@@ -202,20 +202,20 @@ export default function ThanhLyMotLo() {
                         />
                     </div>
 
-                    <div className="flex justify-between items-center bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-sm">
+                    <div className="flex justify-between items-center bg-cyan-50 border border-black rounded-xl p-2.5 text-sm">
                         <span className="text-slate-500">Thành tiền</span>
                         <span className="font-bold text-slate-800 text-lg">{(Number(form.soluongthanhly || 0) * Number(form.dongia || 0)).toLocaleString()} VNĐ</span>
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-slate-200 flex justify-end gap-3">
-                    <button onClick={() => navigate("/admin/QuanLyThanhLy")} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm">
+                <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                    <button onClick={() => navigate("/admin/QuanLyThanhLy")} disabled={submitting} className="liquidation-action px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 disabled:opacity-50 text-sm">
                         Hủy
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={submitting}
-                        className={`px-6 py-2.5 font-bold rounded-xl text-sm ${submitting ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-cyan-600 text-white hover:bg-cyan-700"}`}
+                        className={`liquidation-action px-6 py-2.5 font-bold rounded-xl border text-sm ${submitting ? "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed" : "bg-white text-cyan-800 border-black hover:bg-cyan-50 shadow-sm"}`}
                     >
                         {submitting ? "Đang xử lý..." : "Xác nhận thanh lý"}
                     </button>

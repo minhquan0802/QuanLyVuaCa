@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import AdminSidebar from "./AdminSidebar";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 
 // Nhãn hiển thị cho từng loại thông báo (loai lưu dạng mã ngắn trong DB).
@@ -16,6 +16,9 @@ const LOAI_LABELS = {
 
 export default function AdminLayout({ children, title = "" }) {
     const navigate = useNavigate();
+    const location = useLocation();
+    const isManagementPage = location.pathname === "/admin"
+        || location.pathname.startsWith("/admin/QuanLy");
 
     const [thongBaoList, setThongBaoList] = useState([]);
     const [soChuaXem, setSoChuaXem] = useState(0);
@@ -144,7 +147,9 @@ export default function AdminLayout({ children, title = "" }) {
                     </div>
                 </header>
 
-                <main className="p-8 flex-1 bg-slate-50/50 text-slate-700">
+                <main className={`p-8 flex-1 bg-slate-50/50 text-slate-700 ${
+                    isManagementPage ? "admin-management-content" : ""
+                }`}>
                     {children}
                 </main>
             </div>

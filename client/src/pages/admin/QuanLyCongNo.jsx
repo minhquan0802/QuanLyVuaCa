@@ -1,19 +1,28 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
+import ColumnFilter from "../../components/admin/ColumnFilter";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 
 function trangThaiCongNo(khach) {
-    if (khach.dangBiKhoa) return { label: "Bị khóa", badge: "bg-slate-800 text-white border-slate-800" };
+    if (khach.dangBiKhoa) return { value: "BI_KHOA", label: "Bị khóa", badge: "bg-slate-800 text-white border-slate-800" };
     const congno = Number(khach.congnohientai || 0);
     const hanmuc = Number(khach.hanmuctindung || 0);
-    if (hanmuc <= 0) return { label: "Chưa cấp hạn mức", badge: "bg-slate-100 text-slate-500 border-slate-300" };
+    if (hanmuc <= 0) return { value: "CHUA_CAP_HAN_MUC", label: "Chưa cấp hạn mức", badge: "bg-slate-100 text-slate-500 border-slate-300" };
     const phanTram = (congno / hanmuc) * 100;
-    if (phanTram >= 100) return { label: "Nguy hiểm", badge: "bg-red-50 text-red-700 border-red-200" };
-    if (phanTram >= 80) return { label: "Cảnh báo", badge: "bg-yellow-50 text-yellow-700 border-yellow-200" };
-    return { label: "Bình thường", badge: "bg-green-50 text-green-700 border-green-200" };
+    if (phanTram >= 100) return { value: "NGUY_HIEM", label: "Nguy hiểm", badge: "bg-red-50 text-red-700 border-red-200" };
+    if (phanTram >= 80) return { value: "CANH_BAO", label: "Cảnh báo", badge: "bg-yellow-50 text-yellow-700 border-yellow-200" };
+    return { value: "BINH_THUONG", label: "Bình thường", badge: "bg-green-50 text-green-700 border-green-200" };
 }
+
+const DEBT_STATUS_OPTIONS = [
+    { value: "BINH_THUONG", label: "Bình thường" },
+    { value: "CANH_BAO", label: "Cảnh báo" },
+    { value: "NGUY_HIEM", label: "Nguy hiểm" },
+    { value: "BI_KHOA", label: "Bị khóa" },
+    { value: "CHUA_CAP_HAN_MUC", label: "Chưa cấp hạn mức" },
+];
 
 export default function QuanLyCongNo() {
     const { showToast } = useToast();
@@ -25,6 +34,7 @@ export default function QuanLyCongNo() {
     const [khachChuaMoCongNo, setKhachChuaMoCongNo] = useState([]);
 
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedStatuses, setSelectedStatuses] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
 
@@ -163,14 +173,20 @@ export default function QuanLyCongNo() {
 
     // Lọc + phân trang danh sách công nợ
     const processedDanhSach = useMemo(() => {
-        if (!searchTerm.trim()) return danhSach;
-        const s = searchTerm.toLowerCase();
-        return danhSach.filter(k =>
-            (`${k.ho} ${k.ten}`).toLowerCase().includes(s) ||
-            (k.email || "").toLowerCase().includes(s) ||
-            (k.sodienthoai || "").includes(s)
-        );
-    }, [danhSach, searchTerm]);
+        let result = danhSach;
+        if (searchTerm.trim()) {
+            const s = searchTerm.toLowerCase();
+            result = result.filter(k =>
+                (`${k.ho} ${k.ten}`).toLowerCase().includes(s) ||
+                (k.email || "").toLowerCase().includes(s) ||
+                (k.sodienthoai || "").includes(s)
+            );
+        }
+        if (selectedStatuses.length > 0) {
+            result = result.filter(k => selectedStatuses.includes(trangThaiCongNo(k).value));
+        }
+        return result;
+    }, [danhSach, searchTerm, selectedStatuses]);
 
     const totalPages = Math.ceil(processedDanhSach.length / pageSize);
 
@@ -180,7 +196,7 @@ export default function QuanLyCongNo() {
     }, [processedDanhSach, currentPage]);
 
     // Reset trang khi tìm kiếm
-    useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, selectedStatuses]);
 
     return (
         <AdminLayout title="Quản Lý Công Nợ">
@@ -202,9 +218,9 @@ export default function QuanLyCongNo() {
                 {isAdmin && (
                     <button
                         onClick={openMoCongNoMoi}
-                        className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-sm hover:bg-cyan-700 shadow-md w-full sm:w-auto"
+                        className="admin-primary-action"
                     >
-                        + Mở công nợ cho khách mới
+                        Mở công nợ cho khách mới
                     </button>
                 )}
             </div>
@@ -218,8 +234,18 @@ export default function QuanLyCongNo() {
                                 <th className="p-4">SĐT</th>
                                 <th className="p-4 text-right">Hạn mức</th>
                                 <th className="p-4 text-right">Công nợ hiện tại</th>
-                                <th className="p-4">Trạng thái</th>
-                                <th className="p-4 text-center">Hành động</th>
+                                <th className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span>Trạng thái</span>
+                                        <ColumnFilter
+                                            label="Trạng thái công nợ"
+                                            options={DEBT_STATUS_OPTIONS}
+                                            selectedValues={selectedStatuses}
+                                            onChange={setSelectedStatuses}
+                                        />
+                                    </div>
+                                </th>
+                                <th className="p-4 text-center w-44">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
@@ -250,13 +276,13 @@ export default function QuanLyCongNo() {
                                                 </span>
                                             </td>
                                             <td className="p-4">
-                                                <div className="flex items-center justify-center gap-3 flex-wrap">
-                                                    {isAdmin && <button onClick={() => openSuaHanMuc(khach)} className="text-cyan-600 font-semibold text-xs hover:underline">Sửa hạn mức</button>}
-                                                    {isAdmin && <button onClick={() => openDieuChinh(khach)} className="text-slate-600 font-semibold text-xs hover:underline">Điều chỉnh nợ</button>}
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    {isAdmin && <button onClick={() => openSuaHanMuc(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">Sửa hạn mức</button>}
+                                                    {isAdmin && <button onClick={() => openDieuChinh(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer">Điều chỉnh nợ</button>}
                                                     {isAdmin && khach.dangBiKhoa && (
-                                                        <button onClick={() => openMoKhoa(khach)} className="text-red-600 font-semibold text-xs hover:underline">Mở khóa</button>
+                                                        <button onClick={() => openMoKhoa(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer">Mở khóa</button>
                                                     )}
-                                                    <button onClick={() => openLichSu(khach)} className="text-slate-400 font-semibold text-xs hover:underline">Lịch sử</button>
+                                                    <button onClick={() => openLichSu(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer">Lịch sử</button>
                                                 </div>
                                             </td>
                                         </tr>

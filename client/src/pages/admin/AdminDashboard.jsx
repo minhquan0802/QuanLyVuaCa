@@ -232,23 +232,23 @@ export default function SalesDashboard() {
     };
 
     return (
-        <AdminLayout title="Báo Cáo Bán Hàng (Sales Dashboard)">
+        <AdminLayout title="Dashboard">
             
             {/* --- HEADER LỌC THỜI GIAN --- */}
             <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-8">
-                <h2 className="text-2xl font-bold text-slate-800">Tổng kết Kinh doanh</h2>
+                <h2 className="text-2xl font-bold text-slate-800">Tổng kết kinh doanh</h2>
                 <div className="flex flex-wrap items-center gap-2">
                     <select
                         value={timeRange}
                         onChange={(e) => setTimeRange(e.target.value)}
-                        className="border-slate-300 rounded-xl text-sm font-medium focus:ring-blue-500 focus:border-blue-500 p-2.5 border bg-white shadow-sm outline-none cursor-pointer"
+                        className="rounded-xl text-sm font-bold p-2.5 border border-cyan-700 bg-cyan-600 text-white shadow-sm outline-none cursor-pointer transition-colors hover:bg-cyan-700 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-700"
                     >
-                        <option value="TODAY">Hôm nay</option>
-                        <option value="THIS_WEEK">Tuần này</option>
-                        <option value="THIS_MONTH">Tháng này</option>
-                        <option value="THIS_QUARTER">Quý này</option>
-                        <option value="THIS_YEAR">Năm nay</option>
-                        <option value="CUSTOM">Tùy chọn...</option>
+                        <option className="bg-white text-slate-800" value="TODAY">Hôm nay</option>
+                        <option className="bg-white text-slate-800" value="THIS_WEEK">Tuần này</option>
+                        <option className="bg-white text-slate-800" value="THIS_MONTH">Tháng này</option>
+                        <option className="bg-white text-slate-800" value="THIS_QUARTER">Quý này</option>
+                        <option className="bg-white text-slate-800" value="THIS_YEAR">Năm nay</option>
+                        <option className="bg-white text-slate-800" value="CUSTOM">Tùy chọn...</option>
                     </select>
                     {timeRange === "CUSTOM" && (
                         <>
@@ -267,28 +267,28 @@ export default function SalesDashboard() {
 
             {/* --- KHU VỰC 1: KPI TÀI CHÍNH VÀ VẬN HÀNH --- */}
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 ${timeRange === "TODAY" ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
-                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-lg text-white flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl"><DollarSign size={28} className="text-white" /></div></div>
+                <div className="bg-cyan-100 p-6 rounded-3xl shadow-sm border border-cyan-300 text-cyan-950 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-cyan-200 rounded-2xl"><DollarSign size={28} className="text-cyan-700" /></div></div>
                     <div>
-                        <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">Doanh Thu Đơn Hàng</p>
+                        <p className="text-cyan-700 text-xs font-bold uppercase tracking-wider mb-1">Doanh Thu Đơn Hàng</p>
                         <h3 className="text-2xl lg:text-3xl font-black">{formatCurrency(stats.tongDoanhThu)}</h3>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-purple-50 rounded-2xl"><DollarSign size={28} className="text-purple-600" /></div></div>
+                <div className="bg-violet-100 p-6 rounded-3xl shadow-sm border border-violet-300 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-violet-200 rounded-2xl"><DollarSign size={28} className="text-violet-700" /></div></div>
                     <div>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Thu Từ Bán Thanh Lý</p>
-                        <h3 className="text-2xl lg:text-3xl font-black text-slate-800">{formatCurrency(stats.thuTuBanThanhLy)}</h3>
+                        <p className="text-violet-700 text-xs font-bold uppercase tracking-wider mb-1">Thu Từ Bán Thanh Lý</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-violet-950">{formatCurrency(stats.thuTuBanThanhLy)}</h3>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-orange-50 rounded-2xl"><ShoppingCart size={28} className="text-orange-600" /></div></div>
+                <div className="bg-amber-100 p-6 rounded-3xl shadow-sm border border-amber-300 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-amber-200 rounded-2xl"><ShoppingCart size={28} className="text-amber-700" /></div></div>
                     <div>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Chi Phí Nhập Hàng</p>
-                        <h3 className="text-2xl lg:text-3xl font-black text-slate-800">{formatCurrency(stats.chiPhiNhapHang)}</h3>
-                        <p className="mt-2 text-xs font-semibold text-slate-500">
+                        <p className="text-amber-700 text-xs font-bold uppercase tracking-wider mb-1">Chi Phí Nhập Hàng</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-amber-950">{formatCurrency(stats.chiPhiNhapHang)}</h3>
+                        <p className="mt-2 text-xs font-semibold text-amber-800">
                             Đã thanh toán: {formatCurrency(stats.chiPhiNhapDaThanhToan)}
                         </p>
                     </div>
@@ -299,28 +299,28 @@ export default function SalesDashboard() {
                         type="button"
                         onClick={() => navigate("/admin/QuanLyThanhLy?tab=quahan")}
                         className={`text-left p-6 rounded-3xl shadow-sm border flex flex-col justify-between transition-all hover:shadow-md cursor-pointer ${
-                            stats.soLoQuaHan > 0 ? "bg-red-50 border-red-200" : "bg-white border-slate-200"
+                            stats.soLoQuaHan > 0 ? "bg-rose-100 border-rose-300" : "bg-rose-50 border-rose-200"
                         }`}
                     >
                         <div className="flex justify-between items-start mb-4">
-                            <div className={`p-3 rounded-2xl ${stats.soLoQuaHan > 0 ? "bg-red-100" : "bg-slate-50"}`}>
-                                <AlertCircle size={28} className={stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-400"} />
+                            <div className={`p-3 rounded-2xl ${stats.soLoQuaHan > 0 ? "bg-rose-200" : "bg-rose-100"}`}>
+                                <AlertCircle size={28} className={stats.soLoQuaHan > 0 ? "text-rose-700" : "text-rose-500"} />
                             </div>
                         </div>
                         <div>
-                            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Lô Hàng Quá Hạn</p>
-                            <h3 className={`text-2xl lg:text-3xl font-black ${stats.soLoQuaHan > 0 ? "text-red-600" : "text-slate-800"}`}>
-                                {stats.soLoQuaHan} <span className="text-lg font-semibold text-slate-400">lô</span>
+                            <p className="text-rose-700 text-xs font-bold uppercase tracking-wider mb-1">Lô Hàng Quá Hạn</p>
+                            <h3 className={`text-2xl lg:text-3xl font-black ${stats.soLoQuaHan > 0 ? "text-rose-700" : "text-rose-950"}`}>
+                                {stats.soLoQuaHan} <span className="text-lg font-semibold text-rose-500">lô</span>
                             </h3>
                         </div>
                     </button>
                 )}
 
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-green-50 rounded-2xl"><CheckCircle2 size={28} className="text-green-600" /></div></div>
+                <div className="bg-emerald-100 p-6 rounded-3xl shadow-sm border border-emerald-300 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-emerald-200 rounded-2xl"><CheckCircle2 size={28} className="text-emerald-700" /></div></div>
                     <div>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Đơn Hoàn Thành</p>
-                        <h3 className="text-2xl lg:text-3xl font-black text-slate-800">{stats.donHoanThanh} <span className="text-lg font-semibold text-slate-400">đơn</span></h3>
+                        <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider mb-1">Đơn Hoàn Thành</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-emerald-950">{stats.donHoanThanh} <span className="text-lg font-semibold text-emerald-600">đơn</span></h3>
                     </div>
                 </div>
             </div>
@@ -330,7 +330,7 @@ export default function SalesDashboard() {
                 <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
-                            {viewMode === "TABLE" ? <TableProperties size={24} className="text-blue-600" /> : <BarChart2 size={24} className="text-blue-600" />}
+                            {viewMode === "TABLE" ? <TableProperties size={24} className="text-cyan-600" /> : <BarChart2 size={24} className="text-cyan-600" />}
                             Thống kê luân chuyển hàng hóa
                         </h3>
                         <p className="text-slate-500 mt-1 text-sm">
@@ -341,13 +341,13 @@ export default function SalesDashboard() {
                     </div>
                     
                     {/* Nút Toggle Switch */}
-                    <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/60">
+                    <div className="flex bg-cyan-50 p-1.5 rounded-xl border border-cyan-200">
                         <button
                             onClick={() => setViewMode("TABLE")}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === "TABLE" 
-                                ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200/50" 
-                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                                ? "bg-cyan-600 text-white shadow-sm" 
+                                : "text-cyan-800 hover:text-cyan-900 hover:bg-cyan-100"
                             }`}
                         >
                             <Table size={16} /> Bảng dữ liệu
@@ -356,8 +356,8 @@ export default function SalesDashboard() {
                             onClick={() => setViewMode("CHART")}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === "CHART" 
-                                ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200/50" 
-                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                                ? "bg-cyan-600 text-white shadow-sm" 
+                                : "text-cyan-800 hover:text-cyan-900 hover:bg-cyan-100"
                             }`}
                         >
                             <BarChart2 size={16} /> Biểu đồ cột
@@ -367,7 +367,7 @@ export default function SalesDashboard() {
                 
                 {/* HIỂN THỊ DẠNG BẢNG */}
                 {viewMode === "TABLE" && (
-                    <div className="overflow-x-auto max-h-[400px] animate-in fade-in duration-300"> 
+                    <div className="overflow-x-auto max-h-[400px] rounded-xl border border-black animate-in fade-in duration-300">
                         <table className="w-full text-sm text-left whitespace-nowrap">
                             <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10">
                                 <tr>
@@ -377,7 +377,7 @@ export default function SalesDashboard() {
                                     <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-orange-600">Bán thanh lý (kg)</th>
                                     <th className={`py-4 px-6 font-semibold border-b border-slate-200 text-right text-red-500 ${!showTonKho ? "rounded-tr-xl" : ""}`}>Tiêu hủy (kg)</th>
                                     {showTonKho && (
-                                        <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-purple-600 bg-purple-50 rounded-tr-xl">Tồn kho hiện tại (kg)</th>
+                                        <th className="py-4 px-6 font-semibold border-b border-slate-200 text-right text-purple-600 rounded-tr-xl">Tồn kho hiện tại (kg)</th>
                                     )}
                                 </tr>
                             </thead>
@@ -390,7 +390,7 @@ export default function SalesDashboard() {
                                         <td className="py-4 px-6 text-right font-medium text-orange-600">{Number(row.banThanhLy || 0).toLocaleString()}</td>
                                         <td className="py-4 px-6 text-right font-medium text-red-500">{Number(row.tieuHuy || 0).toLocaleString()}</td>
                                         {showTonKho && (
-                                            <td className="py-4 px-6 text-right font-bold text-purple-700 bg-purple-50/30">{Number(row.tonKho || 0).toLocaleString()}</td>
+                                            <td className="py-4 px-6 text-right font-bold text-purple-700">{Number(row.tonKho || 0).toLocaleString()}</td>
                                         )}
                                     </tr>
                                 ))}
@@ -428,26 +428,26 @@ export default function SalesDashboard() {
                 <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
-                            <ShoppingCart size={24} className="text-blue-600" />
+                            <ShoppingCart size={24} className="text-cyan-600" />
                             Đơn hàng trong kỳ
                         </h3>
                         <p className="text-slate-500 mt-1 text-sm">Danh sách đơn hàng theo khoảng thời gian đang chọn ở phía trên</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-sm font-bold">
+                        <span className="px-3 py-1.5 rounded-lg bg-cyan-100 text-cyan-800 text-sm font-bold">
                             {ordersTotalElements} đơn
                         </span>
                         <button
                             type="button"
                             onClick={() => navigate("/admin/QuanLyDonHang")}
-                            className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
+                            className="px-4 py-2 rounded-xl bg-cyan-600 text-white text-sm font-bold hover:bg-cyan-700 transition-colors"
                         >
                             Xem tất cả đơn hàng
                         </button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <div className="overflow-x-auto rounded-xl border border-black">
                     <table className="w-full min-w-[760px] text-sm text-left">
                         <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                             <tr>

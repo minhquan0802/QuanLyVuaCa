@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
+import ColumnFilter from "../../components/admin/ColumnFilter";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
@@ -12,9 +13,10 @@ export default function QuanLyTaiKhoan() {
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // --- 2. STATE ĐIỀU KHIỂN BỘ LỌC, SẮP XẾP & PHÂN TRANG ---
+    // --- 2. STATE ĐIỀU KHIỂN BỘ LỌC & PHÂN TRANG ---
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortConfig, setSortConfig] = useState({ key: "idtaikhoan", direction: "desc" });
+    const [selectedRoles, setSelectedRoles] = useState([]);
+    const [selectedStatuses, setSelectedStatuses] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 8; // Số tài khoản trên mỗi trang
 
@@ -22,6 +24,12 @@ export default function QuanLyTaiKhoan() {
         { value: "ADMIN", label: "Quản trị viên" },
         { value: "STAFF", label: "Nhân viên" },
         { value: "CUSTOMER", label: "Khách hàng" },
+    ];
+    const ACCOUNT_STATUSES = [
+        { value: "HOAT_DONG", label: "Hoạt động" },
+        { value: "KHOA", label: "Đã khóa" },
+        { value: "CHO_DUYET", label: "Chờ duyệt" },
+        { value: "CHO_XAC_THUC_EMAIL", label: "Chờ xác thực email" },
     ];
 
     // --- 3. GỌI API ---
@@ -42,9 +50,8 @@ export default function QuanLyTaiKhoan() {
         fetchData();
     }, []);
 
-    // --- 4. XỬ LÝ DỮ LIỆU: TÌM KIẾM & SẮP XẾP ---
+    // --- 4. XỬ LÝ DỮ LIỆU: TÌM KIẾM & LỌC ---
     const processedAccounts = useMemo(() => {
-        // Bước 1: Lọc theo từ khóa (Tên hoặc Email)
         let filtered = accounts;
         if (searchTerm.trim() !== "") {
             const search = searchTerm.toLowerCase();
@@ -55,33 +62,14 @@ export default function QuanLyTaiKhoan() {
                 return fullName.includes(search) || email.includes(search) || phone.includes(search);
             });
         }
-
-        // Bước 2: Sắp xếp
-        const sorted = [...filtered].sort((a, b) => {
-            let valA = a[sortConfig.key] || "";
-            let valB = b[sortConfig.key] || "";
-
-            // Xử lý đặc biệt nếu đang sắp xếp theo "Họ và Tên" gộp chung
-            if (sortConfig.key === "hoten") {
-                valA = `${a.ho || ""} ${a.ten || ""}`;
-                valB = `${b.ho || ""} ${b.ten || ""}`;
-            }
-
-            // Sắp xếp chuỗi tiếng Việt
-            if (typeof valA === 'string' && typeof valB === 'string') {
-                return sortConfig.direction === "asc"
-                    ? valA.localeCompare(valB)
-                    : valB.localeCompare(valA);
-            }
-
-            // Sắp xếp số
-            if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
-            return 0;
-        });
-
-        return sorted;
-    }, [accounts, searchTerm, sortConfig]);
+        if (selectedRoles.length > 0) {
+            filtered = filtered.filter(account => selectedRoles.includes(account.vaitro));
+        }
+        if (selectedStatuses.length > 0) {
+            filtered = filtered.filter(account => selectedStatuses.includes(account.trangthaitk));
+        }
+        return filtered;
+    }, [accounts, searchTerm, selectedRoles, selectedStatuses]);
 
     // --- 5. XỬ LÝ DỮ LIỆU: CẮT PHÂN TRANG ---
     const paginatedAccounts = useMemo(() => {
@@ -95,15 +83,6 @@ export default function QuanLyTaiKhoan() {
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
         setCurrentPage(1); // Reset về trang 1 khi gõ tìm kiếm
-    };
-
-    const requestSort = (key) => {
-        let direction = "asc";
-        if (sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc";
-        }
-        setSortConfig({ key, direction });
-        setCurrentPage(1); // Reset về trang 1 khi đổi tiêu chí sắp xếp
     };
 
     const handleAddNew = () => navigate("/admin/QuanLyTaiKhoan/them");
@@ -161,8 +140,8 @@ export default function QuanLyTaiKhoan() {
                         className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm shadow-2xs transition-all bg-white"
                     />
                 </div>
-                <button onClick={handleAddNew} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md shadow-cyan-100 transition-all active:scale-95 w-full sm:w-auto text-sm cursor-pointer">
-                    Thêm Tài Khoản
+                <button onClick={handleAddNew} className="admin-primary-action">
+                    Thêm tài khoản
                 </button>
             </div>
 
@@ -172,32 +151,38 @@ export default function QuanLyTaiKhoan() {
                     <table className="w-full text-left min-w-[850px]">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                             <tr>
-                                <th 
-                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                                    onClick={() => requestSort("hoten")}
-                                >
-                                    Họ và Tên {sortConfig.key === "hoten" && (sortConfig.direction === "asc" ? "↑" : "↓")}
-                                </th>
-                                <th 
-                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                                    onClick={() => requestSort("email")}
-                                >
-                                    Email {sortConfig.key === "email" && (sortConfig.direction === "asc" ? "↑" : "↓")}
-                                </th>
+                                <th className="p-4">Họ và Tên</th>
+                                <th className="p-4">Email</th>
                                 <th className="p-4">SĐT</th>
-                                <th 
-                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                                    onClick={() => requestSort("vaitro")}
-                                >
-                                    Vai Trò {sortConfig.key === "vaitro" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                <th className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span>Vai Trò</span>
+                                        <ColumnFilter
+                                            label="Vai trò"
+                                            options={ROLES}
+                                            selectedValues={selectedRoles}
+                                            onChange={(values) => {
+                                                setSelectedRoles(values);
+                                                setCurrentPage(1);
+                                            }}
+                                        />
+                                    </div>
                                 </th>
-                                <th 
-                                    className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                                    onClick={() => requestSort("trangthaitk")}
-                                >
-                                    Trạng Thái {sortConfig.key === "trangthaitk" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                                <th className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span>Trạng Thái</span>
+                                        <ColumnFilter
+                                            label="Trạng thái"
+                                            options={ACCOUNT_STATUSES}
+                                            selectedValues={selectedStatuses}
+                                            onChange={(values) => {
+                                                setSelectedStatuses(values);
+                                                setCurrentPage(1);
+                                            }}
+                                        />
+                                    </div>
                                 </th>
-                                <th className="p-4 text-center">Thao tác</th>
+                                <th className="p-4 text-center w-40">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
@@ -234,25 +219,29 @@ export default function QuanLyTaiKhoan() {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="p-4 text-center">
-                                            <div className="flex items-center justify-center gap-3">
+                                        <td className="p-4">
+                                            <div className="flex flex-col items-stretch gap-2">
                                                 {item.trangthaitk === 'CHO_DUYET' && (
                                                     <button
                                                         onClick={() => handleApprove(item)}
-                                                        className="text-green-600 font-semibold text-xs hover:underline cursor-pointer"
+                                                        className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer"
                                                     >
                                                         Duyệt
                                                     </button>
                                                 )}
                                                 <button
                                                     onClick={() => handleEdit(item)}
-                                                    className="text-cyan-600 font-semibold text-xs hover:underline cursor-pointer"
+                                                    className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer"
                                                 >
                                                     Sửa
                                                 </button>
                                                 <button
                                                     onClick={() => handleToggleLock(item)}
-                                                    className={`${item.trangthaitk === 'HOAT_DONG' ? 'text-red-600' : 'text-green-600'} font-semibold text-xs hover:underline cursor-pointer`}
+                                                    className={`w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg border font-bold transition-colors text-xs cursor-pointer ${
+                                                        item.trangthaitk === 'HOAT_DONG'
+                                                            ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
+                                                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                                                    }`}
                                                 >
                                                     {item.trangthaitk === 'HOAT_DONG' ? 'Khóa' : 'Mở khóa'}
                                                 </button>

@@ -391,7 +391,7 @@ export default function QuanLyThanhLy() {
             </div>
 
             {selectedLotIds.length > 0 && (
-                <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+                <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-black bg-cyan-50 px-4 py-3">
                     <div className="text-sm text-cyan-900">
                         Đã chọn <strong>{selectedLotIds.length} lô</strong>
                         <span className="mx-2 text-cyan-300">•</span>
@@ -408,7 +408,7 @@ export default function QuanLyThanhLy() {
                         <button
                             type="button"
                             onClick={openMultiLotForm}
-                            className="px-4 py-2 rounded-lg bg-cyan-600 text-white text-sm font-bold hover:bg-cyan-700 transition-colors cursor-pointer"
+                            className="admin-primary-action"
                         >
                             Lập phiếu cho {selectedLotIds.length} lô
                         </button>
@@ -556,7 +556,7 @@ export default function QuanLyThanhLy() {
                                         </div>
                                     </th>
                                     <th className="p-4">Ngày nhập</th>
-                                    <th className="p-4 text-center text-red-600 bg-red-50">Quá hạn (ngày)</th>
+                                    <th className="p-4 text-center text-red-600">Quá hạn (ngày)</th>
                                     <th className="p-4 text-right">Còn lại (kg)</th>
                                     <th className="p-4 text-center w-36">Thao tác</th>
                                 </tr>
@@ -619,7 +619,7 @@ export default function QuanLyThanhLy() {
                                     <th className="p-4">Người tạo</th>
                                     <th className="p-4">
                                         <div className="flex items-center justify-between gap-3">
-                                            <span className="flex-1">Sản phẩm</span>
+                                            <span className="flex-1">Tên loại cá</span>
                                             <ColumnFilter
                                                 label="Tên loại cá"
                                                 options={phieuFishOptions}

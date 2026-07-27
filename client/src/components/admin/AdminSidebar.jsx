@@ -25,10 +25,10 @@ export default function AdminSidebar() {
     };
 
     return (
-        <aside className="w-64 bg-cyan-950 border-r border-cyan-900 flex flex-col h-screen fixed left-0 top-0 z-50 font-body text-cyan-300">
-            <div className="h-16 flex items-center px-6 border-b border-cyan-900">
+        <aside className="w-64 bg-cyan-600 border-r border-black flex flex-col h-screen fixed left-0 top-0 z-50 font-body text-cyan-50">
+            <div className="h-20 flex items-center px-5 border-b border-black">
                 <div className="flex items-center gap-3 cursor-pointer select-none">
-                    <span className="font-display font-extrabold text-xs tracking-widest text-cyan-100 uppercase">
+                    <span className="font-display font-black text-lg leading-tight tracking-wide text-white uppercase">
                         Vựa cá Điêu Hồng
                     </span>
                 </div>
@@ -43,8 +43,8 @@ export default function AdminSidebar() {
                             onClick={() => navigate(item.path)}
                             className={`w-full flex items-center px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                                 active
-                                    ? "bg-cyan-900/60 text-cyan-200 border border-cyan-800 shadow-inner" 
-                                    : "text-cyan-400 hover:bg-cyan-900/30 hover:text-cyan-100"
+                                    ? "bg-cyan-800 text-white border border-cyan-900 shadow-inner"
+                                    : "text-cyan-50 hover:bg-cyan-700 hover:text-white"
                             }`}
                         >
                             <span className="truncate">{item.label}</span>
@@ -53,17 +53,17 @@ export default function AdminSidebar() {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-cyan-900 bg-cyan-950">
+            <div className="p-4 border-t border-black bg-cyan-600">
                 <div className="flex items-center gap-3 px-1 mb-4">
                     <div className="overflow-hidden">
-                        <p className="text-sm font-bold text-cyan-100 truncate">{user.ho}{user.ten}</p>
-                        <p className="text-[11px] text-cyan-400 truncate">{user.email}</p>
+                        <p className="text-sm font-bold text-white truncate">{user.ho}{user.ten}</p>
+                        <p className="text-[11px] text-cyan-100 truncate">{user.email}</p>
                     </div>
                 </div>
                 
                 <button 
                     onClick={logout}
-                    className="w-full flex items-center justify-center py-2.5 rounded-lg text-xs font-bold text-cyan-500 hover:bg-cyan-900 hover:text-rose-400 border border-cyan-900 hover:border-cyan-800 transition-colors"
+                    className="w-full flex items-center justify-center py-2.5 rounded-lg text-xs font-bold text-white bg-cyan-700 hover:bg-cyan-800 hover:text-rose-100 border border-black transition-colors"
                 >
                     ĐĂNG XUẤT
                 </button>
