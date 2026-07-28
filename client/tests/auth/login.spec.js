@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/auth/csrf', (route) => route.fulfill({
+    status: 200,
+    headers: {
+      'X-CSRF-TOKEN': 'test-csrf-token',
+      'Access-Control-Allow-Origin': 'http://localhost:5173',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Expose-Headers': 'X-CSRF-TOKEN',
+    },
+  }));
+});
+
 test.describe('Login Page - Authentication', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to login page before each test
@@ -606,7 +618,7 @@ test.describe('Login Page - Additional Scenarios', () => {
 
     await submitCredentials(page, 'unicode@example.com', specialPassword);
 
-    expect(submittedPassword).toBe(specialPassword);
+    await expect.poll(() => submittedPassword).toBe(specialPassword);
     await expect(page).toHaveURL('/home');
   });
 

@@ -53,6 +53,10 @@ export async function fulfillJson(route, body, status = 200) {
 }
 
 export async function mockAuthenticatedSession(page, items = [ITEM_ONE], user = CUSTOMER) {
+  await page.route('**/auth/csrf', (route) => route.fulfill({
+    status: 200,
+    headers: { 'X-CSRF-TOKEN': 'test-csrf-token', 'Access-Control-Expose-Headers': 'X-CSRF-TOKEN' },
+  }));
   await page.route('**/tai-khoan/my-info', (route) =>
     fulfillJson(route, { result: user }));
 
@@ -65,6 +69,10 @@ export async function mockAuthenticatedSession(page, items = [ITEM_ONE], user = 
 }
 
 export async function mockGuestSession(page) {
+  await page.route('**/auth/csrf', (route) => route.fulfill({
+    status: 200,
+    headers: { 'X-CSRF-TOKEN': 'test-csrf-token', 'Access-Control-Expose-Headers': 'X-CSRF-TOKEN' },
+  }));
   await page.route('**/tai-khoan/my-info', (route) =>
     fulfillJson(route, { message: 'Unauthenticated' }, 500));
   await page.route('**/gio-hang', (route) =>

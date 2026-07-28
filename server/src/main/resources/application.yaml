@@ -5,6 +5,9 @@ server:
 
 
 spring:
+  config:
+    # Support running from either the repository root or the server directory.
+    import: "optional:file:server/.env[.properties],optional:file:.env[.properties]"
   servlet:
     multipart:
       max-file-size: 10MB
@@ -47,15 +50,23 @@ spring:
 
 jwt:
   signerKey: ${SIGNER_KEY}
-  valid-duration: 43200
+  valid-duration: 1800
   refreshable-duration: 604800
+
+rate-limit:
+  auth:
+    window-seconds: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:60}
+    login: ${AUTH_RATE_LIMIT_LOGIN:10}
+    refresh: ${AUTH_RATE_LIMIT_REFRESH:30}
+    logout: ${AUTH_RATE_LIMIT_LOGOUT:30}
+    csrf: ${AUTH_RATE_LIMIT_CSRF:60}
 
 # Mặc định cho production (Render): FE và BE khác domain (cross-site) nên
 # bắt buộc Secure=true + SameSite=None thì trình duyệt mới gửi cookie kèm request.
 # application-local.yaml override lại thành false/Lax để chạy http://localhost.
 cookie:
-  secure: true
-  same-site: None
+  secure: ${COOKIE_SECURE:true}
+  same-site: ${COOKIE_SAME_SITE:None}
 
 vnpay:
   tmn-code: ${TMN_CODE}

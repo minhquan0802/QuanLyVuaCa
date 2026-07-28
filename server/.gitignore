@@ -38,3 +38,8 @@ build/
 
 src/main/resources/application-local.yaml
 
+# Local environment files (may contain secrets)
+.env
+.env.*
+!.env.example
+

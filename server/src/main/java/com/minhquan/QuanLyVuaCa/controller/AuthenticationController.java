@@ -10,12 +10,14 @@ import com.nimbusds.jose.JOSEException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.web.csrf.CsrfToken;
 
 import java.text.ParseException;
 
@@ -34,6 +36,12 @@ public class AuthenticationController {
     @NonFinal
     @Value("${jwt.refreshable-duration}")
     protected int REFRESH_TIME;
+
+    @GetMapping("/csrf")
+    public ResponseEntity<Void> csrf(CsrfToken csrfToken, HttpServletResponse response) {
+        response.setHeader("X-CSRF-TOKEN", csrfToken.getToken());
+        return ResponseEntity.noContent().build();
+    }
 
     //login
     @PostMapping("/token")
