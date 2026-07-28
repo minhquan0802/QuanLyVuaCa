@@ -96,7 +96,7 @@ export default function ProductDetail() {
         const invId = selectedOption.idChitietcaban || selectedOption.chitietcaban?.id;
         if (!invId) return 0;
         const rec = stockList.find(s => Number(s.id) === Number(invId));
-        return rec ? Number(rec.soluongtonconhan || 0) : 0;
+        return rec ? Number(rec.soluongton || 0) : 0;
     })();
 
     const totalWeight = weightPerUnit > 0 ? weightPerUnit * quantity : 0;
@@ -109,9 +109,9 @@ export default function ProductDetail() {
 
     const handleAddToCart = async () => {
         if (!selectedOption) { showToast("Vui lòng chọn kích thước cá!", "error"); return; }
-        if (maxQuantity <= 0) { showToast("Sản phẩm này không đủ khối lượng còn hạn để bán!", "error"); return; }
+        if (maxQuantity <= 0) { showToast("Sản phẩm này đã hết hàng!", "error"); return; }
         if (totalWeight > currentStock) {
-            showToast(`Chỉ còn ${currentStock} kg cá còn hạn!`, "error");
+            showToast(`Chỉ còn ${currentStock} kg cá!`, "error");
             return;
         }
 
@@ -235,7 +235,7 @@ export default function ProductDetail() {
                                         {priceList.map((option) => {
                                             const optIdKho = option.idChitietcaban || option.chitietcaban?.id;
                                             const stockRec = stockList.find(s => Number(s.id) === Number(optIdKho));
-                                            const isOutOfStock = !stockRec || Number(stockRec.soluongtonconhan || 0) <= 0;
+                                            const isOutOfStock = !stockRec || Number(stockRec.soluongton || 0) <= 0;
                                             return (
                                                 <button
                                                     key={option.id}
@@ -327,7 +327,7 @@ export default function ProductDetail() {
                                                 {maxQuantity <= 0 ? "remove_shopping_cart" : "add_shopping_cart"}
                                             </span>
                                         )}
-                                        {adding ? "Đang thêm..." : maxQuantity <= 0 ? "Hết hàng còn hạn" : selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size"}
+                                        {adding ? "Đang thêm..." : maxQuantity <= 0 ? "Hết hàng" : selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size"}
                                     </button>
                                 ) : (
                                     <a href="/" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all">

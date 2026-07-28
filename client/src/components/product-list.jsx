@@ -74,7 +74,7 @@ export default function ProductList({ searchTerm }) {
         const stocks = stockList.filter(s => {
             return Number(s.idLoaiCa) === fishIdNum;
         });
-        const total = stocks.reduce((sum, item) => sum + Number(item.soluongtonconhan || 0), 0);
+        const total = stocks.reduce((sum, item) => sum + Number(item.soluongton || 0), 0);
         return total;
     };
 
