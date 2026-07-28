@@ -584,7 +584,7 @@ export default function QuanLyKho() {
                                                                     onClick={() => setConfirmId(p.idphieunhap)}
                                                                     className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
                                                                 >
-                                                                    Đánh dấu đã TT
+                                                                    Thanh toán
                                                                 </button>
                                                             )
                                                         ) : (
