@@ -9,7 +9,6 @@ import com.minhquan.QuanLyVuaCa.enums.TrangThaiGioHang;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.*;
-import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
 import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +20,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -138,7 +136,7 @@ public class GioHangService {
         int tongSoLuong = existingItem
                 .map(existing -> existing.getSoluong() + request.getSoluong())
                 .orElse(request.getSoluong());
-        kiemTraTonConHan(sanpham, dvt, tongSoLuong);
+        kiemTraTonKho(sanpham, dvt, tongSoLuong);
 
         existingItem.ifPresentOrElse(
                 existing -> existing.setSoluong(tongSoLuong),
@@ -166,7 +164,7 @@ public class GioHangService {
         if (request.getSoluong() == 0) {
             chitietGioHangRepository.delete(item);
         } else {
-            kiemTraTonConHan(item.getIdchitietcaban(), item.getIddonvitinh(), request.getSoluong());
+            kiemTraTonKho(item.getIdchitietcaban(), item.getIddonvitinh(), request.getSoluong());
             item.setSoluong(request.getSoluong());
         }
 
@@ -199,20 +197,18 @@ public class GioHangService {
                 .ifPresent(gioHang -> chitietGioHangRepository.deleteByIdgiohang(gioHang.getIdgiohang()));
     }
 
-    private void kiemTraTonConHan(Chitietcaban sanpham, Donvitinh donvitinh, int soluong) {
+    private void kiemTraTonKho(Chitietcaban sanpham, Donvitinh donvitinh, int soluong) {
         BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(donvitinh, sanpham);
         BigDecimal khoiLuongCan = heSoQuyDoi.multiply(BigDecimal.valueOf(soluong));
-        LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
-        BigDecimal tonConHan = chitietphieunhapRepository
-                .tongTonConHanTheoSanPham(sanpham, nguongConHan);
+        BigDecimal tongTonLo = chitietphieunhapRepository.tongTonConLaiTheoSanPham(sanpham);
         BigDecimal tonTong = sanpham.getSoluongton() != null ? sanpham.getSoluongton() : BigDecimal.ZERO;
-        BigDecimal tonCoTheBan = (tonConHan != null ? tonConHan : BigDecimal.ZERO).min(tonTong);
+        BigDecimal tonCoTheBan = (tongTonLo != null ? tongTonLo : BigDecimal.ZERO).min(tonTong);
 
         if (tonCoTheBan.compareTo(khoiLuongCan) < 0) {
             throw new AppExceptions(
                     ErrorCode.INVENTORY_NOT_ENOUGH,
                     "Sản phẩm " + sanpham.getIdloaica().getTenloaica()
-                            + " chỉ còn " + tonCoTheBan + " kg còn hạn");
+                            + " chỉ còn " + tonCoTheBan + " kg");
         }
     }
 }

@@ -60,7 +60,7 @@ class DonhangServiceLoSyncTest {
         donhangService = new DonhangService(donhangRepository, chitietdonhangRepository, chitietcabanRepository,
                 chitietphieunhapRepository, donvitinhRepository, taikhoanRepository, donhangMapper, congNoService,
                 banggiaRepository, thongBaoService);
-        lenient().when(chitietphieunhapRepository.tongTonConHanTheoSanPham(any(), any()))
+        lenient().when(chitietphieunhapRepository.tongTonConLaiTheoSanPham(any()))
                 .thenAnswer(invocation -> {
                     Chitietcaban sanPham = invocation.getArgument(0);
                     return sanPham.getSoluongton();
@@ -160,7 +160,7 @@ class DonhangServiceLoSyncTest {
         }
 
         @Test
-        void taoDonPOS_trangThaiKhacChoXacNhan_truNgayCaLoVaKhoTong_theoFIFO() {
+        void taoDonPOS_truTheoFifo_keCaLoQuaHan() {
             Chitietcaban kho = kho(BigDecimal.valueOf(50));
             Chitietphieunhap loCu = lo("lo-cu", kho, LocalDate.of(2026, 1, 1),
                     BigDecimal.valueOf(30), BigDecimal.valueOf(30), TrangThaiCa.CON_HANG);
@@ -173,8 +173,8 @@ class DonhangServiceLoSyncTest {
                     .build();
             mockChuoiTinhToan(kho, new Chitietdonhang(), request);
 
-            when(chitietphieunhapRepository.findByIdchitietcabanAndSoluongconlaiGreaterThanAndIdphieunhap_NgaynhapGreaterThanEqualOrderByIdphieunhap_NgaynhapAsc(
-                    eq(kho), eq(BigDecimal.ZERO), any(LocalDate.class)))
+            when(chitietphieunhapRepository.findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
+                    eq(kho), eq(BigDecimal.ZERO)))
                     .thenReturn(List.of(loCu, loMoi));
 
             donhangService.createDonhang(request);
@@ -230,8 +230,8 @@ class DonhangServiceLoSyncTest {
 
             Chitietphieunhap loA = lo("lo-A", kho, LocalDate.of(2026, 1, 1),
                     BigDecimal.valueOf(30), BigDecimal.valueOf(30), TrangThaiCa.CON_HANG);
-            when(chitietphieunhapRepository.findByIdchitietcabanAndSoluongconlaiGreaterThanAndIdphieunhap_NgaynhapGreaterThanEqualOrderByIdphieunhap_NgaynhapAsc(
-                    eq(kho), eq(BigDecimal.ZERO), any(LocalDate.class)))
+            when(chitietphieunhapRepository.findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
+                    eq(kho), eq(BigDecimal.ZERO)))
                     .thenReturn(List.of(loA));
 
             UpdateCanNangRequest request = new UpdateCanNangRequest();
@@ -313,8 +313,8 @@ class DonhangServiceLoSyncTest {
                     BigDecimal.valueOf(30), BigDecimal.valueOf(30), TrangThaiCa.CON_HANG);
             Chitietphieunhap loMoi = lo("lo-moi", kho, LocalDate.of(2026, 2, 1),
                     BigDecimal.valueOf(20), BigDecimal.valueOf(20), TrangThaiCa.CON_HANG);
-            when(chitietphieunhapRepository.findByIdchitietcabanAndSoluongconlaiGreaterThanAndIdphieunhap_NgaynhapGreaterThanEqualOrderByIdphieunhap_NgaynhapAsc(
-                    eq(kho), eq(BigDecimal.ZERO), any(LocalDate.class)))
+            when(chitietphieunhapRepository.findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
+                    eq(kho), eq(BigDecimal.ZERO)))
                     .thenReturn(List.of(loCu, loMoi));
 
             donhangService.updateStatus("dh-1", TrangThaiDonHang.DANG_DONG_HANG);
