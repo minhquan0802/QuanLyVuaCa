@@ -189,7 +189,7 @@ export default function LichSuPhieuNhap() {
                                                                 onClick={() => setConfirmId(p.idphieunhap)}
                                                                 className="px-3.5 py-1.5 bg-orange-50 text-orange-600 border border-orange-200 font-bold rounded-lg text-xs hover:bg-orange-100 transition-colors"
                                                             >
-                                                                Đánh dấu đã TT
+                                                                Thanh toán
                                                             </button>
                                                         )
                                                     ) : (
