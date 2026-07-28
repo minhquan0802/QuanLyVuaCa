@@ -347,24 +347,24 @@ export default function TaoDonHang() {
                                 <tr>
                                     <th className="p-3">Sản phẩm</th>
                                     <th className="p-3">ĐVT</th>
-                                    <th className="p-3 text-center">SL</th>
-                                    <th className="p-3 text-center">Tổng Kg</th>
+                                    <th className="p-3 text-right">SL</th>
+                                    <th className="p-3 text-right">Tổng Kg</th>
                                     <th className="p-3 text-right">Giá/Kg</th>
                                     <th className="p-3 text-right">Thành tiền</th>
-                                    <th className="p-3 text-center">Xóa</th>
+                                    <th className="p-3 text-center w-24">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {newOrder.items.map(item => (
                                     <tr key={item.id} className="hover:bg-slate-50/50">
-                                        <td className="p-3"><div className="font-bold text-slate-700">{item.fishName}</div><div className="text-xs text-slate-400">{item.sizeName}</div></td>
+                                        <td className="p-3"><div className="font-semibold text-slate-800">{item.fishName}</div><div className="text-xs text-slate-500">{item.sizeName}</div></td>
                                         <td className="p-3 font-medium text-slate-600">{item.unitName}</td>
-                                        <td className="p-3 text-center font-bold">{item.quantity}</td>
-                                        <td className="p-3 text-center text-cyan-600 font-bold">{item.estimatedKg} kg</td>
-                                        <td className="p-3 text-right text-slate-500">{formatCurrency(item.pricePerKg)}</td>
-                                        <td className="p-3 text-right font-bold text-slate-900">{formatCurrency(item.total)}</td>
+                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{item.quantity}</td>
+                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{item.estimatedKg} kg</td>
+                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{formatCurrency(item.pricePerKg)}</td>
+                                        <td className="p-3 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(item.total)}</td>
                                         <td className="p-3 text-center">
-                                            <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 font-bold hover:text-red-700">Xóa</button>
+                                            <button onClick={() => handleRemoveItem(item.id)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 font-bold hover:bg-red-100 transition-colors text-xs cursor-pointer">Xóa</button>
                                         </td>
                                     </tr>
                                 ))}

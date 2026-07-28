@@ -128,7 +128,7 @@ export default function LichSuPhieuNhap() {
                                 <th className="p-4 text-right">Tổng SL (kg)</th>
                                 <th className="p-4 text-right">Tổng tiền</th>
                                 <SortTh label="Thanh toán" sortKey="trangthaithanhtoan" current={sort} onSort={requestSort} />
-                                <th className="p-4 text-center">Hành động</th>
+                                <th className="p-4 text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
@@ -155,13 +155,13 @@ export default function LichSuPhieuNhap() {
                                                     )}
                                                 </td>
                                                 <td className="p-4 text-slate-500">{p.ngaynhap}</td>
-                                                <td className="p-4 font-bold text-slate-800">{p.tenNhaCungCap}</td>
-                                                <td className="p-4">{p.tenLoaiCa}</td>
+                                                <td className="p-4 font-semibold text-slate-800">{p.tenNhaCungCap}</td>
+                                                <td className="p-4 font-semibold text-slate-800">{p.tenLoaiCa}</td>
                                                 <td className="p-4 text-slate-600">{p.tenNguoiTaoPhieu || "—"}</td>
-                                                <td className="p-4 text-right font-medium">{Number(p.tongsoluong || 0).toLocaleString()}</td>
-                                                <td className="p-4 text-right font-bold text-cyan-700">{formatCurrency(p.tongtien)}</td>
+                                                <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(p.tongsoluong || 0).toLocaleString()}</td>
+                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(p.tongtien)}</td>
                                                 <td className="p-4">
-                                                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold border inline-block ${status.badge}`}>
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${status.badge}`}>
                                                         {status.label}
                                                     </span>
                                                 </td>
@@ -215,9 +215,9 @@ export default function LichSuPhieuNhap() {
                                                                 {p.listChiTiet.map((ct, idx) => (
                                                                     <tr key={idx} className="text-slate-700">
                                                                         <td className="py-1.5 font-semibold">{ct.tenSize}</td>
-                                                                        <td className="py-1.5 text-right">{Number(ct.soluongnhap || 0).toLocaleString()}</td>
-                                                                        <td className="py-1.5 text-right">{formatCurrency(ct.gianhap)}</td>
-                                                                        <td className="py-1.5 text-right font-bold text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
+                                                                        <td className="py-1.5 text-right font-semibold tabular-nums">{Number(ct.soluongnhap || 0).toLocaleString()}</td>
+                                                                        <td className="py-1.5 text-right font-semibold tabular-nums">{formatCurrency(ct.gianhap)}</td>
+                                                                        <td className="py-1.5 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>

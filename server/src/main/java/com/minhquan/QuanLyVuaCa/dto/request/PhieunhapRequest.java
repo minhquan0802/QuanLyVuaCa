@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.dto.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -22,6 +23,7 @@ public class PhieunhapRequest {
     @NotNull(message = "NHACUNGCAP_NOT_EXISTED")
     Integer idncc;
 
+    @FutureOrPresent(message = "NGAY_NHAP_INVALID")
     LocalDate ngaynhap;
     String ghichu;
     String trangthaithanhtoan;

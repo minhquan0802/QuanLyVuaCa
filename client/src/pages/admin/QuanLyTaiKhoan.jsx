@@ -205,7 +205,7 @@ export default function QuanLyTaiKhoan() {
                             ) : paginatedAccounts.length > 0 ? (
                                 paginatedAccounts.map((item) => (
                                     <tr key={item.idtaikhoan} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="p-4 font-bold text-cyan-950">{item.ho} {item.ten}</td>
+                                        <td className="p-4 font-semibold text-slate-800">{item.ho} {item.ten}</td>
                                         <td className="p-4 text-slate-600">{item.email}</td>
                                         <td className="p-4 font-mono text-slate-500">{item.sodienthoai || "-"}</td>
                                         <td className="p-4 text-slate-700 font-medium">
@@ -213,22 +213,22 @@ export default function QuanLyTaiKhoan() {
                                         </td>
                                         <td className="p-4">
                                             {item.trangthaitk === 'HOAT_DONG' && (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-green-50 text-green-700 border-green-200">
+                                                <span className="px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center gap-1.5 w-fit bg-green-50 text-green-700 border-green-200">
                                                     <span className="size-1.5 rounded-full bg-green-500"></span>Hoạt động
                                                 </span>
                                             )}
                                             {item.trangthaitk === 'KHOA' && (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-red-50 text-red-700 border-red-200">
+                                                <span className="px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center gap-1.5 w-fit bg-red-50 text-red-700 border-red-200">
                                                     <span className="size-1.5 rounded-full bg-red-500"></span>Đã khóa
                                                 </span>
                                             )}
                                             {item.trangthaitk === 'CHO_DUYET' && (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-yellow-50 text-yellow-700 border-yellow-200">
+                                                <span className="px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center gap-1.5 w-fit bg-yellow-50 text-yellow-700 border-yellow-200">
                                                     <span className="size-1.5 rounded-full bg-yellow-500"></span>Chờ duyệt
                                                 </span>
                                             )}
                                             {item.trangthaitk === 'CHO_XAC_THUC_EMAIL' && (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit bg-slate-50 text-slate-500 border-slate-200">
+                                                <span className="px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center gap-1.5 w-fit bg-slate-50 text-slate-500 border-slate-200">
                                                     <span className="size-1.5 rounded-full bg-slate-400"></span>Chờ xác thực email
                                                 </span>
                                             )}

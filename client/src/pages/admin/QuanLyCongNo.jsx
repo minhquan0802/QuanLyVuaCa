@@ -258,12 +258,12 @@ export default function QuanLyCongNo() {
                                     return (
                                         <tr key={khach.idtaikhoan} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="p-4">
-                                                <p className="font-bold text-slate-800">{khach.ho} {khach.ten}</p>
+                                                <p className="font-semibold text-slate-800">{khach.ho} {khach.ten}</p>
                                                 <p className="text-xs text-slate-400">{khach.email}</p>
                                             </td>
                                             <td className="p-4 font-mono text-slate-500">{khach.sodienthoai || "-"}</td>
-                                            <td className="p-4 text-right font-medium">{Number(khach.hanmuctindung).toLocaleString()}đ</td>
-                                            <td className="p-4 text-right font-bold">
+                                            <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(khach.hanmuctindung).toLocaleString()}đ</td>
+                                            <td className="p-4 text-right font-bold tabular-nums">
                                                 {congno < 0 ? (
                                                     <span className="text-green-600">{Math.abs(congno).toLocaleString()}đ (dư trả trước)</span>
                                                 ) : (
@@ -271,13 +271,13 @@ export default function QuanLyCongNo() {
                                                 )}
                                             </td>
                                             <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold border inline-block ${trangThai.badge}`}>
+                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${trangThai.badge}`}>
                                                     {trangThai.label}
                                                 </span>
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex flex-col items-stretch gap-2">
-                                                    {isAdmin && <button onClick={() => openSuaHanMuc(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">Sửa hạn mức</button>}
+                                                    {isAdmin && <button onClick={() => openSuaHanMuc(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 font-bold hover:bg-cyan-100 border border-cyan-200 transition-colors text-xs cursor-pointer">Sửa hạn mức</button>}
                                                     {isAdmin && <button onClick={() => openDieuChinh(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 border border-slate-200 transition-colors text-xs cursor-pointer">Điều chỉnh nợ</button>}
                                                     {isAdmin && khach.dangBiKhoa && (
                                                         <button onClick={() => openMoKhoa(khach)} className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer">Mở khóa</button>
@@ -483,9 +483,9 @@ export default function QuanLyCongNo() {
                                         lichSuPhanTrang.map(ls => (
                                             <tr key={ls.idlichsucongno} className="hover:bg-slate-50/50">
                                                 <td className="p-3 text-slate-500 whitespace-nowrap">{new Date(ls.ngaytao).toLocaleString('vi-VN')}</td>
-                                                <td className="p-3 font-bold">{LOAI_LABEL[ls.loaithaydoi] || ls.loaithaydoi}</td>
-                                                <td className="p-3 text-right">{Number(ls.sotien).toLocaleString()}đ</td>
-                                                <td className="p-3 text-right font-bold">{Number(ls.sodusaukhithaydoi).toLocaleString()}đ</td>
+                                                <td className="p-3 font-semibold text-slate-800">{LOAI_LABEL[ls.loaithaydoi] || ls.loaithaydoi}</td>
+                                                <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(ls.sotien).toLocaleString()}đ</td>
+                                                <td className="p-3 text-right font-bold tabular-nums text-cyan-700">{Number(ls.sodusaukhithaydoi).toLocaleString()}đ</td>
                                                 <td className="p-3 text-slate-500">{ls.tenNguoiThucHien || "Hệ thống"}</td>
                                                 <td className="p-3 text-slate-500">{ls.ghichu || "-"}</td>
                                             </tr>

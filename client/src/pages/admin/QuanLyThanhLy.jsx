@@ -477,11 +477,11 @@ export default function QuanLyThanhLy() {
                                                         className="size-4 accent-cyan-600"
                                                     />
                                                 </td>
-                                                <td className="p-4 font-bold text-slate-800">{lot.tenLoaiCa}</td>
+                                                <td className="p-4 font-semibold text-slate-800">{lot.tenLoaiCa}</td>
                                                 <td className="p-4">{lot.tenSize}</td>
                                                 <td className="p-4 text-slate-500">{lot.ngaynhap}</td>
-                                                <td className="p-4 text-right">{lot.soluongnhap}</td>
-                                                <td className="p-4 text-right font-bold text-cyan-700">{lot.soluongconlai}</td>
+                                                <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{lot.soluongnhap}</td>
+                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{lot.soluongconlai}</td>
                                                 <td className="p-4">
                                                     <div className="flex flex-col items-stretch gap-2">
                                                         <button
@@ -507,7 +507,7 @@ export default function QuanLyThanhLy() {
                                                 <button
                                                     type="button"
                                                     onClick={() => navigate("/admin/QuanLyKho")}
-                                                    className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-sm cursor-pointer"
+                                                    className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold hover:bg-cyan-100 transition-colors text-sm cursor-pointer"
                                                 >
                                                     Đi đến quản lý kho
                                                 </button>
@@ -576,11 +576,11 @@ export default function QuanLyThanhLy() {
                                                     className="size-4 accent-cyan-600"
                                                 />
                                             </td>
-                                            <td className="p-4 font-bold text-slate-800">{lot.tenLoaiCa}</td>
+                                            <td className="p-4 font-semibold text-slate-800">{lot.tenLoaiCa}</td>
                                             <td className="p-4">{lot.tenSize}</td>
                                             <td className="p-4 text-slate-500">{lot.ngaynhap}</td>
-                                            <td className="p-4 text-center font-bold text-red-600">{tinhSoNgayQuaHan(lot.ngaynhap)}</td>
-                                            <td className="p-4 text-right font-bold text-cyan-700">{lot.soluongconlai}</td>
+                                            <td className="p-4 text-center font-bold tabular-nums text-red-600">{tinhSoNgayQuaHan(lot.ngaynhap)}</td>
+                                            <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{lot.soluongconlai}</td>
                                             <td className="p-4">
                                                 <div className="flex flex-col items-stretch gap-2">
                                                     <button
@@ -653,13 +653,13 @@ export default function QuanLyThanhLy() {
                                         return (
                                             <tr key={item.idphieuthanhly} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="p-4 text-slate-500">{new Date(item.ngaythanhly).toLocaleString('vi-VN')}</td>
-                                                <td className="p-4 font-bold text-slate-800">{item.tenNguoiTaoPhieu}</td>
-                                                <td className="p-4">{tenSanPham(item.listChiTiet)}</td>
+                                                <td className="p-4 font-semibold text-slate-800">{item.tenNguoiTaoPhieu}</td>
+                                                <td className="p-4 font-semibold text-slate-800">{tenSanPham(item.listChiTiet)}</td>
                                                 <td className="p-4">{item.lydothanhly}</td>
-                                                <td className="p-4 text-right font-medium">{tinhTongSoLuong(item.listChiTiet)}</td>
-                                                <td className="p-4 text-right font-bold text-slate-800">{tinhTongTien(item.listChiTiet).toLocaleString()}</td>
+                                                <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{tinhTongSoLuong(item.listChiTiet)}</td>
+                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{tinhTongTien(item.listChiTiet).toLocaleString()}</td>
                                                 <td className="p-4">
-                                                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold border inline-block ${statusConfig.badge}`}>
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${statusConfig.badge}`}>
                                                         {statusConfig.label}
                                                     </span>
                                                 </td>

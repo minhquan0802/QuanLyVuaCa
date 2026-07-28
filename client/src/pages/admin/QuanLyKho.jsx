@@ -409,9 +409,9 @@ export default function QuanLyKho() {
                                             />
                                         </div>
                                     </th>
-                                    <th className="p-4 text-center">Tồn tổng</th>
-                                    <th className="p-4 text-center">Còn hạn</th>
-                                    <th className="p-4 text-center">Quá hạn</th>
+                                    <th className="p-4 text-right">Tổng</th>
+                                    <th className="p-4 text-right">Còn hạn</th>
+                                    <th className="p-4 text-right">Quá hạn</th>
                                     <th className="p-4">
                                         <div className="flex items-center justify-between gap-3">
                                             <span className="flex-1">Tình trạng</span>
@@ -440,15 +440,15 @@ export default function QuanLyKho() {
 
                                         return (
                                             <tr key={item.id} className={`${rowHighlight} transition-colors`}>
-                                                <td className="p-4 font-bold text-slate-900">{item.tenLoaiCa}</td>
+                                                <td className="p-4 font-semibold text-slate-800">{item.tenLoaiCa}</td>
                                                 <td className="p-4 text-slate-600">{item.tenSize}</td>
-                                                <td className="p-4 text-center font-bold text-slate-700">{formatKg(item.soluongton)}</td>
-                                                <td className="p-4 text-center font-bold text-green-700">{formatKg(item.soluongConHan)}</td>
-                                                <td className={`p-4 text-center font-bold ${item.soluongQuaHan > 0 ? "text-red-600" : "text-slate-400"}`}>
+                                                <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{formatKg(item.soluongton)}</td>
+                                                <td className="p-4 text-right font-semibold tabular-nums text-green-700">{formatKg(item.soluongConHan)}</td>
+                                                <td className={`p-4 text-right font-semibold tabular-nums ${item.soluongQuaHan > 0 ? "text-red-600" : "text-slate-400"}`}>
                                                     {formatKg(item.soluongQuaHan)}
                                                 </td>
                                                 <td className="p-4">
-                                                    <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold border ${status.badge}`}>
+                                                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold border ${status.badge}`}>
                                                         {status.label}
                                                     </span>
                                                 </td>
@@ -466,7 +466,7 @@ export default function QuanLyKho() {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleImport(item)}
-                                                            className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
+                                                            className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
                                                         >
                                                             Nhập thêm
                                                         </button>
@@ -550,13 +550,13 @@ export default function QuanLyKho() {
                                                         )}
                                                     </td>
                                                     <td className="p-4 text-slate-500">{p.ngaynhap}</td>
-                                                    <td className="p-4 font-bold text-slate-800">{p.tenNhaCungCap}</td>
-                                                    <td className="p-4">{p.tenLoaiCa}</td>
+                                                    <td className="p-4 font-semibold text-slate-800">{p.tenNhaCungCap}</td>
+                                                    <td className="p-4 font-semibold text-slate-800">{p.tenLoaiCa}</td>
                                                     <td className="p-4 text-slate-600">{p.tenNguoiTaoPhieu || "—"}</td>
-                                                    <td className="p-4 text-right font-medium">{Number(p.tongsoluong || 0).toLocaleString()}</td>
-                                                    <td className="p-4 text-right font-bold text-cyan-700">{formatCurrency(p.tongtien)}</td>
+                                                    <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(p.tongsoluong || 0).toLocaleString()}</td>
+                                                    <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(p.tongtien)}</td>
                                                     <td className="p-4">
-                                                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold border inline-block ${status.badge}`}>
+                                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${status.badge}`}>
                                                             {status.label}
                                                         </span>
                                                     </td>
@@ -582,7 +582,7 @@ export default function QuanLyKho() {
                                                             ) : (
                                                                 <button
                                                                     onClick={() => setConfirmId(p.idphieunhap)}
-                                                                    className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
+                                                                    className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
                                                                 >
                                                                     Đánh dấu đã TT
                                                                 </button>
@@ -609,9 +609,9 @@ export default function QuanLyKho() {
                                                                     {p.listChiTiet.map((ct, idx) => (
                                                                         <tr key={idx} className="text-slate-700">
                                                                             <td className="py-1.5 font-semibold">{ct.tenSize}</td>
-                                                                            <td className="py-1.5 text-right">{Number(ct.soluongnhap || 0).toLocaleString()}</td>
-                                                                            <td className="py-1.5 text-right">{formatCurrency(ct.gianhap)}</td>
-                                                                            <td className="py-1.5 text-right font-bold text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
+                                                                            <td className="py-1.5 text-right font-semibold tabular-nums">{Number(ct.soluongnhap || 0).toLocaleString()}</td>
+                                                                            <td className="py-1.5 text-right font-semibold tabular-nums">{formatCurrency(ct.gianhap)}</td>
+                                                                            <td className="py-1.5 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
                                                                         </tr>
                                                                     ))}
                                                                 </tbody>

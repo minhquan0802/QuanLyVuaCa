@@ -432,14 +432,14 @@ export default function TaoPhieuThanhLy() {
                                                     className="size-4 accent-cyan-600"
                                                 />
                                             </td>
-                                            <td className="p-3 font-bold text-slate-800">{lot.tenLoaiCa}</td>
+                                            <td className="p-3 font-semibold text-slate-800">{lot.tenLoaiCa}</td>
                                             <td className="p-3 text-slate-600">{lot.tenSize}</td>
                                             <td className="p-3 text-slate-500">{lot.ngaynhap}</td>
-                                            <td className="p-3 text-right font-bold text-slate-700">
+                                            <td className="p-3 text-right font-semibold tabular-nums text-slate-700">
                                                 {formatKg(lot.soluongconlai)} kg
                                             </td>
                                             <td className="p-3 text-center">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold border ${
+                                                <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold border ${
                                                     lot.isOverdue
                                                         ? "bg-red-50 text-red-600 border-red-200"
                                                         : "bg-green-50 text-green-700 border-green-200"
@@ -486,7 +486,7 @@ export default function TaoPhieuThanhLy() {
                                                     />
                                                 ) : "—"}
                                             </td>
-                                            <td className="p-3 text-right font-bold text-slate-800">
+                                            <td className="p-3 text-right font-bold tabular-nums text-cyan-700">
                                                 {detail
                                                     ? `${(
                                                         Number(detail.soluongthanhly || 0)

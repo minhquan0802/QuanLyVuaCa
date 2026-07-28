@@ -384,13 +384,13 @@ export default function SalesDashboard() {
                             <tbody className="divide-y divide-slate-100">
                                 {processedFishData.map((row, index) => (
                                     <tr key={index} className="hover:bg-slate-50/80 transition-colors">
-                                        <td className="py-4 px-6 font-bold text-slate-700">{row.name}</td>
-                                        <td className="py-4 px-6 text-right font-medium text-slate-600">{row.nhap.toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-bold text-slate-800">{row.ban.toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-medium text-orange-600">{Number(row.banThanhLy || 0).toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-medium text-red-500">{Number(row.tieuHuy || 0).toLocaleString()}</td>
+                                        <td className="py-4 px-6 font-semibold text-slate-800">{row.name}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-slate-700">{row.nhap.toLocaleString()}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-slate-700">{row.ban.toLocaleString()}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-orange-600">{Number(row.banThanhLy || 0).toLocaleString()}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-red-500">{Number(row.tieuHuy || 0).toLocaleString()}</td>
                                         {showTonKho && (
-                                            <td className="py-4 px-6 text-right font-bold text-purple-700">{Number(row.tonKho || 0).toLocaleString()}</td>
+                                            <td className="py-4 px-6 text-right font-bold tabular-nums text-cyan-700">{Number(row.tonKho || 0).toLocaleString()}</td>
                                         )}
                                     </tr>
                                 ))}
@@ -476,16 +476,16 @@ export default function SalesDashboard() {
                                             className="cursor-pointer hover:bg-blue-50/50 transition-colors"
                                             title="Bấm để xem chi tiết đơn hàng"
                                         >
-                                            <td className="px-5 py-4 font-bold text-slate-800">{order.tenKhachHang || "Khách vãng lai"}</td>
+                                            <td className="px-5 py-4 font-semibold text-slate-800">{order.tenKhachHang || "Khách vãng lai"}</td>
                                             <td className="px-5 py-4 text-slate-600 max-w-xl truncate">
                                                 {Object.prototype.hasOwnProperty.call(orderDetailsById, order.iddonhang)
                                                     ? formatOrderItems(orderDetailsById[order.iddonhang])
                                                     : "Đang tải mặt hàng..."}
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold ${status.badge}`}>{status.label}</span>
+                                                <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg border text-xs font-bold ${status.badge}`}>{status.label}</span>
                                             </td>
-                                            <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(order.tongtien || 0)}</td>
+                                            <td className="px-5 py-4 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(order.tongtien || 0)}</td>
                                             <td className="px-5 py-4 text-right text-slate-500">{new Date(order.ngaydat).toLocaleString("vi-VN")}</td>
                                         </tr>
                                     );

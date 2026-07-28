@@ -209,17 +209,17 @@ export default function KichCoLoaiCa() {
                                     <tr>
                                         <th className="text-left px-3 py-2 font-medium">Size</th>
                                         <th className="text-center px-3 py-2 font-medium">Kg quy đổi / con</th>
-                                        <th className="w-8"></th>
+                                        <th className="w-24 px-3 py-2 text-center font-medium">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {fishInventory.map((item) => {
                                         return (
                                             <tr key={item.id} className="hover:bg-slate-50/60">
-                                                <td className="px-3 py-2.5 font-bold text-slate-700">{item.tenSize}</td>
+                                                <td className="px-3 py-2.5 font-semibold text-slate-800">{item.tenSize}</td>
                                                 <td className="px-3 py-2 text-center">
                                                     {item.sokgtuongung ? (
-                                                        <span className="text-cyan-700 font-bold">{item.sokgtuongung} kg</span>
+                                                        <span className="text-slate-700 font-semibold tabular-nums">{item.sokgtuongung} kg</span>
                                                     ) : (
                                                         <div className="flex items-center gap-1.5 justify-center">
                                                             <input
@@ -240,14 +240,12 @@ export default function KichCoLoaiCa() {
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="px-2 py-2.5 text-right">
+                                                <td className="px-2 py-2.5 text-center">
                                                     <button
                                                         onClick={() => handleDeleteSize(item.id)}
-                                                        className="size-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer"
+                                                        className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 font-bold hover:bg-red-100 transition-colors text-xs cursor-pointer"
                                                     >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-3.5">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                                                        </svg>
+                                                        Xóa
                                                     </button>
                                                 </td>
                                             </tr>
