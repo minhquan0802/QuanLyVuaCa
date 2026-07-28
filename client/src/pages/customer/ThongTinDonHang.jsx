@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const BANK_ID = import.meta.env.VITE_BANK_ID || "MB";
 const BANK_ACCOUNT = import.meta.env.VITE_BANK_ACCOUNT || "0123456789";
@@ -27,6 +28,7 @@ const PAYMENT_FILTERS = [
 export default function ThongTinDonHang() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { confirm, showAlert } = useConfirm();
     const isWholesale = user?.vaitro === "CUSTOMER";
 
     // --- STATE DỮ LIỆU CHÍNH ---
@@ -98,14 +100,24 @@ export default function ThongTinDonHang() {
     };
 
     const handleConfirmReceived = async (orderId) => {
-        if (!window.confirm("Xác nhận bạn đã nhận được hàng?")) return;
+        const accepted = await confirm({
+            title: "Xác nhận đã nhận hàng",
+            message: "Bạn xác nhận đã nhận được đơn hàng này?",
+            confirmText: "Đã nhận hàng",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
             await api.put(`/Donhangs/${orderId}/xac-nhan-nhan-hang`);
             setOrders(prev => prev.map(o =>
                 o.iddonhang === orderId ? { ...o, trangthaidonhang: 'GIAO_HANG_THANH_CONG' } : o
             ));
         } catch (error) {
-            alert("Lỗi: " + (error.response?.data?.message || error.message));
+            await showAlert({
+                title: "Không thể xác nhận nhận hàng",
+                message: error.response?.data?.message || error.message,
+                variant: "danger",
+            });
         }
     };
 
@@ -145,9 +157,20 @@ export default function ThongTinDonHang() {
 
     const handleConfirmPay = async () => {
         const soTien = getSoTienThanhToan();
-        if (soTien <= 0) { alert("Số tiền không hợp lệ"); return; }
+        if (soTien <= 0) {
+            await showAlert({
+                title: "Số tiền không hợp lệ",
+                message: "Vui lòng nhập số tiền thanh toán lớn hơn 0.",
+                variant: "warning",
+            });
+            return;
+        }
         if (payType === 'partial' && soTien < getMinPartial()) {
-            alert(`Số tiền tối thiểu là 10% số còn nợ: ${getMinPartial().toLocaleString()}đ`);
+            await showAlert({
+                title: "Số tiền chưa đạt mức tối thiểu",
+                message: `Số tiền tối thiểu là 10% số còn nợ: ${getMinPartial().toLocaleString()}đ.`,
+                variant: "warning",
+            });
             return;
         }
 
@@ -162,24 +185,42 @@ export default function ThongTinDonHang() {
             if (data.paymentUrl) {
                 window.location.href = data.paymentUrl;
             } else {
-                alert("Lỗi tạo link VNPAY");
+                await showAlert({
+                    title: "Không thể tạo liên kết thanh toán",
+                    message: "Hệ thống không nhận được liên kết thanh toán từ VNPAY.",
+                    variant: "danger",
+                });
             }
         } catch (e) {
-            alert("Lỗi: " + (e.response?.data?.message || e.message));
+            await showAlert({
+                title: "Thanh toán thất bại",
+                message: e.response?.data?.message || e.message,
+                variant: "danger",
+            });
         } finally {
             setPayLoading(false);
         }
     };
 
     const handleCancelOrder = async (orderId) => {
-        if (!window.confirm("Bạn có chắc muốn hủy đơn hàng này không?")) return;
+        const accepted = await confirm({
+            title: "Hủy đơn hàng",
+            message: "Bạn có chắc muốn hủy đơn hàng này không?",
+            confirmText: "Hủy đơn",
+            variant: "danger",
+        });
+        if (!accepted) return;
         try {
             await api.put(`/Donhangs/${orderId}/huy`);
             setOrders(prev => prev.map(o =>
                 o.iddonhang === orderId ? { ...o, trangthaidonhang: 'HUY' } : o
             ));
         } catch (error) {
-            alert("Không thể hủy đơn: " + (error.response?.data?.message || error.message));
+            await showAlert({
+                title: "Không thể hủy đơn hàng",
+                message: error.response?.data?.message || error.message,
+                variant: "danger",
+            });
         }
     };
 
