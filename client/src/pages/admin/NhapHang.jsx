@@ -27,6 +27,7 @@ export default function NhapHang() {
 
     const [inventory, setInventory] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [priceList, setPriceList] = useState([]);
     const [importHistory, setImportHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddNcc, setShowAddNcc] = useState(false);
@@ -52,16 +53,18 @@ export default function NhapHang() {
 
     const [addedDetails, setAddedDetails] = useState([]);
 
-    // Tải kho, nhà cung cấp và lịch sử nhập gần nhất.
+    // Tải kho, nhà cung cấp, bảng giá hiện hành và lịch sử nhập gần nhất.
     useEffect(() => {
         Promise.all([
             api.get("/Chitietcabans"),
             api.get("/Nhacungcaps"),
+            api.get("/Banggias"),
             api.get("/Phieunhaps"),
         ])
-            .then(([resInventory, resSuppliers, resHistory]) => {
+            .then(([resInventory, resSuppliers, resPrices, resHistory]) => {
                 setInventory(resInventory.data.result || []);
                 setSuppliers(resSuppliers.data.result || []);
+                setPriceList(resPrices.data.result || []);
                 setImportHistory(resHistory.data.result || []);
             })
             .catch(() => showToast("Không thể tải dữ liệu!", "error"))
@@ -124,6 +127,49 @@ export default function NhapHang() {
               .map(item => ({ id: item.idSizeCa, sizeca: item.tenSize }))
         : [];
 
+    const getAutomaticSalePrices = (fishId, sizeId, sizeName) => {
+        const inventoryItem = inventory.find(item =>
+            Number(item.idLoaiCa) === Number(fishId)
+            && Number(item.idSizeCa) === Number(sizeId)
+        );
+        const currentPrice = inventoryItem
+            ? priceList.find(price =>
+                Number(price.idChitietcaban) === Number(inventoryItem.id)
+                && (price.trangThai === "Đang áp dụng" || !price.ngayKetThuc)
+                && (!price.ngayBatDau || price.ngayBatDau <= today)
+            )
+            : null;
+        const previousPrice = getPreviousPrice(fishId, sizeName);
+
+        return {
+            retail: currentPrice?.giaBanLe ?? previousPrice?.giabanle ?? "",
+            wholesale: currentPrice?.giaBanSi ?? previousPrice?.giabansi ?? "",
+        };
+    };
+
+    // Điền giá cho kích thước được truyền sẵn từ trang kho sau khi các nguồn giá tải xong.
+    useEffect(() => {
+        if (!importForm.idloaica || !currentDetail.idsizeca || !currentDetail.sizeName) return;
+
+        const automaticPrices = getAutomaticSalePrices(
+            importForm.idloaica,
+            currentDetail.idsizeca,
+            currentDetail.sizeName,
+        );
+        setCurrentDetail(previous => ({
+            ...previous,
+            giabanledukien: automaticPrices.retail,
+            giabansidukien: automaticPrices.wholesale,
+        }));
+    }, [
+        importForm.idloaica,
+        currentDetail.idsizeca,
+        currentDetail.sizeName,
+        inventory,
+        priceList,
+        importHistory,
+    ]);
+
     const handleSelectFishImport = (fishId) => {
         if (addedDetails.length > 0) {
             showToast("Hãy xóa các dòng đã thêm trước khi đổi loại cá!", "error");
@@ -137,13 +183,18 @@ export default function NhapHang() {
     const handleSelectSize = (e) => {
         const sizeId = e.target.value;
         const sizeObj = availableSizes.find(s => s.id == sizeId);
-        
+        const automaticPrices = getAutomaticSalePrices(
+            importForm.idloaica,
+            sizeId,
+            sizeObj?.sizeca || "",
+        );
+
         setCurrentDetail(prev => ({
             ...prev,
             idsizeca: sizeId,
             sizeName: sizeObj ? sizeObj.sizeca : "",
-            giabanledukien: "",
-            giabansidukien: ""
+            giabanledukien: automaticPrices.retail,
+            giabansidukien: automaticPrices.wholesale,
         }));
     };
 
@@ -155,6 +206,10 @@ export default function NhapHang() {
         const finalLe = Number(currentDetail.giabanledukien);
         const finalSi = Number(currentDetail.giabansidukien);
 
+        if (finalLe <= 0 || finalSi <= 0) {
+            showToast("Vui lòng nhập đầy đủ giá bán lẻ và giá bán sỉ!", "error");
+            return;
+        }
         if (finalLe > 0 && finalLe <= Number(currentDetail.gianhap)) { showToast(`Giá Bán Lẻ phải lớn hơn Giá Nhập!`, "error"); return; }
         if (finalSi > 0 && finalSi <= Number(currentDetail.gianhap)) { showToast(`Giá Bán Sỉ phải lớn hơn Giá Nhập!`, "error"); return; }
 
@@ -183,8 +238,8 @@ export default function NhapHang() {
             sizeName: isQuickImport ? prev.sizeName : "",
             soluongnhap: 10,
             gianhap: 0,
-            giabanledukien: "",
-            giabansidukien: "",
+            giabanledukien: isQuickImport ? prev.giabanledukien : "",
+            giabansidukien: isQuickImport ? prev.giabansidukien : "",
         }));
     };
 
@@ -403,11 +458,31 @@ export default function NhapHang() {
                             </div>
                             <div className="col-span-2">
                                 <label className="text-xs font-bold text-slate-500 block mb-1.5">Giá Bán Lẻ</label>
-                                <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" placeholder="Dự kiến" value={currentDetail.giabanledukien} onChange={e => setCurrentDetail({ ...currentDetail, giabanledukien: e.target.value })} />
+                                <input
+                                    type="number"
+                                    className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 outline-none"
+                                    placeholder="Nhập giá bán lẻ"
+                                    value={currentDetail.giabanledukien}
+                                    onChange={e => setCurrentDetail({
+                                        ...currentDetail,
+                                        giabanledukien: e.target.value,
+                                    })}
+                                    title="Được gợi ý tự động và có thể chỉnh sửa"
+                                />
                             </div>
                             <div className="col-span-2">
                                 <label className="text-xs font-bold text-slate-500 block mb-1.5">Giá Bán Sỉ</label>
-                                <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" placeholder="Dự kiến" value={currentDetail.giabansidukien} onChange={e => setCurrentDetail({ ...currentDetail, giabansidukien: e.target.value })} />
+                                <input
+                                    type="number"
+                                    className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 outline-none"
+                                    placeholder="Nhập giá bán sỉ"
+                                    value={currentDetail.giabansidukien}
+                                    onChange={e => setCurrentDetail({
+                                        ...currentDetail,
+                                        giabansidukien: e.target.value,
+                                    })}
+                                    title="Được gợi ý tự động và có thể chỉnh sửa"
+                                />
                             </div>
                             <div className="col-span-1">
                                 <button onClick={handleAddDetail} className="w-full p-2 bg-cyan-600 text-white border border-black rounded-lg hover:bg-cyan-700 flex justify-center cursor-pointer" title="Thêm vào phiếu">
@@ -419,17 +494,15 @@ export default function NhapHang() {
                         </div>
 
                         <div className="mt-4 rounded-xl border border-black bg-white p-3">
-                            <p className="text-xs font-bold uppercase text-slate-500 mb-2">Giá của lần nhập gần nhất</p>
+                            <p className="text-xs font-bold uppercase text-slate-500 mb-2">Giá nhập gần nhất theo kích thước</p>
                             {previousPricesBySize.length > 0 ? (
                                 <div className="overflow-x-auto rounded-lg border border-slate-200">
-                                    <table className="w-full min-w-[680px] text-sm">
+                                    <table className="w-full min-w-[420px] text-sm">
                                         <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
                                             <tr>
                                                 <th className="p-2.5 text-left">Kích thước</th>
                                                 <th className="p-2.5 text-center">Ngày nhập</th>
                                                 <th className="p-2.5 text-right">Giá nhập</th>
-                                                <th className="p-2.5 text-right">Giá bán lẻ</th>
-                                                <th className="p-2.5 text-right">Giá bán sỉ</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -438,8 +511,6 @@ export default function NhapHang() {
                                                     <td className="p-2.5 font-semibold text-slate-800">{size.sizeca}</td>
                                                     <td className="p-2.5 text-center text-slate-500">{size.previousPrice?.ngaynhap || "—"}</td>
                                                     <td className="p-2.5 text-right font-semibold tabular-nums text-slate-700">{formatPreviousCurrency(size.previousPrice?.gianhap)}</td>
-                                                    <td className="p-2.5 text-right font-semibold tabular-nums text-slate-700">{formatPreviousCurrency(size.previousPrice?.giabanle)}</td>
-                                                    <td className="p-2.5 text-right font-semibold tabular-nums text-slate-700">{formatPreviousCurrency(size.previousPrice?.giabansi)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
