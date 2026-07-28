@@ -283,7 +283,7 @@ export default function QuanLyLoaiCa() {
                                                 />
                                             </div>
                                         </td>
-                                        <td className="p-4 font-bold text-cyan-950 w-56">
+                                        <td className="p-4 font-semibold text-slate-800 w-56">
                                             {item.tenloaica}
                                             {item.deleted && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-200 text-slate-500 font-normal">Ngừng bán</span>}
                                         </td>
@@ -291,7 +291,7 @@ export default function QuanLyLoaiCa() {
                                         <td className="p-4">
                                             <div className="flex flex-col items-stretch gap-2">
                                                 {!item.deleted && (
-                                                    <button onClick={() => handleOpenSize(item)} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer">
+                                                    <button onClick={() => handleOpenSize(item)} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 font-bold hover:bg-cyan-100 border border-cyan-200 transition-colors text-xs cursor-pointer">
                                                         Kích cỡ
                                                     </button>
                                                 )}

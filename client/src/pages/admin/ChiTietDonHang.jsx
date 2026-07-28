@@ -178,10 +178,10 @@ export default function ChiTietDonHang() {
                     <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center gap-2 mb-3 flex-wrap">
                             <span className="text-xs font-bold text-slate-500 uppercase">Trạng thái:</span>
-                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${statusConfig.color}`}>{statusConfig.label}</span>
+                            <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold border ${statusConfig.color}`}>{statusConfig.label}</span>
                             {order.trangthaithanhtoan === "DA_THANH_TOAN"
-                                ? <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">Đã thanh toán</span>
-                                : <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-orange-50 text-orange-700 border-orange-200">Chưa thanh toán</span>
+                                ? <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">Đã thanh toán</span>
+                                : <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold border bg-orange-50 text-orange-700 border-orange-200">Chưa thanh toán</span>
                             }
                         </div>
 
@@ -239,10 +239,10 @@ export default function ChiTietDonHang() {
                             <tbody className="divide-y divide-slate-100">
                                 {viewDetails.map(d => (
                                     <tr key={d.idchitietdonhang} className="hover:bg-slate-50/30">
-                                        <td className="p-3 font-bold text-slate-700">{d.tenLoaiCa}</td>
+                                        <td className="p-3 font-semibold text-slate-800">{d.tenLoaiCa}</td>
                                         <td className="p-3 text-slate-500 text-xs">{d.tenSize}</td>
-                                        <td className="p-3 text-center font-bold text-slate-800">{d.soluong} {d.tenDonViTinh}</td>
-                                        <td className="p-3 text-center text-slate-400 font-medium">{d.soluongkgthuctequydoi} kg</td>
+                                        <td className="p-3 text-center font-semibold tabular-nums text-slate-700">{d.soluong} {d.tenDonViTinh}</td>
+                                        <td className="p-3 text-center font-medium tabular-nums text-slate-500">{d.soluongkgthuctequydoi} kg</td>
                                         {isEditingMode && (() => {
                                             const ton = d.soluongton ?? 0;
                                             // Kho hiện tại đã bị trừ sẵn phần kg thực tế cũ của chính đơn này (lúc chuyển
@@ -285,19 +285,19 @@ export default function ChiTietDonHang() {
                                                 <span className="font-bold text-slate-800">{d.soluongkgthucte} kg</span>
                                             )}
                                         </td>
-                                        <td className="p-3 text-right text-slate-400 text-xs">
+                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700 text-xs">
                                             {d.soluongkgthuctequydoi
                                                 ? formatCurrency(Math.round(d.tongtiendukien / d.soluongkgthuctequydoi)) + "/kg"
                                                 : formatCurrency(d.dongia)}
                                         </td>
-                                        <td className="p-3 text-right font-bold text-slate-800">{formatCurrency(d.tongtienthucte ?? d.tongtiendukien)}</td>
+                                        <td className="p-3 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(d.tongtienthucte ?? d.tongtiendukien)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
                                 <tr>
                                     <td colSpan="6" className="p-4 text-right text-slate-500 text-xs uppercase tracking-wider">Tổng cộng hóa đơn thực tế:</td>
-                                    <td className="p-4 text-right font-black text-cyan-600 text-xl">{formatCurrency(calculateTotal())}</td>
+                                    <td className="p-4 text-right font-bold tabular-nums text-cyan-700 text-xl">{formatCurrency(calculateTotal())}</td>
                                 </tr>
                             </tfoot>
                         </table>

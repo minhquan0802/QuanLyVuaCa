@@ -221,12 +221,12 @@ export default function QuanLyBangGia() {
     // Helper: Component Badge trạng thái
     const renderStatusBadge = (status) => {
         if (status === "Đang áp dụng") {
-            return <span className="bg-green-50 text-green-600 px-3 py-1 rounded-full text-xs font-bold border border-green-200 shadow-xs flex items-center gap-1.5 w-fit mx-auto"><span className="size-1.5 rounded-full bg-green-500"></span>Đang áp dụng</span>;
+            return <span className="bg-green-50 text-green-700 px-2.5 py-1 rounded-lg text-xs font-bold border border-green-200 inline-flex items-center justify-center gap-1.5 w-fit mx-auto"><span className="size-1.5 rounded-full bg-green-500"></span>Đang áp dụng</span>;
         }
         if (status === "Sắp áp dụng") {
-            return <span className="bg-cyan-50 text-cyan-600 px-3 py-1 rounded-full text-xs font-bold border border-cyan-200 shadow-xs flex items-center gap-1.5 w-fit mx-auto"><span className="size-1.5 rounded-full bg-cyan-500"></span>Sắp áp dụng</span>;
+            return <span className="bg-cyan-50 text-cyan-700 px-2.5 py-1 rounded-lg text-xs font-bold border border-cyan-200 inline-flex items-center justify-center gap-1.5 w-fit mx-auto"><span className="size-1.5 rounded-full bg-cyan-500"></span>Sắp áp dụng</span>;
         }
-        return <span className="bg-slate-50 text-slate-500 px-3 py-1 rounded-full text-xs font-bold border border-slate-200 shadow-xs flex items-center gap-1.5 w-fit mx-auto"><span className="size-1.5 rounded-full bg-slate-400"></span>Đã hết hạn</span>;
+        return <span className="bg-slate-50 text-slate-500 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 inline-flex items-center justify-center gap-1.5 w-fit mx-auto"><span className="size-1.5 rounded-full bg-slate-400"></span>Đã hết hạn</span>;
     };
 
     return (
@@ -281,15 +281,15 @@ export default function QuanLyBangGia() {
                                 <tr><td colSpan="7" className="p-6 text-center text-slate-400">Đang tải dữ liệu...</td></tr>
                             ) : paginatedPriceList.length > 0 ? (
                                 paginatedPriceList.map((item) => (
-                                    <tr key={item.id} className={`hover:bg-slate-50/80 transition-colors ${item.trangThai === "Đang áp dụng" ? "bg-cyan-50/10" : ""}`}>
-                                        <td className="p-4 font-bold text-cyan-950">{item.tenLoaiCa}</td>
+                                    <tr key={item.id} className="bg-white hover:bg-slate-50/80 transition-colors">
+                                        <td className="p-4 font-semibold text-slate-800">{item.tenLoaiCa}</td>
                                         <td className="p-4">
                                             <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 whitespace-nowrap">{item.tenSize}</span>
                                         </td>
-                                        <td className="p-4 text-right font-mono font-medium text-slate-700">
+                                        <td className="p-4 text-right font-semibold tabular-nums text-slate-700">
                                             {Number(item.giaBanLe).toLocaleString('vi-VN')}
                                         </td>
-                                        <td className="p-4 text-right font-mono font-medium text-slate-700">
+                                        <td className="p-4 text-right font-semibold tabular-nums text-slate-700">
                                             {Number(item.giaBanSi).toLocaleString('vi-VN')}
                                         </td>
                                         <td className="p-4 text-center text-xs text-slate-500">
@@ -311,7 +311,7 @@ export default function QuanLyBangGia() {
                                                 onClick={() => navigate("/admin/QuanLyBangGia/them", {
                                                     state: { idchitietcaban: item.idChitietcaban }
                                                 })}
-                                                className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
+                                                className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 font-bold hover:bg-cyan-100 border border-cyan-200 transition-colors text-xs cursor-pointer"
                                             >
                                                 Thiết lập giá mới
                                             </button>

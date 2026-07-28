@@ -14,5 +14,7 @@ public class ChiTietPhieunhapInResponse {
     String tenSize;
     BigDecimal soluongnhap;
     BigDecimal gianhap;
+    BigDecimal giabanletaithoidiemnhap;
+    BigDecimal giabansitaithoidiemnhap;
     BigDecimal thanhtien;
 }

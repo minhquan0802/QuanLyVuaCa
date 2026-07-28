@@ -62,6 +62,9 @@ public class PhieunhapService {
 
     @Transactional
     public PhieunhapResponse nhapHang(PhieunhapRequest request) {
+        if (request.getNgaynhap() != null && request.getNgaynhap().isBefore(LocalDate.now())) {
+            throw new AppExceptions(ErrorCode.NGAY_NHAP_INVALID);
+        }
         request.getListChiTiet().forEach(this::validateSalePrices);
 
         // --- 1. TẠO PHIẾU NHẬP ---
@@ -204,6 +207,8 @@ public class PhieunhapService {
                                     : "?")
                             .soluongnhap(quantity)
                             .gianhap(importPrice)
+                            .giabanletaithoidiemnhap(detail.getGiabanletaithoidiemnhap())
+                            .giabansitaithoidiemnhap(detail.getGiabansitaithoidiemnhap())
                             .thanhtien(quantity.multiply(importPrice))
                             .build();
                 })

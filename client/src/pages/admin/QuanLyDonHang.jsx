@@ -189,10 +189,10 @@ export default function QuanLyDonHang() {
                                     const statusConfig = ORDER_STATUS[item.trangthaidonhang] || { label: item.trangthaidonhang, badge: "bg-gray-50 text-gray-600 border-slate-200" };
                                     return (
                                         <tr key={item.iddonhang} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="p-4 font-mono font-medium text-cyan-700">
+                                            <td className="p-4 font-mono font-medium text-slate-500">
                                                 #{item.iddonhang.substring(0, 8).toUpperCase()}
                                             </td>
-                                            <td className="p-4 font-bold text-slate-800">
+                                            <td className="p-4 font-semibold text-slate-800">
                                                 <div className="flex flex-col">
                                                     <span>{item.tenKhachHang || "Khách vãng lai"}</span>
                                                     {item.sdtKhachHang && <span className="font-normal text-xs text-slate-500 mt-0.5">{item.sdtKhachHang}</span>}
@@ -202,21 +202,21 @@ export default function QuanLyDonHang() {
                                                 {new Date(item.ngaydat).toLocaleString('vi-VN')}
                                             </td>
                                             <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold border inline-flex items-center w-fit ${statusConfig.badge}`}>
+                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center w-fit ${statusConfig.badge}`}>
                                                     {statusConfig.label}
                                                 </span>
                                             </td>
                                             <td className="p-4">
                                                 {item.trangthaithanhtoan === "DA_THANH_TOAN"
-                                                    ? <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">Đã thanh toán</span>
-                                                    : <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-slate-50 text-slate-500 border-slate-200">Chưa thanh toán</span>
+                                                    ? <span className="px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center bg-emerald-50 text-emerald-700 border-emerald-200">Đã thanh toán</span>
+                                                    : <span className="px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center bg-slate-50 text-slate-500 border-slate-200">Chưa thanh toán</span>
                                                 }
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex flex-col items-stretch gap-2">
                                                     <button
                                                         onClick={() => navigate(`/admin/QuanLyDonHang/chi-tiet/${item.iddonhang}`)}
-                                                        className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-600 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
+                                                        className="w-full inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 font-bold hover:bg-cyan-100 border border-cyan-200 transition-colors text-xs cursor-pointer"
                                                     >
                                                         Xử lý đơn
                                                     </button>

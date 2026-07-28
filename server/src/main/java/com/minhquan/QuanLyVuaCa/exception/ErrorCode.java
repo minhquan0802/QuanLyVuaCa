@@ -101,7 +101,8 @@ public enum ErrorCode {
     NHACUNGCAP_NAME_INVALID(1081, "Ten nha cung cap khong hop le", HttpStatus.BAD_REQUEST),
     NHACUNGCAP_PHONE_INVALID(1082, "So dien thoai nha cung cap khong hop le", HttpStatus.BAD_REQUEST),
     LYDO_THANHLY_EMPTY(1083, "Ly do thanh ly khong duoc de trong", HttpStatus.BAD_REQUEST),
-    QUYDOI_INVALID(1084, "So kg quy doi phai lon hon 0", HttpStatus.BAD_REQUEST);
+    QUYDOI_INVALID(1084, "So kg quy doi phai lon hon 0", HttpStatus.BAD_REQUEST),
+    NGAY_NHAP_INVALID(1085, "Ngay nhap khong duoc nam trong qua khu", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

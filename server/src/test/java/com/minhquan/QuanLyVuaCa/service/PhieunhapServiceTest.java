@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -73,7 +74,7 @@ class PhieunhapServiceTest {
         return PhieunhapRequest.builder()
                 .idloaica(1)
                 .idncc(3)
-                .ngaynhap(LocalDate.of(2026, 7, 23))
+                .ngaynhap(LocalDate.now())
                 .trangthaithanhtoan(trangThaiThanhToan)
                 .listChiTiet(List.of(ChitietPhieunhapRequest.builder()
                         .idsizeca(2)
@@ -118,7 +119,20 @@ class PhieunhapServiceTest {
         Chitietphieunhap loMoi = captor.getValue().getFirst();
         assertEquals(0, new BigDecimal("10.50").compareTo(loMoi.getSoluongconlai()));
         assertEquals(TrangThaiCa.CON_HANG, loMoi.getTrangthaica());
-        assertEquals(LocalDate.of(2026, 7, 25), loMoi.getNgaythanhly());
+        assertEquals(LocalDate.now().plusDays(2), loMoi.getNgaythanhly());
+    }
+
+    @Test
+    void ngayNhapTrongQuaKhu_tuChoiTruocKhiLuuPhieu() {
+        PhieunhapRequest request = request(new BigDecimal("10"), "CHUA_THANH_TOAN");
+        request.setNgaynhap(LocalDate.now().minusDays(1));
+
+        AppExceptions exception = assertThrows(
+                AppExceptions.class,
+                () -> phieunhapService.nhapHang(request));
+
+        assertEquals(ErrorCode.NGAY_NHAP_INVALID, exception.getErrorCode());
+        verifyNoInteractions(phieunhapRepository);
     }
 
     @Test
@@ -166,5 +180,34 @@ class PhieunhapServiceTest {
                 kho.getIdloaica() == loaiCa
                         && kho.getIdsizeca() == sizeCa
                         && kho.getSoluongton().compareTo(new BigDecimal("7.25")) == 0));
+    }
+
+    @Test
+    void getDanhSach_traDuGiaNhapGiaLeVaGiaSiTaiThoiDiemNhap() {
+        sizeCa.setSizeca("Size 1 kg");
+        Chitietcaban kho = Chitietcaban.builder()
+                .id(10)
+                .idloaica(loaiCa)
+                .idsizeca(sizeCa)
+                .build();
+        Phieunhap phieu = new Phieunhap();
+        Chitietphieunhap detail = new Chitietphieunhap();
+        detail.setIdchitietcaban(kho);
+        detail.setSoluongnhap(new BigDecimal("10"));
+        detail.setGianhap(new BigDecimal("30000"));
+        detail.setGiabanletaithoidiemnhap(new BigDecimal("50000"));
+        detail.setGiabansitaithoidiemnhap(new BigDecimal("45000"));
+
+        when(phieunhapRepository.findAll(any(Sort.class))).thenReturn(List.of(phieu));
+        when(phieunhapMapper.toResponse(phieu)).thenReturn(PhieunhapResponse.builder().build());
+        when(chitietphieunhapRepository.findByIdphieunhap(phieu)).thenReturn(List.of(detail));
+
+        PhieunhapResponse response = phieunhapService.getDanhSach().getFirst();
+
+        assertEquals(new BigDecimal("30000"), response.getListChiTiet().getFirst().getGianhap());
+        assertEquals(new BigDecimal("50000"),
+                response.getListChiTiet().getFirst().getGiabanletaithoidiemnhap());
+        assertEquals(new BigDecimal("45000"),
+                response.getListChiTiet().getFirst().getGiabansitaithoidiemnhap());
     }
 }
