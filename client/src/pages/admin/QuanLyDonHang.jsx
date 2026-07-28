@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
-import ColumnFilter from "../../components/admin/ColumnFilter";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 
@@ -14,11 +13,6 @@ const ORDER_STATUS = {
     "HUY": { label: "Đã hủy", dot: "bg-red-500", badge: "bg-red-50 text-red-700 border-red-200" }
 };
 
-const PAYMENT_STATUS = [
-    { value: "DA_THANH_TOAN", label: "Đã thanh toán" },
-    { value: "CHUA_THANH_TOAN", label: "Chưa thanh toán" },
-];
-
 export default function QuanLyDonHang() {
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -28,8 +22,8 @@ export default function QuanLyDonHang() {
     const [loading, setLoading] = useState(true);
 
     // --- 2. STATE ĐIỀU KHIỂN TÍNH NĂNG ---
-    const [selectedStatuses, setSelectedStatuses] = useState([]);
-    const [selectedPayments, setSelectedPayments] = useState([]);
+    const [filterStatus, setFilterStatus] = useState("ALL");
+    const [filterPayment, setFilterPayment] = useState("ALL");
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
@@ -45,13 +39,13 @@ export default function QuanLyDonHang() {
     // Reset về trang 1 khi thay đổi bất kỳ bộ lọc nào
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedStatuses, selectedPayments, searchTerm]);
+    }, [filterStatus, filterPayment, searchTerm]);
 
     // --- 4. XỬ LÝ LỌC ---
     const processedOrders = useMemo(() => {
         let result = orders.filter(o =>
-            (selectedStatuses.length === 0 || selectedStatuses.includes(o.trangthaidonhang)) &&
-            (selectedPayments.length === 0 || selectedPayments.includes(o.trangthaithanhtoan))
+            (filterStatus === "ALL" || o.trangthaidonhang === filterStatus) &&
+            (filterPayment === "ALL" || o.trangthaithanhtoan === filterPayment)
         );
 
         // Bước 2: Lọc theo Từ khóa tìm kiếm (Mã đơn, Tên KH, SĐT)
@@ -65,7 +59,7 @@ export default function QuanLyDonHang() {
         }
 
         return result;
-    }, [orders, selectedStatuses, selectedPayments, searchTerm]);
+    }, [orders, filterStatus, filterPayment, searchTerm]);
 
     // --- 5. XỬ LÝ PHÂN TRANG ---
     const paginatedOrders = useMemo(() => {
@@ -102,6 +96,77 @@ export default function QuanLyDonHang() {
                 </button>
             </div>
 
+            {/* BỘ LỌC TRẠNG THÁI ĐƠN HÀNG VÀ THANH TOÁN */}
+            <div className="bg-slate-50/50 border border-slate-200 p-4 rounded-2xl mb-6 flex flex-col gap-4 shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                    <div className="text-xs font-bold text-slate-500 uppercase lg:w-36 shrink-0 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                        </svg>
+                        Trạng thái đơn
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setFilterStatus("ALL")}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                                filterStatus === "ALL"
+                                    ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
+                                    : "bg-white text-slate-600 border-slate-200 hover:bg-cyan-50 hover:text-cyan-800"
+                            }`}
+                        >
+                            Tất cả
+                        </button>
+                        {Object.entries(ORDER_STATUS).map(([status, config]) => (
+                            <button
+                                type="button"
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 border ${
+                                    filterStatus === status
+                                        ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
+                                        : "bg-white text-slate-600 border-slate-200 hover:bg-cyan-50 hover:text-cyan-800"
+                                }`}
+                            >
+                                <span className={`size-2 rounded-full ${config.dot}`}></span>
+                                {config.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="h-px w-full bg-slate-200/80 hidden lg:block"></div>
+
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                    <div className="text-xs font-bold text-slate-500 uppercase lg:w-36 shrink-0 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        Thanh toán
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {[
+                            { value: "ALL", label: "Tất cả" },
+                            { value: "DA_THANH_TOAN", label: "Đã thanh toán" },
+                            { value: "CHUA_THANH_TOAN", label: "Chưa thanh toán" },
+                        ].map(({ value, label }) => (
+                            <button
+                                type="button"
+                                key={value}
+                                onClick={() => setFilterPayment(value)}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                                    filterPayment === value
+                                        ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
+                                        : "bg-white text-slate-600 border-slate-200 hover:bg-cyan-50 hover:text-cyan-800"
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
             {/* BẢNG HIỂN THỊ DANH SÁCH ĐƠN HÀNG */}
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
                 <div className="overflow-x-auto">
@@ -111,31 +176,8 @@ export default function QuanLyDonHang() {
                                 <th className="p-4">Mã Đơn</th>
                                 <th className="p-4">Khách Hàng</th>
                                 <th className="p-4">Ngày Đặt</th>
-                                <th className="p-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Trạng thái</span>
-                                        <ColumnFilter
-                                            label="Trạng thái đơn"
-                                            options={Object.entries(ORDER_STATUS).map(([value, config]) => ({
-                                                value,
-                                                label: config.label,
-                                            }))}
-                                            selectedValues={selectedStatuses}
-                                            onChange={setSelectedStatuses}
-                                        />
-                                    </div>
-                                </th>
-                                <th className="p-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Thanh toán</span>
-                                        <ColumnFilter
-                                            label="Thanh toán"
-                                            options={PAYMENT_STATUS}
-                                            selectedValues={selectedPayments}
-                                            onChange={setSelectedPayments}
-                                        />
-                                    </div>
-                                </th>
+                                <th className="p-4">Trạng thái</th>
+                                <th className="p-4">Thanh toán</th>
                                 <th className="p-4 text-center w-40">Thao tác</th>
                             </tr>
                         </thead>

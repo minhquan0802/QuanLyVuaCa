@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 function ColumnFilter({ label, options, selectedValues, onChange }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -139,6 +140,7 @@ function ColumnFilter({ label, options, selectedValues, onChange }) {
 export default function QuanLyLoaiCa() {
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     // --- STATE DỮ LIỆU GỐC ---
     const [categories, setCategories] = useState([]);
@@ -207,7 +209,13 @@ export default function QuanLyLoaiCa() {
     };
 
     const handleNgungBan = async (item) => {
-        if (!window.confirm(`Ngừng bán "${item.tenloaica}"? Bảng giá sẽ hết hiệu lực ngay.`)) return;
+        const accepted = await confirm({
+            title: "Ngừng bán loại cá",
+            message: `Ngừng bán “${item.tenloaica}”? Bảng giá sẽ hết hiệu lực ngay.`,
+            confirmText: "Ngừng bán",
+            variant: "danger",
+        });
+        if (!accepted) return;
         try {
             await api.delete(`/Loaicas/${item.id}`);
             setCategories(prev => prev.map(c => c.id === item.id ? { ...c, deleted: true } : c));

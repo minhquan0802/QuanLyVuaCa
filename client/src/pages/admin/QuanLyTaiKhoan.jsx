@@ -4,10 +4,12 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import ColumnFilter from "../../components/admin/ColumnFilter";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function QuanLyTaiKhoan() {
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     // --- 1. STATE DỮ LIỆU GỐC ---
     const [accounts, setAccounts] = useState([]);
@@ -91,7 +93,13 @@ export default function QuanLyTaiKhoan() {
     const handleToggleLock = async (item) => {
         const isLocking = item.trangthaitk === "HOAT_DONG";
         const action = isLocking ? "khóa" : "mở khóa";
-        if (!window.confirm(`Bạn chắc muốn ${action} tài khoản "${item.ho} ${item.ten}"?`)) return;
+        const accepted = await confirm({
+            title: isLocking ? "Khóa tài khoản" : "Mở khóa tài khoản",
+            message: `Bạn có chắc muốn ${action} tài khoản “${item.ho} ${item.ten}”?`,
+            confirmText: isLocking ? "Khóa tài khoản" : "Mở khóa",
+            variant: isLocking ? "danger" : "primary",
+        });
+        if (!accepted) return;
         try {
             await api.put(`/tai-khoan/${item.idtaikhoan}`, {
                 ...item,
@@ -106,7 +114,13 @@ export default function QuanLyTaiKhoan() {
     };
 
     const handleApprove = async (item) => {
-        if (!window.confirm(`Phê duyệt tài khoản "${item.ho} ${item.ten}"?`)) return;
+        const accepted = await confirm({
+            title: "Phê duyệt tài khoản",
+            message: `Phê duyệt tài khoản “${item.ho} ${item.ten}”?`,
+            confirmText: "Phê duyệt",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
             await api.put(`/tai-khoan/duyet/${item.idtaikhoan}`);
             showToast("Phê duyệt tài khoản thành công!", "success");

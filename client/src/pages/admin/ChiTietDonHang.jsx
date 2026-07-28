@@ -4,6 +4,7 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const ORDER_STATUS = {
     CHO_XAC_NHAN:         { label: "Chờ xác nhận",    color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
@@ -21,6 +22,7 @@ export default function ChiTietDonHang() {
     const location = useLocation();
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
     const isAdmin = user?.vaitro === "ADMIN";
 
     const [order, setOrder] = useState(null);
@@ -87,7 +89,13 @@ export default function ChiTietDonHang() {
     };
 
     const handleMarkPayment = async () => {
-        if (!window.confirm("Xác nhận ghi nhận đơn hàng này đã thanh toán tiền mặt?")) return;
+        const accepted = await confirm({
+            title: "Xác nhận thanh toán",
+            message: "Ghi nhận đơn hàng này đã thanh toán bằng tiền mặt?",
+            confirmText: "Đã thanh toán",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
             await api.put(`/Thanhtoan/${id}/thanh-toan-thu-cong`);
             setOrder(prev => ({ ...prev, trangthaithanhtoan: "DA_THANH_TOAN" }));
@@ -100,8 +108,23 @@ export default function ChiTietDonHang() {
     // Thay đổi trạng thái đơn hàng nhanh
     const handleUpdateStatus = async (newStatus) => {
         if (updatingStatus) return;
-        if (isEdited && !window.confirm("Bạn chưa lưu cân nặng đã sửa. Tiếp tục đổi trạng thái?")) return;
-        if (!window.confirm(`Xác nhận chuyển trạng thái sang: ${ORDER_STATUS[newStatus].label}?`)) return;
+        if (isEdited) {
+            const discardWeightChanges = await confirm({
+                title: "Cân nặng chưa được lưu",
+                message: "Bạn chưa lưu cân nặng đã sửa. Tiếp tục đổi trạng thái và bỏ các thay đổi này?",
+                confirmText: "Tiếp tục",
+                variant: "warning",
+            });
+            if (!discardWeightChanges) return;
+        }
+
+        const accepted = await confirm({
+            title: "Đổi trạng thái đơn hàng",
+            message: `Chuyển trạng thái đơn hàng sang “${ORDER_STATUS[newStatus].label}”?`,
+            confirmText: "Đổi trạng thái",
+            variant: newStatus === "HUY" ? "danger" : "primary",
+        });
+        if (!accepted) return;
         setUpdatingStatus(true);
         try {
             const res = await api.put(`/Donhangs/${id}/status`, { trangthaidonhang: newStatus });

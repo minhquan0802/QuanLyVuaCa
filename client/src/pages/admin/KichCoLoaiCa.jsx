@@ -3,11 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function KichCoLoaiCa() {
     const { loaicaId } = useParams();
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [selectedFish, setSelectedFish] = useState(null);
     const [fishInventory, setFishInventory] = useState([]);
@@ -102,7 +104,13 @@ export default function KichCoLoaiCa() {
     };
 
     const handleDeleteSize = async (chitietId) => {
-        if (!window.confirm("Xóa kích thước này khỏi loại cá?")) return;
+        const accepted = await confirm({
+            title: "Xóa kích thước",
+            message: "Bạn có chắc muốn xóa kích thước này khỏi loại cá?",
+            confirmText: "Xóa",
+            variant: "danger",
+        });
+        if (!accepted) return;
         try {
             await api.delete(`/Chitietcabans/${chitietId}`);
             setFishInventory(prev => prev.filter(s => s.id !== chitietId));
