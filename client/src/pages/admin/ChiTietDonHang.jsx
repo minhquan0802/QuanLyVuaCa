@@ -225,7 +225,7 @@ export default function ChiTietDonHang() {
                                     <th className="p-3 text-center">Số lượng</th>
                                     <th className="p-3 text-center text-slate-400">Dự kiến (Kg)</th>
                                     {isEditingMode && (
-                                        <th className="p-3 text-center text-emerald-700 bg-emerald-50 border-x border-slate-200">
+                                        <th className="p-3 text-center">
                                             Tồn kho
                                         </th>
                                     )}
@@ -255,8 +255,8 @@ export default function ChiTietDonHang() {
                                             const nhapThucTe = parseFloat(d.editWeight) || 0;
                                             const nguy = nhapThucTe > 0 && nhapThucTe > tonKhaDung;
                                             return (
-                                                <td className={`p-3 text-center border-x border-slate-200 ${nguy ? "bg-red-50" : "bg-emerald-50"}`}>
-                                                    <div className={`font-bold text-sm ${nguy ? "text-red-600" : "text-emerald-700"}`}>
+                                                <td className={`p-3 text-center border-x border-slate-200 ${nguy ? "bg-red-50" : ""}`}>
+                                                    <div className={`font-bold text-sm ${nguy ? "text-red-600" : "text-slate-700"}`}>
                                                         {tonKhaDung} kg
                                                     </div>
                                                     {donKhac > 0 && (

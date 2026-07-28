@@ -14,7 +14,6 @@ import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.DonhangMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
-import com.minhquan.QuanLyVuaCa.scheduler.LoHangQuaHanScheduler;
 import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
 import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +30,6 @@ import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -182,7 +180,7 @@ public class DonhangService {
 
                     if (tonCoTheBan.compareTo(luongCanTru) < 0) {
                         throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + finalChitietcaban.getIdloaica().getTenloaica()
-                                + " không đủ hàng còn hạn! (Có thể bán: " + tonCoTheBan + ", Đặt: " + luongCanTru + ")");
+                                + " không đủ hàng! (Có thể bán: " + tonCoTheBan + ", Đặt: " + luongCanTru + ")");
                     }
 
                     truLoFifo(finalChitietcaban, luongCanTru);
@@ -468,7 +466,7 @@ public class DonhangService {
                 BigDecimal luongCanTru = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
                 if (luongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-                // Chỉ khối lượng thuộc lô còn hạn mới được phép giao.
+                // Cho phép giao từ tất cả lô còn hàng, bao gồm cả lô quá hạn.
                 BigDecimal tonCoTheBan = tinhTonCoTheBan(kho);
                 // xuống đúng số tồn kho hiện có rồi trừ sạch phần tồn đó.
                 if (tonCoTheBan.compareTo(luongCanTru) < 0) {
@@ -665,7 +663,7 @@ public class DonhangService {
                 throw new AppExceptions(
                         ErrorCode.INVENTORY_NOT_ENOUGH,
                         "Sản phẩm " + sanphamTrongKho.getIdloaica().getTenloaica()
-                                + " không đủ hàng còn hạn! (Có thể bán: " + tonCoTheBan
+                                + " không đủ hàng! (Có thể bán: " + tonCoTheBan
                                 + ", Đặt: " + soLuongCanTru + ")");
             }
 
@@ -679,26 +677,16 @@ public class DonhangService {
     }
 
     private BigDecimal tinhTonCoTheBan(Chitietcaban sanphamTrongKho) {
-        LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
-        BigDecimal tonConHan = chitietphieunhapRepository
-                .tongTonConHanTheoSanPham(sanphamTrongKho, nguongConHan);
+        BigDecimal tongTonLo = chitietphieunhapRepository.tongTonConLaiTheoSanPham(sanphamTrongKho);
         BigDecimal tonTong = sanphamTrongKho.getSoluongton() != null
                 ? sanphamTrongKho.getSoluongton()
                 : BigDecimal.ZERO;
-        return (tonConHan != null ? tonConHan : BigDecimal.ZERO).min(tonTong);
+        return (tongTonLo != null ? tongTonLo : BigDecimal.ZERO).min(tonTong);
     }
 
-    // Trừ dần soluongconlai của các lô còn hạn thuộc sản phẩm kho này,
-    // lô nhập trước (ngaynhap cũ hơn) bị trừ trước.
+    // Trừ dần soluongconlai của tất cả lô còn hàng, bao gồm cả lô quá hạn.
+    // Lô nhập trước (ngaynhap cũ hơn) bị trừ trước nên hàng quá hạn/cũ được ưu tiên xuất trước.
     private void truLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
-        LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
-        List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
-                .findByIdchitietcabanAndSoluongconlaiGreaterThanAndIdphieunhap_NgaynhapGreaterThanEqualOrderByIdphieunhap_NgaynhapAsc(
-                        sanphamTrongKho, BigDecimal.ZERO, nguongConHan);
-        truSoLuongTrongDanhSachLo(sanphamTrongKho, danhSachLo, soLuongCanTru);
-    }
-
-    private void truLoFifoTatCa(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
         List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
                 .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
                         sanphamTrongKho, BigDecimal.ZERO);
@@ -824,7 +812,7 @@ public class DonhangService {
             if (lech.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             try {
-                truLoFifoTatCa(kho, lech);
+                truLoFifo(kho, lech);
             } catch (RuntimeException e) {
                 canhBao.add("Kho ID " + kho.getId() + " (" + kho.getIdloaica().getTenloaica() + " - "
                         + kho.getIdsizeca().getSizeca() + "): " + e.getMessage());

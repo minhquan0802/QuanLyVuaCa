@@ -57,7 +57,7 @@ class DonhangServiceTest {
         donhangService = new DonhangService(donhangRepository, chitietdonhangRepository, chitietcabanRepository,
                 chitietphieunhapRepository, donvitinhRepository, taikhoanRepository, donhangMapper, congNoService,
                 banggiaRepository, thongBaoService);
-        lenient().when(chitietphieunhapRepository.tongTonConHanTheoSanPham(any(), any()))
+        lenient().when(chitietphieunhapRepository.tongTonConLaiTheoSanPham(any()))
                 .thenAnswer(invocation -> {
                     Chitietcaban sanPham = invocation.getArgument(0);
                     return sanPham.getSoluongton();

@@ -24,10 +24,6 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     List<Chitietphieunhap> findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
             Chitietcaban idchitietcaban, BigDecimal soluong);
 
-    // FIFO chỉ gồm các lô đủ điều kiện bán: còn hàng và chưa quá hạn.
-    List<Chitietphieunhap> findByIdchitietcabanAndSoluongconlaiGreaterThanAndIdphieunhap_NgaynhapGreaterThanEqualOrderByIdphieunhap_NgaynhapAsc(
-            Chitietcaban idchitietcaban, BigDecimal soluong, LocalDate ngaynhap);
-
     // Tất cả lô còn hàng, không phân biệt sản phẩm — dùng cho màn hình thanh lý nhanh
     List<Chitietphieunhap> findBySoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(BigDecimal soluong);
 
@@ -50,15 +46,14 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     """)
     List<TonKhoConHanProjection> tongTonConHanTheoTatCaSanPham(@Param("nguong") LocalDate nguong);
 
+    // Tổng tồn của tất cả lô còn hàng, bao gồm cả lô đã quá hạn.
     @Query("""
         SELECT COALESCE(SUM(ct.soluongconlai), 0)
         FROM Chitietphieunhap ct
         WHERE ct.idchitietcaban = :sanpham
           AND ct.soluongconlai > 0
-          AND ct.idphieunhap.ngaynhap >= :nguong
     """)
-    BigDecimal tongTonConHanTheoSanPham(@Param("sanpham") Chitietcaban sanpham,
-                                        @Param("nguong") LocalDate nguong);
+    BigDecimal tongTonConLaiTheoSanPham(@Param("sanpham") Chitietcaban sanpham);
 
     // Lô mới nhất trước — dùng để hoàn trả tồn kho (LIFO ngược lại với FIFO lúc trừ)
     List<Chitietphieunhap> findByIdchitietcabanOrderByIdphieunhap_NgaynhapDesc(Chitietcaban idchitietcaban);

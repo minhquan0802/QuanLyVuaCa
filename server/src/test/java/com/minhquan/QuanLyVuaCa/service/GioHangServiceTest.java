@@ -76,7 +76,7 @@ class GioHangServiceTest {
         donViTinh.setHesokg(BigDecimal.ZERO);
 
         lenient().when(taikhoanRepository.findByEmail("khach@vuaca.vn")).thenReturn(Optional.of(user));
-        lenient().when(chitietphieunhapRepository.tongTonConHanTheoSanPham(any(), any()))
+        lenient().when(chitietphieunhapRepository.tongTonConLaiTheoSanPham(any()))
                 .thenReturn(new BigDecimal("20"));
     }
 
@@ -125,21 +125,19 @@ class GioHangServiceTest {
     }
 
     @Test
-    void themSanPhamKhiChiConLoQuaHan_biTuChoi() {
+    void themSanPhamKhiChiConLoQuaHan_vanDuocThem() {
         when(gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai("kh-1", TrangThaiGioHang.DANG_HOAT_DONG))
                 .thenReturn(Optional.of(gioHang));
         when(chitietcabanRepository.findById(1)).thenReturn(Optional.of(sanPham));
         when(donvitinhRepository.findById(1)).thenReturn(Optional.of(donViTinh));
         when(chitietGioHangRepository.findItem("gh-1", 1, 1)).thenReturn(Optional.empty());
-        when(chitietphieunhapRepository.tongTonConHanTheoSanPham(eq(sanPham), any()))
-                .thenReturn(BigDecimal.ZERO);
+        when(chitietGioHangRepository.findByIdgiohang_Idgiohang("gh-1")).thenReturn(List.of());
 
-        AppExceptions exception = assertThrows(
-                AppExceptions.class,
-                () -> gioHangService.themSanPham(new ThemVaoGioHangRequest(1, 1, 1)));
+        assertDoesNotThrow(() ->
+                gioHangService.themSanPham(new ThemVaoGioHangRequest(1, 1, 1)));
 
-        assertEquals(ErrorCode.INVENTORY_NOT_ENOUGH, exception.getErrorCode());
-        verify(chitietGioHangRepository, never()).save(any());
+        verify(chitietGioHangRepository).save(any(ChitietGioHang.class));
+        verify(chitietphieunhapRepository).tongTonConLaiTheoSanPham(sanPham);
     }
 
     @Test
