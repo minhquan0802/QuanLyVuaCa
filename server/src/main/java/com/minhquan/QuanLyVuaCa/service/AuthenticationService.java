@@ -6,6 +6,7 @@ import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.CookieResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.IntrospectResponse;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
+import com.minhquan.QuanLyVuaCa.enums.TokenType;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
@@ -66,6 +67,10 @@ public class AuthenticationService {
     @Value("${cookie.same-site}")
     protected String COOKIE_SAME_SITE;
 
+    @NonFinal
+    @Value("${server.servlet.context-path:}")
+    protected String CONTEXT_PATH;
+
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         var taiKhoan = taiKhoanRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
@@ -82,8 +87,8 @@ public class AuthenticationService {
         if (TrangThaiTaiKhoan.KHOA.equals(taiKhoan.getTrangthaitk()))
             throw new AppExceptions(ErrorCode.ACCOUNT_LOCKED);
 
-        String token = generateToken(taiKhoan, TOKEN_TIME);
-        String refreshToken = generateToken(taiKhoan, REFRESH_TIME);
+        String token = generateToken(taiKhoan, TOKEN_TIME, TokenType.ACCESS);
+        String refreshToken = generateToken(taiKhoan, REFRESH_TIME, TokenType.REFRESH);
 
         return AuthenticationResponse.builder()
                 .token(token)
@@ -98,7 +103,7 @@ public class AuthenticationService {
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
         }
 
-        var signJwt = verifyToken(refreshToken);
+        var signJwt = verifyToken(refreshToken, TokenType.REFRESH);
 
         invalidateToken(signJwt);
 
@@ -109,8 +114,8 @@ public class AuthenticationService {
         if (TrangThaiTaiKhoan.KHOA.equals(taiKhoan.getTrangthaitk()))
             throw new AppExceptions(ErrorCode.ACCOUNT_LOCKED);
 
-        String newToken = generateToken(taiKhoan, TOKEN_TIME);
-        String newRefreshToken = generateToken(taiKhoan, REFRESH_TIME);
+        String newToken = generateToken(taiKhoan, TOKEN_TIME, TokenType.ACCESS);
+        String newRefreshToken = generateToken(taiKhoan, REFRESH_TIME, TokenType.REFRESH);
 
         return AuthenticationResponse.builder()
                 .token(newToken)
@@ -120,34 +125,22 @@ public class AuthenticationService {
     }
 
     public void logout(String token, String refreshToken) {
-        try {
-            if (token != null){
-                SignedJWT parseToken = SignedJWT.parse(token);
-                invalidateToken(parseToken);
-            }
-
-            if (refreshToken != null){
-                SignedJWT parseRefreshToken = SignedJWT.parse(refreshToken);
-                invalidateToken(parseRefreshToken);
-            }
-
-        } catch (Exception e) {
-            log.error("Token đã không hợp lệ hoặc cấu trúc lỗi", e);
-        }
+        verifyAndInvalidate(token, TokenType.ACCESS);
+        verifyAndInvalidate(refreshToken, TokenType.REFRESH);
     }
 
     public IntrospectResponse introspect(IntrospectRequest request) {
         var token = request.getToken();
         boolean isValid = true;
         try {
-            verifyToken(token);
+            verifyToken(token, TokenType.ACCESS);
         } catch (Exception e) {
             isValid = false;
         }
         return IntrospectResponse.builder().valid(isValid).build();
     }
 
-    private String generateToken(Taikhoan taikhoan, long duration) {
+    private String generateToken(Taikhoan taikhoan, long duration, TokenType tokenType) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(taikhoan.getEmail())
@@ -157,6 +150,7 @@ public class AuthenticationService {
                         Instant.now().plus(duration, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("role", buildScope(taikhoan))
+                .claim("token_type", tokenType.getClaimValue())
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -172,24 +166,56 @@ public class AuthenticationService {
         }
     }
 
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+    private SignedJWT verifyToken(String token, TokenType expectedType) throws JOSEException, ParseException {
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
         SignedJWT signedJWT = SignedJWT.parse(token);
 
         Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
         var verify = signedJWT.verify(verifier);
 
-        if (!(verify && expirationTime.after(new Date())))
+        if (!(verify && expirationTime != null && expirationTime.after(new Date())))
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+
+        String tokenType = signedJWT.getJWTClaimsSet().getStringClaim("token_type");
+        if (!expectedType.getClaimValue().equals(tokenType))
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
 
         String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        if (jwtId == null || jwtId.isBlank())
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+
         Boolean isBlacklisted = redisTemplate.hasKey("blacklist:" + jwtId);
 
         if (isBlacklisted) {
             throw new AppExceptions(ErrorCode.BLACKLIST);
         }
 
+        validateCurrentAccount(signedJWT);
         return signedJWT;
+    }
+
+    private void validateCurrentAccount(SignedJWT signedJWT) throws ParseException {
+        String email = signedJWT.getJWTClaimsSet().getSubject();
+        Taikhoan taiKhoan = taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.UNAUTHENTICATED));
+
+        if (!TrangThaiTaiKhoan.HOAT_DONG.equals(taiKhoan.getTrangthaitk()))
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+
+        String tokenRole = signedJWT.getJWTClaimsSet().getStringClaim("role");
+        if (!buildScope(taiKhoan).equals(tokenRole))
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+    }
+
+    private void verifyAndInvalidate(String token, TokenType tokenType) {
+        if (token == null || token.isBlank())
+            return;
+
+        try {
+            invalidateToken(verifyToken(token, tokenType));
+        } catch (Exception exception) {
+            log.warn("Bo qua token {} khong hop le khi dang xuat", tokenType.getClaimValue());
+        }
     }
 
     private void invalidateToken(SignedJWT signToken) throws ParseException {
@@ -228,7 +254,7 @@ public class AuthenticationService {
                 .httpOnly(true)
                 .secure(COOKIE_SECURE)
                 .maxAge(refreshTokenTime)
-                .path("/")
+                .path(refreshCookiePath())
                 .sameSite(COOKIE_SAME_SITE)
                 .build();
 
@@ -236,5 +262,12 @@ public class AuthenticationService {
                 .token(tokenCookie)
                 .refreshToken(refreshTokenCookie)
                 .build();
+    }
+
+    private String refreshCookiePath() {
+        String normalizedContextPath = CONTEXT_PATH == null ? "" : CONTEXT_PATH.trim();
+        if (normalizedContextPath.isEmpty() || "/".equals(normalizedContextPath))
+            return "/auth";
+        return normalizedContextPath.replaceAll("/+$", "") + "/auth";
     }
 }

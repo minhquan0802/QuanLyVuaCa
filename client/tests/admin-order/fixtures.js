@@ -60,6 +60,10 @@ export async function fulfillJson(route, body, status = 200) {
 }
 
 export async function mockUser(page, user = ADMIN) {
+  await page.route('**/auth/csrf', (route) => route.fulfill({
+    status: 200,
+    headers: { 'X-CSRF-TOKEN': 'test-csrf-token', 'Access-Control-Expose-Headers': 'X-CSRF-TOKEN' },
+  }));
   await page.route('**/tai-khoan/my-info', (route) => fulfillJson(route, { result: user }));
   await page.route('**/gio-hang', (route) => fulfillJson(route, { result: { items: [], tongTien: 0 } }));
   await page.route('**/ThongBao/**', (route) => fulfillJson(route, { result: [] }));
