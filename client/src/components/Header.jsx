@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useConfirm } from "../context/ConfirmContext";
 import api from "../config/axios";
 
 export default function Header() {
@@ -9,6 +10,7 @@ export default function Header() {
     const location = useLocation();
     const { user, logout } = useAuth();
     const { totalItems } = useCart();
+    const { confirm } = useConfirm();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -55,6 +57,13 @@ export default function Header() {
 
     const handleClickThongBao = async (thongBao) => {
         if (!thongBao.daxem) {
+            const accepted = await confirm({
+                title: "Mở thông báo",
+                message: "Đánh dấu thông báo này là đã đọc và mở nội dung?",
+                confirmText: "Mở thông báo",
+                variant: "primary",
+            });
+            if (!accepted) return;
             try {
                 await api.put(`/ThongBao/${thongBao.idthongbao}/da-xem`);
                 setThongBaoList(prev => prev.map(tb => tb.idthongbao === thongBao.idthongbao ? { ...tb, daxem: true } : tb));
@@ -71,9 +80,16 @@ export default function Header() {
         setIsDropdownOpen(false);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        const accepted = await confirm({
+            title: "Đăng xuất",
+            message: "Kết thúc phiên đăng nhập hiện tại?",
+            confirmText: "Đăng xuất",
+            variant: "warning",
+        });
+        if (!accepted) return;
         setIsDropdownOpen(false);
-        logout();
+        await logout();
     };
 
     return (
