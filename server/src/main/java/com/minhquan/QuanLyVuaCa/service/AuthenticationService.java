@@ -27,10 +27,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -157,6 +161,7 @@ public class AuthenticationService {
                 .jwtID(UUID.randomUUID().toString())
                 .claim("role", buildScope(taikhoan))
                 .claim("token_type", tokenType.getClaimValue())
+                .claim("password_version", buildPasswordVersion(taikhoan.getMatkhau()))
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -211,6 +216,10 @@ public class AuthenticationService {
         String tokenRole = signedJWT.getJWTClaimsSet().getStringClaim("role");
         if (!buildScope(taiKhoan).equals(tokenRole))
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+
+        String tokenPasswordVersion = signedJWT.getJWTClaimsSet().getStringClaim("password_version");
+        if (!buildPasswordVersion(taiKhoan.getMatkhau()).equals(tokenPasswordVersion))
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
     }
 
     private void verifyAndInvalidate(String token, TokenType tokenType) {
@@ -245,6 +254,16 @@ public class AuthenticationService {
         if (taikhoan.getVaitro() != null && !taikhoan.getVaitro().isEmpty())
             stringJoiner.add("ROLE_" + taikhoan.getVaitro());
         return stringJoiner.toString();
+    }
+
+    private String buildPasswordVersion(String encodedPassword) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(encodedPassword.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is not available", exception);
+        }
     }
 
     public CookieResponse addCookie(String token, int tokenTime, String refreshToken, int refreshTokenTime) {

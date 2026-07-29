@@ -83,6 +83,10 @@ class AuthenticationServiceTest {
 
         assertEquals("access", accessToken.getJWTClaimsSet().getStringClaim("token_type"));
         assertEquals("refresh", refreshToken.getJWTClaimsSet().getStringClaim("token_type"));
+        assertNotNull(accessToken.getJWTClaimsSet().getStringClaim("password_version"));
+        assertEquals(
+                accessToken.getJWTClaimsSet().getStringClaim("password_version"),
+                refreshToken.getJWTClaimsSet().getStringClaim("password_version"));
         assertTrue(accessToken.getJWTClaimsSet().getExpirationTime()
                 .before(refreshToken.getJWTClaimsSet().getExpirationTime()));
     }
@@ -212,6 +216,19 @@ class AuthenticationServiceTest {
                 IntrospectRequest.builder().token(response.getToken()).build()).isValid();
 
         assertFalse(valid);
+    }
+
+    @Test
+    void introspect_voHieuHoaTokenNgayKhiMatKhauThayDoi() {
+        AuthenticationResponse response = authenticate();
+        taiKhoan.setMatkhau("new-encoded-password");
+
+        boolean valid = authenticationService.introspect(
+                IntrospectRequest.builder().token(response.getToken()).build()).isValid();
+
+        assertFalse(valid);
+        assertThrows(AppExceptions.class,
+                () -> authenticationService.refreshToken(response.getRefreshToken()));
     }
 
     @Test

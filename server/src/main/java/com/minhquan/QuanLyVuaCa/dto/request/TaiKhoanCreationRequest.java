@@ -15,8 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TaiKhoanCreationRequest {
-    // Họ không được để trống -> Map về lỗi FULL_NAME_INVALID
-    @NotBlank(message = "FULL_NAME_INVALID")
+    // Họ có thể trống đối với người chỉ có tên gồm một từ.
     String ho;
 
     // Tên không được để trống -> Map về lỗi FULL_NAME_INVALID

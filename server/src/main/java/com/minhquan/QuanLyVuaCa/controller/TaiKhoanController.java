@@ -6,10 +6,13 @@ import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaiKhoanUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.TaikhoanResponse;
+import com.minhquan.QuanLyVuaCa.service.AuthenticationService;
 import com.minhquan.QuanLyVuaCa.service.TaiKhoanService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +23,8 @@ import java.util.List;
 public class TaiKhoanController {
     @Autowired
     private TaiKhoanService taiKhoanService;
+    @Autowired
+    private AuthenticationService authenticationService;
 
     @PostMapping
     private ApiResponse<TaikhoanResponse> taoTaikhoan(@Valid @RequestBody TaiKhoanCreationRequest request) {
@@ -65,10 +70,13 @@ public class TaiKhoanController {
     }
 
     @PutMapping("/doi-mat-khau")
-    public ApiResponse<String> doiMatKhau(@Valid @RequestBody DoiMatKhauRequest request) {
+    public ApiResponse<String> doiMatKhau(@Valid @RequestBody DoiMatKhauRequest request,
+                                         HttpServletResponse response) {
+        String result = taiKhoanService.doiMatKhau(request.getMatkhauCu(), request.getMatkhauMoi());
+        clearAuthenticationCookies(response);
         return ApiResponse.<String>builder()
                 .code(200)
-                .result(taiKhoanService.doiMatKhau(request.getMatkhauCu(), request.getMatkhauMoi()))
+                .result(result)
                 .build();
     }
 
@@ -90,10 +98,13 @@ public class TaiKhoanController {
     }
 
     @PostMapping("/dat-lai-mat-khau")
-    public ApiResponse<String> datLaiMatKhau(@Valid @RequestBody DatLaiMatKhauRequest request) {
+    public ApiResponse<String> datLaiMatKhau(@Valid @RequestBody DatLaiMatKhauRequest request,
+                                            HttpServletResponse response) {
+        String result = taiKhoanService.datLaiMatKhau(request.getToken(), request.getMatkhauMoi());
+        clearAuthenticationCookies(response);
         return ApiResponse.<String>builder()
                 .code(200)
-                .result(taiKhoanService.datLaiMatKhau(request.getToken(), request.getMatkhauMoi()))
+                .result(result)
                 .build();
     }
 
@@ -128,6 +139,12 @@ public class TaiKhoanController {
                 .message("Phê duyệt tài khoản thành công")
                 .result(taiKhoanService.duyetTaiKhoan(id))
                 .build();
+    }
+
+    private void clearAuthenticationCookies(HttpServletResponse response) {
+        var cookies = authenticationService.addCookie(null, 0, null, 0);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookies.getToken().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookies.getRefreshToken().toString());
     }
 
 }
