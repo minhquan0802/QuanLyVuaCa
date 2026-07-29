@@ -55,7 +55,7 @@ public class DonhangService {
     ThongBaoService thongBaoService;
 
     @Transactional
-    public DonhangResponse createDonhang(DonhangRequestCreation request) {
+    public DonhangResponse taoDonHang(DonhangRequestCreation request) {
 
         Donhang donhang = donhangMapper.toDonhang(request);
         donhang.setTongtien(BigDecimal.ZERO);
@@ -236,7 +236,7 @@ public class DonhangService {
     // --- 1b. LẤY 1 ĐƠN HÀNG THEO ID ---
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public DonhangResponse getDonhangById(String id) {
+    public DonhangResponse layDonHangTheoId(String id) {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
 
@@ -264,7 +264,7 @@ public class DonhangService {
     // --- 2. LẤY TẤT CẢ ĐƠN HÀNG ---
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public List<DonhangResponse> getAllDonhangs() {
+    public List<DonhangResponse> layTatCaDonHang() {
 
         // ---- CACH 1 ----
         // Lấy danh sách entity từ DB
@@ -320,7 +320,7 @@ public class DonhangService {
 
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public Page<DonhangResponse> searchDonhangs(
+    public Page<DonhangResponse> timDonhangs(
             LocalDateTime from,
             LocalDateTime to,
             int page,
@@ -352,7 +352,7 @@ public class DonhangService {
     // --- 3. LẤY CHI TIẾT ĐƠN HÀNG ---
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
-    public List<ChitietDonhangResponse> getChiTietDonHang(String idDonhang) {
+    public List<ChitietDonhangResponse> layChiTietDonHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
@@ -431,7 +431,7 @@ public class DonhangService {
         }
 
         // Không cần hoàn kho/lô gì cả: đơn còn CHO_XAC_NHAN nghĩa là chưa từng bị trừ kho (xem
-        // createDonhang/updateStatus — kho/lô chỉ bị trừ khi đơn rời CHO_XAC_NHAN).
+        // taoDonHang/capNhatTrangThai — kho/lô chỉ bị trừ khi đơn rời CHO_XAC_NHAN).
         donhang.setTrangthaidonhang(TrangThaiDonHang.HUY);
         Donhang saved = donhangRepository.save(donhang);
         return donhangMapper.toDonhangResponse(saved, currentUser.getHo() + " " + currentUser.getTen(), currentUser.getSodienthoai());
@@ -440,7 +440,7 @@ public class DonhangService {
     // --- 5. CẬP NHẬT TRẠNG THÁI (admin/staff) ---
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public DonhangResponse updateStatus(String id, TrangThaiDonHang newStatus) {
+    public DonhangResponse capNhatTrangThai(String id, TrangThaiDonHang newStatus) {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
 
@@ -549,44 +549,9 @@ public class DonhangService {
         }
     }
 
-//    @PreAuthorize("isAuthenticated()")
-//    public List<DonhangResponse> getMyOrders() {
-//        // 1. Lấy User hiện tại
-//        var context = SecurityContextHolder.getContext();
-//        String currentEmail = context.getAuthentication().getName();
-//
-//        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
-//                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-//
-//        // 2. Lấy danh sách Entity
-//        // Lưu ý: Đảm bảo bảng donhang lưu ID khách dạng String hay Int để gọi hàm find cho đúng
-//        List<Donhang> myOrders = donhangRepository.findByIdthongtinkhachhang(String.valueOf(currentUser.getIdtaikhoan()));
-//
-//        List<DonhangResponse> responseList = new ArrayList<>();
-//
-//        // 3. Duyệt và map sang DTO
-//        for (Donhang donhang : myOrders) {
-//            // Map sang DTO trước
-//            DonhangResponse response = donhangMapper.toDonhangResponse(donhang,
-//                    currentUser.getHo() + " " + currentUser.getTen(),
-//                    currentUser.getSodienthoai());
-//
-//            // 4. [QUAN TRỌNG] Tính tổng tiền và set vào DTO Response
-//            // Vì Entity Donhang không có trường tongtien, nên ta set thẳng vào Response để trả về FE
-//            BigDecimal calculatedTotal = tinhTongTienDonHang(donhang.getIddonhang());
-//            response.setTongtien(calculatedTotal);
-//
-//            responseList.add(response);
-//        }
-//
-//        // 5. Sắp xếp mới nhất lên đầu
-//        responseList.sort((a, b) -> b.getNgaydat().compareTo(a.getNgaydat()));
-//
-//        return responseList;
-//    }
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
-    public List<DonhangResponse> getMyOrders() {
+    public List<DonhangResponse> layDonHangCuaToi() {
         // 1. Lấy User hiện tại
         var context = SecurityContextHolder.getContext();
         String currentEmail = context.getAuthentication().getName();
@@ -718,7 +683,7 @@ public class DonhangService {
         }
     }
 
-    // Hoàn trả vào lô khi cân thực tế nhẹ hơn dự kiến (xem updateThucTeDonHang) — ưu tiên hoàn vào lô
+    // Hoàn trả vào lô khi cân thực tế nhẹ hơn dự kiến (xem capNhatThucTeDonHang) — ưu tiên hoàn vào lô
     // vừa bị trừ gần đây nhất (ngaynhap mới nhất trước, ngược lại với FIFO lúc trừ). Bỏ qua lô đã
     // THANH_LY vì phần đó là hao hụt đã chốt sổ, không phải hàng còn bán được.
     private void hoanTraLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongHoanTra) {
@@ -823,7 +788,7 @@ public class DonhangService {
     }
 
     @Transactional
-    public void updateThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> listUpdates) {
+    public void capNhatThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> listUpdates) {
         // 1. Kiểm tra đơn hàng
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));

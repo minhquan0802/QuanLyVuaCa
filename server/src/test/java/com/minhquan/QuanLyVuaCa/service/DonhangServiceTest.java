@@ -145,7 +145,7 @@ class DonhangServiceTest {
             mockChuoiTinhToanCoBan(kho, request, BigDecimal.valueOf(50000), BigDecimal.valueOf(40000));
             when(donhangMapper.toDonhangResponse(any(), any(), any())).thenReturn(DonhangResponse.builder().build());
 
-            donhangService.createDonhang(request);
+            donhangService.taoDonHang(request);
 
             verify(congNoService).kiemTraDuocDatHang("kh-1", true);
 
@@ -163,7 +163,7 @@ class DonhangServiceTest {
             mockChuoiTinhToanCoBan(kho, request, BigDecimal.valueOf(50000), BigDecimal.valueOf(40000));
             when(donhangMapper.toDonhangResponse(any(), any(), any())).thenReturn(DonhangResponse.builder().build());
 
-            donhangService.createDonhang(request);
+            donhangService.taoDonHang(request);
 
             verifyNoInteractions(congNoService);
 
@@ -190,7 +190,7 @@ class DonhangServiceTest {
             });
             when(donhangMapper.toChitietEntity(any())).thenReturn(new Chitietdonhang());
 
-            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.createDonhang(request));
+            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.taoDonHang(request));
             assertEquals(ErrorCode.THIEU_ID_CHITIET_CABAN, ex.getErrorCode());
         }
 
@@ -206,7 +206,7 @@ class DonhangServiceTest {
             when(donhangMapper.toChitietEntity(any())).thenReturn(new Chitietdonhang());
             when(chitietcabanRepository.findById(1)).thenReturn(Optional.empty());
 
-            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.createDonhang(request));
+            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.taoDonHang(request));
             assertEquals(ErrorCode.CHITIET_CABAN_NOT_EXISTED, ex.getErrorCode());
         }
 
@@ -229,7 +229,7 @@ class DonhangServiceTest {
             when(donvitinhRepository.findById(1)).thenReturn(Optional.of(dvt));
             when(banggiaRepository.findByChitietcabanAndNgayketthucIsNull(kho)).thenReturn(Optional.empty());
 
-            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.createDonhang(request));
+            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.taoDonHang(request));
             assertEquals(ErrorCode.BANGGIA_CHUA_AP_DUNG, ex.getErrorCode());
         }
 
@@ -241,7 +241,7 @@ class DonhangServiceTest {
                     .build();
             mockChuoiTinhToanCoBan(kho, request, BigDecimal.valueOf(50000), BigDecimal.valueOf(40000));
 
-            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.createDonhang(request));
+            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.taoDonHang(request));
             assertEquals(ErrorCode.INVENTORY_NOT_ENOUGH, ex.getErrorCode());
         }
     }
@@ -251,23 +251,23 @@ class DonhangServiceTest {
     class TraCuuDonHang {
 
         @Test
-        void getDonhangById_KhongTonTai_NemException() {
+        void layDonHangTheoId_KhongTonTai_NemException() {
             when(donhangRepository.findById("dh-x")).thenReturn(Optional.empty());
 
-            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.getDonhangById("dh-x"));
+            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.layDonHangTheoId("dh-x"));
             assertEquals(ErrorCode.DONHANG_NOT_EXISTED, ex.getErrorCode());
         }
 
         @Test
-        void getChiTietDonHang_DonKhongTonTai_NemException() {
+        void layChiTietDonHang_DonKhongTonTai_NemException() {
             when(donhangRepository.findById("dh-x")).thenReturn(Optional.empty());
 
-            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.getChiTietDonHang("dh-x"));
+            AppExceptions ex = assertThrows(AppExceptions.class, () -> donhangService.layChiTietDonHang("dh-x"));
             assertEquals(ErrorCode.DONHANG_NOT_EXISTED, ex.getErrorCode());
         }
 
         @Test
-        void getChiTietDonHang_TraVeDanhSachKemTongKgDangChoCuaDonKhac() {
+        void layChiTietDonHang_TraVeDanhSachKemTongKgDangChoCuaDonKhac() {
             Donhang donhang = new Donhang();
             donhang.setIddonhang("dh-1");
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
@@ -282,7 +282,7 @@ class DonhangServiceTest {
             when(chitietdonhangRepository.tongKgDangChoKhac(eq(kho), any(), eq("dh-1")))
                     .thenReturn(BigDecimal.valueOf(7));
 
-            List<ChitietDonhangResponse> result = donhangService.getChiTietDonHang("dh-1");
+            List<ChitietDonhangResponse> result = donhangService.layChiTietDonHang("dh-1");
 
             assertEquals(1, result.size());
             assertEquals(BigDecimal.valueOf(7), result.get(0).getTongKgDonKhacDangCho());
@@ -382,7 +382,7 @@ class DonhangServiceTest {
             when(donhangRepository.save(donhang)).thenReturn(donhang);
             when(donhangMapper.toDonhangResponse(any(), any(), any())).thenReturn(DonhangResponse.builder().build());
 
-            donhangService.updateStatus("dh-1", TrangThaiDonHang.GIAO_HANG_THANH_CONG);
+            donhangService.capNhatTrangThai("dh-1", TrangThaiDonHang.GIAO_HANG_THANH_CONG);
 
             verify(congNoService).xuLyDonGiaoThanhCong(eq(donhang), any(BigDecimal.class));
         }
@@ -396,7 +396,7 @@ class DonhangServiceTest {
             when(donhangRepository.save(donhang)).thenReturn(donhang);
             when(donhangMapper.toDonhangResponse(any(), any(), any())).thenReturn(DonhangResponse.builder().build());
 
-            donhangService.updateStatus("dh-1", TrangThaiDonHang.GIAO_HANG_THANH_CONG);
+            donhangService.capNhatTrangThai("dh-1", TrangThaiDonHang.GIAO_HANG_THANH_CONG);
 
             verifyNoInteractions(congNoService);
         }

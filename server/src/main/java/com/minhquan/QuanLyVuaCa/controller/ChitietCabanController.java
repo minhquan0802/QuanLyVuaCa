@@ -23,24 +23,24 @@ public class ChitietCabanController {
     ChitietCabanService chitietCabanService;
 
     @GetMapping
-    public ApiResponse<List<ChitietCabanResponse>> getAll() {
+    public ApiResponse<List<ChitietCabanResponse>> layTatCa() {
         return ApiResponse.<List<ChitietCabanResponse>>builder()
-                .result(chitietCabanService.getAll())
+                .result(chitietCabanService.layTatCa())
                 .build();
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<ChitietCabanResponse> create(@RequestBody @Validated ChitietCabanCreationRequest request) {
+    public ApiResponse<ChitietCabanResponse> taoMoi(@RequestBody @Validated ChitietCabanCreationRequest request) {
         return ApiResponse.<ChitietCabanResponse>builder()
-                .result(chitietCabanService.create(request))
+                .result(chitietCabanService.taoMoi(request))
                 .build();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<String> delete(@PathVariable Integer id) {
-        chitietCabanService.delete(id);
+    public ApiResponse<String> xoa(@PathVariable Integer id) {
+        chitietCabanService.xoa(id);
         return ApiResponse.<String>builder()
                 .result("Đã xóa sản phẩm khỏi danh sách kinh doanh")
                 .build();

@@ -55,7 +55,7 @@ public class GioHangService {
     }
 
     // ── Map sang Response, tính giá real-time ────────────────────────────────
-    private GioHangResponse mapToResponse(GioHang gioHang, boolean isWholesale) {
+    private GioHangResponse xayDungGioHangResponse(GioHang gioHang, boolean isWholesale) {
         List<ChitietGioHang> items = chitietGioHangRepository.findByIdgiohang_Idgiohang(gioHang.getIdgiohang());
         BigDecimal tongTien = BigDecimal.ZERO;
         List<ChitietGioHangResponse> itemResponses = new ArrayList<>();
@@ -101,7 +101,7 @@ public class GioHangService {
     @Transactional(readOnly = true)
     public BigDecimal tinhTongTienGioHangHienTai(String idtaikhoan, boolean isWholesale) {
         return gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai(idtaikhoan, TrangThaiGioHang.DANG_HOAT_DONG)
-                .map(gh -> mapToResponse(gh, isWholesale).getTongTien())
+                .map(gh -> xayDungGioHangResponse(gh, isWholesale).getTongTien())
                 .orElse(BigDecimal.ZERO);
     }
 
@@ -112,7 +112,7 @@ public class GioHangService {
         Taikhoan user = layUserHienTai();
         return gioHangRepository
                 .findByIdtaikhoan_IdtaikhoanAndTrangthai(user.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
-                .map(gh -> mapToResponse(gh, ChinhSachGiaUtils.laKhachSi(user.getVaitro())))
+                .map(gh -> xayDungGioHangResponse(gh, ChinhSachGiaUtils.laKhachSi(user.getVaitro())))
                 .orElse(GioHangResponse.builder().items(List.of()).tongTien(BigDecimal.ZERO).build());
     }
 
@@ -151,7 +151,7 @@ public class GioHangService {
         );
 
         boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
-        return mapToResponse(gioHang, isWholesale);
+        return xayDungGioHangResponse(gioHang, isWholesale);
     }
 
     // ── 3. Cập nhật số lượng (soluong = 0 → xóa luôn) ───────────────────────
@@ -170,7 +170,7 @@ public class GioHangService {
 
         Taikhoan user = layUserHienTai();
         boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
-        return mapToResponse(item.getIdgiohang(), isWholesale);
+        return xayDungGioHangResponse(item.getIdgiohang(), isWholesale);
     }
 
     // ── 4. Xóa 1 sản phẩm khỏi giỏ ──────────────────────────────────────────
@@ -185,7 +185,7 @@ public class GioHangService {
 
         Taikhoan user = layUserHienTai();
         boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
-        return mapToResponse(gioHang, isWholesale);
+        return xayDungGioHangResponse(gioHang, isWholesale);
     }
 
     // ── 5. Xóa toàn bộ giỏ ───────────────────────────────────────────────────

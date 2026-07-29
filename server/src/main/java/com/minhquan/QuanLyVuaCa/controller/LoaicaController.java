@@ -25,7 +25,7 @@ public class LoaicaController {
         return ApiResponse.<List<LoaicaResponse>>builder()
                 .code(200)
                 .message("OK")
-                .result(loaicaService.getLoaiCa())
+                .result(loaicaService.layLoaiCa())
                 .build();
     }
 
@@ -35,7 +35,7 @@ public class LoaicaController {
         return ApiResponse.<List<LoaicaResponse>>builder()
                 .code(200)
                 .message("OK")
-                .result(loaicaService.getTatCaLoaiCa())
+                .result(loaicaService.layTatCaLoaiCa())
                 .build();
     }
 
@@ -63,7 +63,7 @@ public class LoaicaController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<LoaicaResponse> timLoaiCa(@PathVariable("id") Integer id) {
+    public ApiResponse<LoaicaResponse> timLoaica(@PathVariable("id") Integer id) {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("OK")

@@ -60,7 +60,7 @@ class ThanhtoanServiceTest {
                 thanhToan("tt-1", "400", TrangThaiThanhToan.DA_THANH_TOAN),
                 thanhToan("tt-2", "300", TrangThaiThanhToan.CHO_XAC_NHAN)));
 
-        TinhTrangThanhToanResponse result = service.getTinhTrang("dh-1");
+        TinhTrangThanhToanResponse result = service.layTinhTrang("dh-1");
 
         assertEquals(0, new BigDecimal("400").compareTo(result.getDaTra()));
         assertEquals(0, new BigDecimal("600").compareTo(result.getConNo()));

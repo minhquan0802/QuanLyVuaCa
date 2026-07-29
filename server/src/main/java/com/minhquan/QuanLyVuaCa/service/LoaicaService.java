@@ -45,12 +45,12 @@ public class LoaicaService {
     Cloudinary cloudinary;
 
     @Transactional(readOnly = true)
-    public List<LoaicaResponse> getLoaiCa() {
+    public List<LoaicaResponse> layLoaiCa() {
         return toResponses(loaicaRepository.findAllByDeletedFalse());
     }
 
     @Transactional(readOnly = true)
-    public List<LoaicaResponse> getTatCaLoaiCa() {
+    public List<LoaicaResponse> layTatCaLoaiCa() {
         return toResponses(loaicaRepository.findAll());
     }
 
@@ -81,12 +81,12 @@ public class LoaicaService {
         String oldImageUrl = loaica.getHinhanhurl();
         String newImageUrl = null;
         if (newFile != null && !newFile.isEmpty()) {
-            validateImage(newFile);
-            newImageUrl = saveImage(newFile, buildImageFileName(tenLoaiCa, newFile));
+            kiemTraAnh(newFile);
+            newImageUrl = saveImage(newFile, taoTenFileAnh(tenLoaiCa, newFile));
         }
 
         loaica.setTenloaica(tenLoaiCa);
-        loaica.setMieuta(normalizeNullableText(request.getMieuta()));
+        loaica.setMieuta(chuanHoaChuoi(request.getMieuta()));
         if (newImageUrl != null) {
             loaica.setHinhanhurl(newImageUrl);
         }
@@ -96,13 +96,13 @@ public class LoaicaService {
             updated = loaicaRepository.saveAndFlush(loaica);
         } catch (RuntimeException exception) {
             if (newImageUrl != null) {
-                deleteFile(newImageUrl);
+                xoaFile(newImageUrl);
             }
             throw exception;
         }
 
         if (newImageUrl != null && oldImageUrl != null && !oldImageUrl.equals(newImageUrl)) {
-            deleteFile(oldImageUrl);
+            xoaFile(oldImageUrl);
         }
         return mapper.toLoaicaResponse(updated);
     }
@@ -147,13 +147,13 @@ public class LoaicaService {
 
         Loaica loaica = new Loaica();
         loaica.setTenloaica(tenLoaiCa);
-        loaica.setMieuta(normalizeNullableText(request.getMieuta()));
+        loaica.setMieuta(chuanHoaChuoi(request.getMieuta()));
 
         MultipartFile file = request.getHinhanh();
         String imageUrl = null;
         if (file != null && !file.isEmpty()) {
-            validateImage(file);
-            imageUrl = saveImage(file, buildImageFileName(tenLoaiCa, file));
+            kiemTraAnh(file);
+            imageUrl = saveImage(file, taoTenFileAnh(tenLoaiCa, file));
             loaica.setHinhanhurl(imageUrl);
         }
 
@@ -161,17 +161,17 @@ public class LoaicaService {
             return mapper.toLoaicaResponse(loaicaRepository.saveAndFlush(loaica));
         } catch (RuntimeException exception) {
             if (imageUrl != null) {
-                deleteFile(imageUrl);
+                xoaFile(imageUrl);
             }
             throw exception;
         }
     }
 
-    private String normalizeNullableText(String value) {
+    private String chuanHoaChuoi(String value) {
         return value == null ? null : value.trim();
     }
 
-    private void validateImage(MultipartFile file) {
+    private void kiemTraAnh(MultipartFile file) {
         Set<String> allowedContentTypes = Set.of("image/jpeg", "image/png", "image/webp");
         String contentType = file.getContentType();
         if (file.isEmpty() || contentType == null
@@ -180,7 +180,7 @@ public class LoaicaService {
         }
     }
 
-    private String buildImageFileName(String tenLoaiCa, MultipartFile file) {
+    private String taoTenFileAnh(String tenLoaiCa, MultipartFile file) {
         String extension = switch (Objects.requireNonNull(file.getContentType()).toLowerCase()) {
             case "image/jpeg" -> ".jpg";
             case "image/png" -> ".png";
@@ -218,7 +218,7 @@ public class LoaicaService {
         }
     }
 
-    private void deleteFile(String imageUrl) {
+    private void xoaFile(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank() || !imageUrl.contains("/loaica/")) {
             return;
         }

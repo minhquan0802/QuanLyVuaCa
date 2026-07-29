@@ -20,10 +20,10 @@ public class ThanhtoanController {
 
     // Lấy tình trạng nợ/đã trả của đơn hàng
     @GetMapping("/{iddonhang}/tinh-trang")
-    public ApiResponse<TinhTrangThanhToanResponse> getTinhTrang(@PathVariable String iddonhang) {
+    public ApiResponse<TinhTrangThanhToanResponse> layTinhTrang(@PathVariable String iddonhang) {
         return ApiResponse.<TinhTrangThanhToanResponse>builder()
                 .code(200)
-                .result(thanhtoanService.getTinhTrang(iddonhang))
+                .result(thanhtoanService.layTinhTrang(iddonhang))
                 .build();
     }
 

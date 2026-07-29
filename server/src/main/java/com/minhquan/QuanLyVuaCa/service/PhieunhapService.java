@@ -45,7 +45,7 @@ public class PhieunhapService {
     BanggiaRepository banggiaRepository;
 
     @Transactional(readOnly = true)
-    public List<PhieunhapResponse> getDanhSach() {
+    public List<PhieunhapResponse> layDanhSach() {
         return phieunhapRepository.findAll(Sort.by(Sort.Direction.DESC, "ngaynhap"))
                 .stream()
                 .map(this::toFullResponse)
@@ -65,7 +65,7 @@ public class PhieunhapService {
         if (request.getNgaynhap() != null && request.getNgaynhap().isBefore(LocalDate.now())) {
             throw new AppExceptions(ErrorCode.NGAY_NHAP_INVALID);
         }
-        request.getListChiTiet().forEach(this::validateSalePrices);
+        request.getListChiTiet().forEach(this::kiemTraGiaBan);
 
         // --- 1. TẠO PHIẾU NHẬP ---
         Phieunhap phieunhap = phieunhapMapper.toEntity(request);
@@ -165,7 +165,7 @@ public class PhieunhapService {
                 listEntities.add(detail);
 
                 // Cập nhật Bảng giá hiện hành (Logic riêng)
-                updateBanggia(savedKho, itemRequest.getGiabanletaithoidiemnhap(), itemRequest.getGiabansitaithoidiemnhap());
+                capNhatBangGia(savedKho, itemRequest.getGiabanletaithoidiemnhap(), itemRequest.getGiabansitaithoidiemnhap());
             }
             chitietphieunhapRepository.saveAll(listEntities);
         }
@@ -174,7 +174,7 @@ public class PhieunhapService {
     }
 
     // Hàm phụ trợ để xử lý Bảng giá
-    private void validateSalePrices(ChitietPhieunhapRequest detail) {
+    private void kiemTraGiaBan(ChitietPhieunhapRequest detail) {
         BigDecimal retailPrice = detail.getGiabanletaithoidiemnhap();
         BigDecimal wholesalePrice = detail.getGiabansitaithoidiemnhap();
         if (retailPrice == null || wholesalePrice == null) {
@@ -220,7 +220,7 @@ public class PhieunhapService {
         return response;
     }
 
-    private void updateBanggia(Chitietcaban kho, BigDecimal giaLeMoi, BigDecimal giaSiMoi) {
+    private void capNhatBangGia(Chitietcaban kho, BigDecimal giaLeMoi, BigDecimal giaSiMoi) {
         // Nếu không nhập giá dự kiến thì không cập nhật bảng giá
         if (giaLeMoi == null && giaSiMoi == null) return;
         if (giaLeMoi == null || giaSiMoi == null) {

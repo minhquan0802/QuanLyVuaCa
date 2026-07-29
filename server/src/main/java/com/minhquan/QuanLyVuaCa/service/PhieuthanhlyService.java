@@ -48,7 +48,7 @@ public class PhieuthanhlyService {
 
     @Transactional
     public PhieuthanhlyResponse taoPhieuThanhly(PhieuthanhlyRequest request) {
-        TrangThaiThanhLy trangThai = validateRequest(request);
+        TrangThaiThanhLy trangThai = kiemTraRequest(request);
 
         // --- 1. Người tạo phiếu (lấy từ user đang đăng nhập) ---
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -105,7 +105,7 @@ public class PhieuthanhlyService {
         return toResponse(savedPhieu);
     }
 
-    private TrangThaiThanhLy validateRequest(PhieuthanhlyRequest request) {
+    private TrangThaiThanhLy kiemTraRequest(PhieuthanhlyRequest request) {
         if (request == null || request.getListChiTiet() == null || request.getListChiTiet().isEmpty()) {
             throw new AppExceptions(ErrorCode.CHITIET_THANHLY_EMPTY);
         }
