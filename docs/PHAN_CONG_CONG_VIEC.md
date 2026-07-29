@@ -26,8 +26,8 @@ Nhóm thống nhất phân công theo các nguyên tắc sau:
    - Luồng xử lý nghiệp vụ.
    - Kiểm thử chức năng.
    - Tài liệu mô tả và sơ đồ phân tích thiết kế.
-3. Minh Quân là người nắm nghiệp vụ chính của đề tài nên phụ trách các module lõi như đơn hàng, thanh toán, công nợ và luồng bán hàng.
-4. Hồng Quân phụ trách các module quản trị dữ liệu, tài khoản, danh mục, kho, nhập hàng, thanh lý và thông báo.
+3. Minh Quân là người nắm nghiệp vụ chính của đề tài nên phụ trách các module lõi như đơn hàng, thanh toán, công nợ, thông báo và luồng bán hàng.
+4. Hồng Quân phụ trách các module quản trị dữ liệu, tài khoản, danh mục, kho, nhập hàng, thanh lý và dashboard.
 5. Hai thành viên cùng tham gia tích hợp hệ thống, kiểm thử tổng thể, rà soát giao diện và hoàn thiện báo cáo.
 
 ---
@@ -36,8 +36,8 @@ Nhóm thống nhất phân công theo các nguyên tắc sau:
 
 | Thành viên | Vai trò chính | Nhóm chức năng phụ trách |
 |---|---|---|
-| Minh Quân | Nắm nghiệp vụ chính, phụ trách luồng nghiệp vụ lõi | Đặt hàng, giỏ hàng, tạo đơn POS, quản lý đơn hàng, thanh toán, công nợ, trạng thái đơn hàng |
-| Hồng Quân | Phụ trách nhóm quản trị dữ liệu và vận hành kho | Xác thực, tài khoản, loại cá, size cá, bảng giá, kho, nhập hàng, thanh lý, thông báo, dashboard |
+| Minh Quân | Nắm nghiệp vụ chính, phụ trách luồng nghiệp vụ lõi | Đặt hàng, giỏ hàng, tạo đơn POS, quản lý đơn hàng, thanh toán, công nợ, trạng thái đơn hàng, thông báo |
+| Hồng Quân | Phụ trách nhóm quản trị dữ liệu và vận hành kho | Xác thực, tài khoản, loại cá, size cá, bảng giá, kho, nhập hàng, thanh lý, dashboard |
 
 ---
 
@@ -45,7 +45,7 @@ Nhóm thống nhất phân công theo các nguyên tắc sau:
 
 ## 4.1 Vai trò
 
-Minh Quân là người nắm nghiệp vụ chính của hệ thống, chịu trách nhiệm phân tích và hoàn thiện các luồng nghiệp vụ lõi liên quan đến quá trình bán hàng, đặt hàng, xử lý đơn, thanh toán và công nợ khách sỉ.
+Minh Quân là người nắm nghiệp vụ chính của hệ thống, chịu trách nhiệm phân tích và hoàn thiện các luồng nghiệp vụ lõi liên quan đến quá trình bán hàng, đặt hàng, xử lý đơn, thanh toán, công nợ khách sỉ và thông báo hệ thống.
 
 Các module này có mối liên hệ trực tiếp đến doanh thu, tồn kho, trạng thái đơn hàng và công nợ nên cần người hiểu rõ nghiệp vụ thực tế của vựa cá phụ trách.
 
@@ -69,6 +69,7 @@ Minh Quân phụ trách các nhóm chức năng sau:
 11. Quản lý công nợ khách sỉ
 12. Kiểm tra hạn mức tín dụng khách sỉ
 13. Theo dõi trạng thái thanh toán của đơn hàng
+14. Quản lý thông báo và tiếp nhận thông báo thời gian thực
 ```
 
 ---
@@ -79,12 +80,14 @@ Minh Quân phụ trách các nhóm chức năng sau:
 
 ```txt
 client/src/pages/customer/product-detail.jsx
+client/src/pages/customer/home.jsx
 client/src/pages/customer/cart.jsx
 client/src/pages/customer/checkout.jsx
 client/src/pages/customer/ThongTinDonHang.jsx
 client/src/pages/customer/OrderSuccess.jsx
 client/src/pages/customer/OrderFailed.jsx
 client/src/context/CartContext.jsx
+client/src/components/product-list.jsx
 ```
 
 ### Nhóm màn hình quản trị
@@ -96,18 +99,12 @@ client/src/pages/admin/ChiTietDonHang.jsx
 client/src/pages/admin/QuanLyCongNo.jsx
 ```
 
-### Thư mục hỗ trợ đã tách/refactor
+### Nhóm giao diện thông báo
 
 ```txt
-client/src/pages/admin/tao-don-hang/
-  constants.js
-  components/BangSanPhamDaChon.jsx
-  components/ManHinhHoanTatDonHang.jsx
-  utils/dinhDangTien.js
-  utils/xuLyDonHang.js
+client/src/components/admin/AdminLayout.jsx (phần chuông và danh sách thông báo)
+client/src/components/header.jsx (phần thông báo khách hàng)
 ```
-
----
 
 ## 4.4 Các controller/backend phụ trách
 
@@ -117,6 +114,7 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/controller/GioHangController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ThanhtoanController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/PaymentController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/CongNoController.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ThongBaoController.java
 ```
 
 ---
@@ -129,7 +127,19 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/service/GioHangService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThanhtoanService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/VnPayService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/CongNoService.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThongBaoService.java
 ```
+
+### Thành phần backend hỗ trợ nghiệp vụ
+
+```txt
+server/src/main/java/com/minhquan/QuanLyVuaCa/scheduler/GioHangScheduler.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/scheduler/CongNoQuaHanScheduler.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/util/ChinhSachGiaUtils.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/util/QuyDoiKhoiLuongUtils.java
+```
+
+`QuyDoiKhoiLuongUtils` chỉ là lớp tiện ích tính toán. Tên lớp giữ theo nghiệp vụ quy đổi, không đại diện cho bảng `quydoikhoiluong` đã xóa.
 
 ---
 
@@ -147,6 +157,7 @@ Lichsucongno
 Taikhoan
 Chitietcaban
 Chitietphieunhap
+Thongbao
 ```
 
 ### Enum
@@ -171,6 +182,7 @@ LichsucongnoRepository
 TaiKhoanRepository
 ChitietcabanRepository
 ChitietphieunhapRepository
+ThongbaoRepository
 ```
 
 ---
@@ -183,6 +195,7 @@ ChitietphieunhapRepository
 /Thanhtoan
 /payment
 /CongNo
+/ThongBao
 ```
 
 Một số API tiêu biểu:
@@ -195,6 +208,8 @@ DELETE /gio-hang/items/{id}
 DELETE /gio-hang
 
 GET    /Donhangs
+GET    /Donhangs/search
+GET    /Donhangs/{id}
 POST   /Donhangs
 GET    /Donhangs/my-orders
 GET    /Donhangs/{id}/chitiet
@@ -202,15 +217,29 @@ PUT    /Donhangs/{id}/status
 PUT    /Donhangs/{id}/cap-nhat-can-nang
 PUT    /Donhangs/{id}/xac-nhan-nhan-hang
 PUT    /Donhangs/{id}/huy
+GET    /Donhangs/bao-cao-lech-kho
+POST   /Donhangs/dong-bo-lai-ton-kho
 
 POST   /payment/create-payment
+GET    /payment/vnpay-callback
 GET    /Thanhtoan/{iddonhang}/tinh-trang
+POST   /Thanhtoan/chuyen-khoan
+PUT    /Thanhtoan/{idthanhtoan}/xac-nhan
+PUT    /Thanhtoan/{iddonhang}/thanh-toan-thu-cong
 
 GET    /CongNo
+POST   /CongNo/{idtaikhoan}/khoi-tao
 GET    /CongNo/{idtaikhoan}/lich-su
 PUT    /CongNo/{idtaikhoan}/han-muc
 PUT    /CongNo/{idtaikhoan}/dieu-chinh
 PUT    /CongNo/{idtaikhoan}/mo-khoa
+
+GET    /ThongBao/subscribe
+GET    /ThongBao
+GET    /ThongBao/chua-xem
+PUT    /ThongBao/{id}/da-xem
+PUT    /ThongBao/da-xem-tat-ca
+POST   /ThongBao
 ```
 
 ---
@@ -236,7 +265,7 @@ Khách hàng xem sản phẩm
 Nhân viên/Admin mở màn hình tạo đơn
   -> chọn khách lẻ hoặc khách sỉ
   -> chọn sản phẩm, size, đơn vị tính, số lượng
-  -> hệ thống tính khối lượng quy đổi và đơn giá
+  -> hệ thống tính khối lượng dự kiến từ hệ số kg của đơn vị tính hoặc trường sokgtuongung của chi tiết sản phẩm
   -> thêm sản phẩm vào đơn
   -> tạo đơn hàng
   -> khách lẻ: hoàn tất thanh toán tại quầy
@@ -276,6 +305,16 @@ Khách sỉ có hạn mức tín dụng
   -> ghi lịch sử thay đổi công nợ
 ```
 
+### 4.8.6 Luồng thông báo
+
+```txt
+Đơn hàng, công nợ hoặc tác vụ định kỳ phát sinh sự kiện
+  -> hệ thống lưu thông báo cho người nhận
+  -> đẩy thông báo thời gian thực qua SSE
+  -> người dùng xem danh sách và số lượng chưa xem
+  -> người dùng mở thông báo hoặc đánh dấu tất cả đã xem
+```
+
 ---
 
 ## 4.9 Sơ đồ phụ trách
@@ -293,6 +332,7 @@ Minh Quân phụ trách chuẩn bị và giải thích các sơ đồ sau:
 8. Sequence diagram - Thanh toán VNPAY
 9. Sequence diagram - Cập nhật công nợ khi giao hàng thành công
 10. State diagram - Trạng thái đơn hàng
+11. Activity/Sequence diagram - Tiếp nhận và xử lý thông báo
 ```
 
 ---
@@ -311,6 +351,8 @@ Minh Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 - Mô tả quy trình công nợ khách sỉ
 - Thiết kế API nhóm đơn hàng, thanh toán, công nợ
 - Test case nhóm đặt hàng, thanh toán, công nợ
+- Mô tả module và API thông báo thời gian thực
+- Test case nhóm thông báo
 ```
 
 ---
@@ -333,6 +375,8 @@ Minh Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 13. Cập nhật công nợ khi đơn giao thành công
 14. Giảm công nợ khi thanh toán được xác nhận
 15. Chặn đặt hàng khi khách sỉ vượt hạn mức tín dụng
+16. Nhận thông báo thời gian thực qua SSE
+17. Xem và đánh dấu thông báo đã xem
 ```
 
 ---
@@ -341,7 +385,7 @@ Minh Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 
 ## 5.1 Vai trò
 
-Hồng Quân phụ trách nhóm chức năng quản trị dữ liệu, tài khoản, danh mục sản phẩm, kho, nhập hàng, thanh lý và thông báo. Đây là các module phục vụ vận hành hệ thống, cung cấp dữ liệu nền cho luồng bán hàng và quản lý hàng hóa.
+Hồng Quân phụ trách nhóm chức năng quản trị dữ liệu, tài khoản, danh mục sản phẩm, kho, nhập hàng, thanh lý và dashboard. Đây là các module phục vụ vận hành hệ thống, cung cấp dữ liệu nền cho luồng bán hàng và quản lý hàng hóa.
 
 ---
 
@@ -358,7 +402,7 @@ Hồng Quân phụ trách các nhóm chức năng sau:
 6. Quản lý loại cá
 7. Quản lý size cá
 8. Quản lý chi tiết cá bán theo loại cá và size
-9. Quản lý đơn vị tính và quy đổi khối lượng
+9. Quản lý đơn vị tính và số kg tương ứng của từng chi tiết sản phẩm
 10. Quản lý bảng giá bán lẻ/bán sỉ
 11. Quản lý tồn kho
 12. Tạo phiếu nhập hàng
@@ -366,8 +410,7 @@ Hồng Quân phụ trách các nhóm chức năng sau:
 14. Quản lý phiếu thanh lý
 15. Tạo phiếu thanh lý
 16. Theo dõi lô cá còn hàng/quá hạn
-17. Quản lý thông báo
-18. Dashboard/thống kê
+17. Dashboard/thống kê
 ```
 
 ---
@@ -411,17 +454,19 @@ client/src/pages/admin/QuanLyKho.jsx
 client/src/pages/admin/NhapHang.jsx
 client/src/pages/admin/QuanLyThanhLy.jsx
 client/src/pages/admin/TaoPhieuThanhLy.jsx
+client/src/pages/admin/ThanhLyMotLo.jsx
 ```
 
-### Nhóm layout, thông báo, dashboard
+### Nhóm layout và dashboard
 
 ```txt
 client/src/pages/admin/AdminDashboard.jsx
-client/src/components/admin/AdminLayout.jsx
+client/src/components/admin/AdminLayout.jsx (phần khung bố cục; phối hợp với Minh Quân ở phần thông báo)
 client/src/components/admin/AdminSidebar.jsx
-client/src/components/header.jsx
 client/src/components/footer.jsx
 ```
+
+`client/src/pages/admin/LichSuPhieuNhap.jsx` hiện tồn tại trong mã nguồn nhưng chưa được khai báo trong `AppRoutes`, vì vậy chưa được tính là một màn hình đang hoạt động. Lịch sử phiếu nhập hiện được hiển thị trong luồng quản lý kho/nhập hàng.
 
 ---
 
@@ -438,7 +483,7 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/controller/DonvitinhController.jav
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/NhacungcapController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/PhieunhapController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/controller/PhieuthanhlyController.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ThongBaoController.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ThongKeController.java
 ```
 
 ---
@@ -449,15 +494,30 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/controller/ThongBaoController.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/AuthenticationService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/TaiKhoanService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/EmailService.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/service/PwnedPasswordService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/LoaicaService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/SizecaService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/ChitietCabanService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/BanggiaService.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/service/DonvitinhService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/NhacungcapService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/PhieunhapService.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/service/PhieuthanhlyService.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThongBaoService.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThongKeService.java
 ```
+
+### Thành phần backend hỗ trợ nghiệp vụ
+
+```txt
+server/src/main/java/com/minhquan/QuanLyVuaCa/scheduler/LoHangQuaHanScheduler.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/SecurityConfig.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/JwtCookieTokenResolver.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/JwtTokenDecoder.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/AuthRateLimitFilter.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/CloudinaryConfig.java
+```
+
+`LoHangQuaHanScheduler` thuộc nghiệp vụ kho/thanh lý do Hồng Quân phụ trách, nhưng sử dụng `ThongBaoService` của Minh Quân để gửi cảnh báo.
 
 ---
 
@@ -477,7 +537,17 @@ Phieunhap
 Chitietphieunhap
 Phieuthanhly
 Chitietphieuthanhly
-Thongbao
+```
+
+Lưu ý về mô hình dữ liệu hiện tại:
+
+```txt
+Không còn bảng hoặc entity quydoikhoiluong.
+Trường sokgtuongung được lưu trực tiếp trong bảng chitietsanpham
+(entity Chitietcaban trong Backend) để biểu diễn khối lượng trung bình của từng biến thể cá.
+Bảng donvitinh vẫn giữ trường hesokg cho những đơn vị có hệ số kg cố định.
+Khi tính khối lượng, hệ thống ưu tiên donvitinh.hesokg hợp lệ;
+nếu đơn vị không có hệ số riêng thì sử dụng chitietsanpham.sokgtuongung.
 ```
 
 ### Enum
@@ -503,7 +573,6 @@ PhieunhapRepository
 ChitietphieunhapRepository
 PhieuthanhlyRepository
 ChitietphieuthanhlyRepository
-ThongbaoRepository
 ```
 
 ---
@@ -521,7 +590,6 @@ ThongbaoRepository
 /Nhacungcaps
 /Phieunhaps
 /Phieuthanhlys
-/ThongBao
 /Thongke
 ```
 
@@ -529,12 +597,16 @@ Một số API tiêu biểu:
 
 ```txt
 POST   /auth/token
+GET    /auth/csrf
 POST   /auth/refresh
 POST   /auth/logout
 
 GET    /tai-khoan
+GET    /tai-khoan/{id}
 POST   /tai-khoan
 PUT    /tai-khoan/{id}
+DELETE /tai-khoan/{id}
+GET    /tai-khoan/cho-duyet
 PUT    /tai-khoan/duyet/{id}
 GET    /tai-khoan/my-info
 GET    /tai-khoan/verify-email
@@ -544,31 +616,48 @@ POST   /tai-khoan/dat-lai-mat-khau
 PUT    /tai-khoan/doi-mat-khau
 
 GET    /Loaicas
+GET    /Loaicas/admin/all
+GET    /Loaicas/{id}
 POST   /Loaicas
 PUT    /Loaicas/{id}
+DELETE /Loaicas/{id}
+PATCH  /Loaicas/{id}/khoi-phuc
 
 GET    /Sizecas
 POST   /Sizecas
+DELETE /Sizecas/{id}
 
 GET    /Chitietcabans
 POST   /Chitietcabans
+PUT    /Chitietcabans/{id}/so-kg-tuong-ung
 DELETE /Chitietcabans/{id}
 
 GET    /Banggias
 POST   /Banggias
+GET    /Banggias/history
+DELETE /Banggias/{id}
+
+GET    /Donvitinhs
+GET    /Donvitinhs/{id}
+POST   /Donvitinhs
+PUT    /Donvitinhs/{id}
+DELETE /Donvitinhs/{id}
+
+GET    /Nhacungcaps
+POST   /Nhacungcaps
 
 GET    /Phieunhaps
 POST   /Phieunhaps
+PATCH  /Phieunhaps/{id}/thanh-toan
 
 GET    /Phieuthanhlys
 GET    /Phieuthanhlys/tat-ca-lo-con-hang
 GET    /Phieuthanhlys/lo-con-hang
+GET    /Phieuthanhlys/lo-qua-han
 POST   /Phieuthanhlys
 
-GET    /ThongBao
-GET    /ThongBao/chua-xem
-PUT    /ThongBao/{id}/da-xem
-PUT    /ThongBao/da-xem-tat-ca
+GET    /Thongke/tong-quan
+GET    /Thongke/luan-chuyen-hang-hoa
 ```
 
 ---
@@ -602,7 +691,8 @@ Admin xem danh sách tài khoản
 Admin tạo loại cá
   -> tạo size cá
   -> tạo chi tiết cá bán theo loại cá và size
-  -> thiết lập quy đổi đơn vị tính
+  -> nhập trường sokgtuongung trực tiếp cho chi tiết sản phẩm
+  -> thiết lập hesokg cho đơn vị tính nếu đơn vị có hệ số kg cố định
   -> thiết lập bảng giá bán lẻ/bán sỉ
 ```
 
@@ -628,13 +718,14 @@ Admin xem danh sách lô còn hàng/quá hạn
   -> hệ thống cập nhật tồn kho tổng
 ```
 
-### 5.8.6 Luồng thông báo
+### 5.8.6 Luồng dashboard/thống kê
 
 ```txt
-Hệ thống hoặc scheduler phát hiện sự kiện cần cảnh báo
-  -> tạo thông báo
-  -> admin xem danh sách thông báo
-  -> admin đánh dấu đã xem từng thông báo hoặc tất cả
+Admin/Nhân viên truy cập Dashboard
+  -> chọn mốc hoặc khoảng thời gian thống kê
+  -> hệ thống tổng hợp doanh thu, chi phí và số đơn hoàn thành
+  -> hệ thống tổng hợp luân chuyển nhập, bán, hao hụt theo loại cá
+  -> hiển thị chỉ số, danh sách đơn hàng và bảng/biểu đồ
 ```
 
 ---
@@ -652,7 +743,7 @@ Hồng Quân phụ trách chuẩn bị và giải thích các sơ đồ sau:
 6. Activity diagram - Tạo bảng giá
 7. Activity diagram - Nhập hàng
 8. Activity diagram - Thanh lý lô cá
-9. Activity diagram - Xử lý thông báo
+9. Activity diagram - Dashboard/thống kê
 10. Sequence diagram - Đăng nhập
 11. Sequence diagram - Nhập hàng
 12. Sequence diagram - Thanh lý
@@ -669,13 +760,13 @@ Hồng Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 - Mô tả module xác thực và phân quyền
 - Mô tả module quản lý tài khoản
 - Mô tả module quản lý loại cá, size cá
-- Mô tả module bảng giá và quy đổi
+- Mô tả module bảng giá, đơn vị tính và trường sokgtuongung của chi tiết sản phẩm
 - Mô tả module quản lý kho
 - Mô tả module nhập hàng
 - Mô tả module thanh lý
-- Mô tả module thông báo
-- Thiết kế API nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý
-- Test case nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý
+- Mô tả module dashboard/thống kê
+- Thiết kế API nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý, thống kê
+- Test case nhóm tài khoản, danh mục, kho, nhập hàng, thanh lý, thống kê
 ```
 
 ---
@@ -696,13 +787,15 @@ Hồng Quân phụ trách viết và rà soát các phần sau trong báo cáo:
 11. Cập nhật loại cá
 12. Thêm size cá
 13. Tạo chi tiết cá bán
-14. Cấu hình hệ số kg trên đơn vị tính hoặc chi tiết sản phẩm
+14. Cập nhật sokgtuongung trên chi tiết sản phẩm và hesokg của đơn vị tính
 15. Tạo bảng giá
 16. Xem tồn kho
 17. Tạo phiếu nhập hàng
 18. Tạo phiếu thanh lý
-19. Xem thông báo
-20. Đánh dấu thông báo đã xem
+19. Xem chỉ số tổng quan theo khoảng thời gian
+20. Xem luân chuyển nhập, bán và hao hụt theo loại cá
+21. Từ chối mật khẩu đã xuất hiện trong dữ liệu rò rỉ
+22. Giới hạn số lần đăng nhập sai và đọc JWT từ cookie
 ```
 
 ---
@@ -725,14 +818,26 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 11. Hỗ trợ nhau xử lý lỗi phát sinh trước ngày bảo vệ.
 ```
 
+Các file hạ tầng Frontend dùng chung do cả hai cùng rà soát:
+
+```txt
+client/src/main.jsx
+client/src/routes/app-routes.jsx
+client/src/config/axios.js
+client/src/context/ToastContext.jsx
+client/src/context/ConfirmContext.jsx
+```
+
+Trong đó, Hồng Quân chịu trách nhiệm chính phần xác thực/phân quyền; Minh Quân chịu trách nhiệm kiểm tra ảnh hưởng của Axios, Toast và Confirm tới các luồng đặt hàng, thanh toán, công nợ và thông báo.
+
 ---
 
 # 7. Bảng minh chứng kết quả bàn giao
 
 | Thành viên | Kết quả bàn giao chính | Minh chứng |
 |---|---|---|
-| Minh Quân | Nhóm chức năng đặt hàng, đơn hàng, thanh toán, công nợ | Màn hình đặt hàng, giỏ hàng, checkout, đơn hàng của tôi, quản lý đơn, tạo đơn POS, quản lý công nợ; API `/gio-hang`, `/Donhangs`, `/payment`, `/Thanhtoan`, `/CongNo`; sơ đồ activity/sequence/state; test case |
-| Hồng Quân | Nhóm chức năng tài khoản, danh mục, kho, nhập hàng, thanh lý, thông báo | Màn hình đăng nhập, đăng ký, tài khoản, loại cá, size, bảng giá, kho, nhập hàng, thanh lý, dashboard/thông báo; API `/auth`, `/tai-khoan`, `/Loaicas`, `/Sizecas`, `/Chitietcabans`, `/Banggias`, `/Phieunhaps`, `/Phieuthanhlys`, `/ThongBao`; sơ đồ activity/sequence/ERD; test case |
+| Minh Quân | Nhóm chức năng đặt hàng, đơn hàng, thanh toán, công nợ, thông báo | Màn hình đặt hàng, giỏ hàng, checkout, đơn hàng của tôi, quản lý đơn, tạo đơn POS, quản lý công nợ và thông báo; API `/gio-hang`, `/Donhangs`, `/payment`, `/Thanhtoan`, `/CongNo`, `/ThongBao`; sơ đồ activity/sequence/state; test case |
+| Hồng Quân | Nhóm chức năng tài khoản, danh mục, kho, nhập hàng, thanh lý, thống kê | Màn hình đăng nhập, đăng ký, tài khoản, loại cá, size, bảng giá, kho, nhập hàng, thanh lý, dashboard; API `/auth`, `/tai-khoan`, `/Loaicas`, `/Sizecas`, `/Chitietcabans`, `/Banggias`, `/Phieunhaps`, `/Phieuthanhlys`, `/Thongke`; sơ đồ activity/sequence/ERD; test case |
 
 ---
 
@@ -752,6 +857,7 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 - Sequence tạo đơn POS
 - Sequence thanh toán VNPAY
 - State diagram trạng thái đơn hàng
+- Activity/Sequence xử lý thông báo
 ```
 
 ## Hồng Quân
@@ -793,12 +899,14 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 | Cơ sở lý thuyết/công nghệ sử dụng | Hồng Quân | Minh Quân |
 | Phân tích nghiệp vụ bán hàng, đơn hàng, thanh toán, công nợ | Minh Quân | Hồng Quân |
 | Phân tích nghiệp vụ tài khoản, danh mục, kho, nhập hàng, thanh lý | Hồng Quân | Minh Quân |
+| Phân tích nghiệp vụ thông báo thời gian thực | Minh Quân | — |
+| Phân tích nghiệp vụ dashboard/thống kê | Hồng Quân | Minh Quân |
 | Thiết kế cơ sở dữ liệu | Cả hai | Cả hai |
 | Thiết kế giao diện và luồng người dùng | Cả hai | Cả hai |
-| Cài đặt module đơn hàng, thanh toán, công nợ | Minh Quân | Hồng Quân |
-| Cài đặt module tài khoản, danh mục, kho, thanh lý | Hồng Quân | Minh Quân |
-| Kiểm thử module đơn hàng, thanh toán, công nợ | Minh Quân | Hồng Quân |
-| Kiểm thử module tài khoản, danh mục, kho, thanh lý | Hồng Quân | Minh Quân |
+| Cài đặt module đơn hàng, thanh toán, công nợ, thông báo | Minh Quân | — |
+| Cài đặt module tài khoản, danh mục, kho, thanh lý, thống kê | Hồng Quân | Minh Quân |
+| Kiểm thử module đơn hàng, thanh toán, công nợ, thông báo | Minh Quân | — |
+| Kiểm thử module tài khoản, danh mục, kho, thanh lý, thống kê | Hồng Quân | Minh Quân |
 | Kết luận và hướng phát triển | Cả hai | Cả hai |
 | Slide và kịch bản demo | Cả hai | Cả hai |
 
@@ -816,6 +924,7 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 5. Admin xem và cập nhật trạng thái đơn hàng.
 6. Admin tạo đơn hàng tại quầy POS.
 7. Admin xem/cập nhật công nợ khách sỉ.
+8. Người dùng nhận, xem và đánh dấu thông báo đã xem.
 ```
 
 ## Hồng Quân demo
@@ -828,7 +937,7 @@ Ngoài phần phân công riêng, hai thành viên cùng thực hiện các côn
 5. Admin xem tồn kho.
 6. Admin tạo phiếu nhập hàng.
 7. Admin tạo phiếu thanh lý.
-8. Admin xem thông báo.
+8. Admin xem Dashboard và luân chuyển hàng hóa theo thời gian.
 ```
 
 ---
@@ -858,10 +967,10 @@ Tóm tắt:
 
 ```txt
 Minh Quân:
-  Phụ trách nghiệp vụ lõi bán hàng, đơn hàng, thanh toán, công nợ.
+  Phụ trách nghiệp vụ lõi bán hàng, đơn hàng, thanh toán, công nợ, thông báo.
 
 Hồng Quân:
-  Phụ trách nghiệp vụ quản trị tài khoản, danh mục, kho, nhập hàng, thanh lý, thông báo.
+  Phụ trách nghiệp vụ quản trị tài khoản, danh mục, kho, nhập hàng, thanh lý, dashboard/thống kê.
 
 Cả hai:
   Cùng tích hợp, kiểm thử tổng thể, hoàn thiện báo cáo, chuẩn bị slide và demo.
