@@ -8,6 +8,7 @@ import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.entity.Taikhoan;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiTaiKhoan;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
+import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.TaiKhoanRepository;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,9 +17,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,6 +42,9 @@ class AuthenticationServiceTest {
 
     @Mock
     PasswordEncoder passwordEncoder;
+
+    @Mock
+    ValueOperations<String, Object> valueOperations;
 
     AuthenticationService authenticationService;
     Taikhoan taiKhoan;
@@ -101,6 +107,82 @@ class AuthenticationServiceTest {
     }
 
     @Test
+    void refreshToken_nemAppExceptionThayViParseExceptionKhiTokenBiHong() {
+        // Cookie bị sửa thủ công/hư hỏng -> không phải chuỗi JWT hợp lệ.
+        // Trước khi sửa bug, SignedJWT.parse() ném ParseException (checked) lọt thẳng
+        // ra ngoài thành lỗi 500 chưa được xử lý thay vì trả 401 chuẩn.
+        AppExceptions ex = assertThrows(AppExceptions.class,
+                () -> authenticationService.refreshToken("khong-phai-jwt-hop-le"));
+
+        assertEquals(ErrorCode.UNAUTHENTICATED, ex.getErrorCode());
+    }
+
+    @Test
+    void refreshToken_nemAppExceptionKhiRefreshTokenRongHoacNull() {
+        assertThrows(AppExceptions.class, () -> authenticationService.refreshToken(null));
+        assertThrows(AppExceptions.class, () -> authenticationService.refreshToken(""));
+    }
+
+    @Test
+    void refreshToken_nemAppExceptionKhiRefreshTokenDaHetHan() {
+        ReflectionTestUtils.setField(authenticationService, "REFRESH_TIME", -10L);
+        AuthenticationResponse response = authenticate();
+        ReflectionTestUtils.setField(authenticationService, "REFRESH_TIME", 604800L);
+
+        AppExceptions ex = assertThrows(AppExceptions.class,
+                () -> authenticationService.refreshToken(response.getRefreshToken()));
+
+        assertEquals(ErrorCode.UNAUTHENTICATED, ex.getErrorCode());
+    }
+
+    @Test
+    void refreshToken_tuChoiKhiRefreshTokenNamTrongBlacklist() throws Exception {
+        AuthenticationResponse response = authenticate();
+        String jwtId = SignedJWT.parse(response.getRefreshToken()).getJWTClaimsSet().getJWTID();
+        when(redisTemplate.hasKey("blacklist:" + jwtId)).thenReturn(true);
+
+        AppExceptions ex = assertThrows(AppExceptions.class,
+                () -> authenticationService.refreshToken(response.getRefreshToken()));
+
+        assertEquals(ErrorCode.BLACKLIST, ex.getErrorCode());
+    }
+
+    @Test
+    void refreshToken_thanhCongCapTokenMoiVaBlacklistRefreshTokenCu() throws Exception {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        AuthenticationResponse loginResponse = authenticate();
+        String oldJwtId = SignedJWT.parse(loginResponse.getRefreshToken()).getJWTClaimsSet().getJWTID();
+
+        AuthenticationResponse refreshed = authenticationService.refreshToken(loginResponse.getRefreshToken());
+
+        assertTrue(refreshed.isAuthenticated());
+        assertNotEquals(loginResponse.getToken(), refreshed.getToken());
+        assertNotEquals(loginResponse.getRefreshToken(), refreshed.getRefreshToken());
+        assertEquals("access", SignedJWT.parse(refreshed.getToken()).getJWTClaimsSet().getStringClaim("token_type"));
+        assertEquals("refresh", SignedJWT.parse(refreshed.getRefreshToken()).getJWTClaimsSet().getStringClaim("token_type"));
+        verify(valueOperations).set(eq("blacklist:" + oldJwtId), eq("true"), any(Duration.class));
+    }
+
+    @Test
+    void refreshToken_nemAppExceptionKhiTaiKhoanKhongConTonTai() {
+        AuthenticationResponse response = authenticate();
+        when(taiKhoanRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+        assertThrows(AppExceptions.class,
+                () -> authenticationService.refreshToken(response.getRefreshToken()));
+    }
+
+    @Test
+    void refreshToken_tuChoiKhiTaiKhoanBiKhoaSauKhiDaCoRefreshToken() {
+        AuthenticationResponse response = authenticate();
+        taiKhoan.setTrangthaitk(TrangThaiTaiKhoan.KHOA);
+
+        assertThrows(AppExceptions.class,
+                () -> authenticationService.refreshToken(response.getRefreshToken()));
+    }
+
+    @Test
     void introspect_tuChoiRefreshTokenLamAccessToken() {
         AuthenticationResponse response = authenticate();
 
@@ -135,7 +217,10 @@ class AuthenticationServiceTest {
     @Test
     void logout_khongBlacklistTokenSaiChuKy() {
         AuthenticationResponse response = authenticate();
-        String forgedToken = response.getToken().substring(0, response.getToken().length() - 1) + "x";
+        String[] tokenParts = response.getToken().split("\\.");
+        char replacement = tokenParts[2].charAt(0) == 'A' ? 'B' : 'A';
+        tokenParts[2] = replacement + tokenParts[2].substring(1);
+        String forgedToken = String.join(".", tokenParts);
 
         authenticationService.logout(forgedToken, null);
 

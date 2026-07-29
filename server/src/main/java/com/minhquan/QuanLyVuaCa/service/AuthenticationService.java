@@ -97,17 +97,23 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse refreshToken(String refreshToken) throws ParseException, JOSEException {
+    public AuthenticationResponse refreshToken(String refreshToken) {
         // Kiểm tra null trước khi kiểm tra rỗng
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
         }
 
-        var signJwt = verifyToken(refreshToken, TokenType.REFRESH);
+        String email;
+        try {
+            var signJwt = verifyToken(refreshToken, TokenType.REFRESH);
+            invalidateToken(signJwt);
+            email = signJwt.getJWTClaimsSet().getSubject();
+        } catch (ParseException | JOSEException e) {
+            // Token bị hỏng/sai định dạng (không parse được) -> coi như chưa đăng nhập,
+            // không để lọt ra ngoài thành lỗi 500 chưa được xử lý.
+            throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
+        }
 
-        invalidateToken(signJwt);
-
-        var email = signJwt.getJWTClaimsSet().getSubject();
         var taiKhoan = taiKhoanRepository.findByEmail(email)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 

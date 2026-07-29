@@ -6,7 +6,6 @@ import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.AuthenticationResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.IntrospectResponse;
 import com.minhquan.QuanLyVuaCa.service.AuthenticationService;
-import com.nimbusds.jose.JOSEException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import org.springframework.http.HttpHeaders;
@@ -18,8 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.web.csrf.CsrfToken;
-
-import java.text.ParseException;
 
 @Slf4j
 @RestController
@@ -135,8 +132,7 @@ public class AuthenticationController {
 
     @PostMapping("/refresh")
     public ApiResponse<AuthenticationResponse> refreshToken(@CookieValue(value = "refreshToken", required = false) String refreshToken,
-                                                            HttpServletResponse response)
-            throws ParseException, JOSEException {
+                                                            HttpServletResponse response) {
         var result = service.refreshToken(refreshToken);
 
         var cookieResult = service.addCookie(result.getToken(), TOKEN_TIME, result.getRefreshToken(), REFRESH_TIME);
