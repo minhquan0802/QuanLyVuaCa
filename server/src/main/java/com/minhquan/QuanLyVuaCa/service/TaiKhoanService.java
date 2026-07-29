@@ -128,6 +128,9 @@ public class TaiKhoanService {
         Taikhoan taikhoan = taiKhoanRepository.findByEmail(email)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
+        if (passwordEncoder.matches(matkhauMoi, taikhoan.getMatkhau()))
+            throw new AppExceptions(ErrorCode.NEW_PASSWORD_SAME_AS_OLD);
+
         if (pwnedPasswordService.kiemTraMatKhauBiLo(matkhauMoi))
             throw new AppExceptions(ErrorCode.PASSWORD_PWNED);
 
@@ -223,6 +226,9 @@ public class TaiKhoanService {
 
         if (!passwordEncoder.matches(matkhauCu, taikhoan.getMatkhau()))
             throw new AppExceptions(ErrorCode.WRONG_PASSWORD);
+
+        if (passwordEncoder.matches(matkhauMoi, taikhoan.getMatkhau()))
+            throw new AppExceptions(ErrorCode.NEW_PASSWORD_SAME_AS_OLD);
 
         if (pwnedPasswordService.kiemTraMatKhauBiLo(matkhauMoi))
             throw new AppExceptions(ErrorCode.PASSWORD_PWNED);

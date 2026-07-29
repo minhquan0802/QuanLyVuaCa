@@ -49,7 +49,11 @@ export default function Profile() {
 
     const [isChangingPw, setIsChangingPw] = useState(false);
     const [pwData, setPwData] = useState({ matkhauCu: "", matkhauMoi: "", xacNhan: "" });
-    const [showPw, setShowPw] = useState(false);
+    const [showPw, setShowPw] = useState({
+        matkhauCu: false,
+        matkhauMoi: false,
+        xacNhan: false,
+    });
     const [isSavingPw, setIsSavingPw] = useState(false);
 
     const handleEditClick = () => {
@@ -99,14 +103,19 @@ export default function Profile() {
                 matkhauCu: pwData.matkhauCu,
                 matkhauMoi: pwData.matkhauMoi,
             });
-            setIsChangingPw(false);
-            setPwData({ matkhauCu: "", matkhauMoi: "", xacNhan: "" });
-            showToast("Đổi mật khẩu thành công!", "success");
+            showToast("Đổi mật khẩu thành công! Bạn sẽ được chuyển đến trang đăng nhập.", "success");
+            await new Promise(resolve => setTimeout(resolve, 1800));
+            setUser(null);
+            navigate("/login", { replace: true });
         } catch (err) {
             const code = err.response?.data?.code;
             const msg = code === 1033
                 ? "Mật khẩu hiện tại không đúng."
-                : err.response?.data?.message || "Thao tác thất bại";
+                : code === 1034
+                    ? "Mật khẩu này đã từng bị lộ trong các vụ rò rỉ dữ liệu. Vui lòng chọn mật khẩu khác."
+                    : code === 1035
+                        ? "Mật khẩu mới không được trùng mật khẩu hiện tại."
+                        : err.response?.data?.message || "Thao tác thất bại";
             showToast(msg, "error");
         } finally {
             setIsSavingPw(false);
@@ -264,7 +273,7 @@ export default function Profile() {
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                         <h3 className="font-bold text-base text-slate-800">Bảo mật</h3>
                         {!isChangingPw && (
-                            <button onClick={() => { setIsChangingPw(true); setShowPw(false); setPwData({ matkhauCu: "", matkhauMoi: "", xacNhan: "" }); }} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 text-xs cursor-pointer">
+                            <button onClick={() => { setIsChangingPw(true); setShowPw({ matkhauCu: false, matkhauMoi: false, xacNhan: false }); setPwData({ matkhauCu: "", matkhauMoi: "", xacNhan: "" }); }} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 text-xs cursor-pointer">
                                 Đổi mật khẩu
                             </button>
                         )}
@@ -275,14 +284,14 @@ export default function Profile() {
                             <Field label="Mật khẩu hiện tại">
                                 <div className="relative">
                                     <input
-                                        type={showPw ? "text" : "password"}
+                                        type={showPw.matkhauCu ? "text" : "password"}
                                         value={pwData.matkhauCu}
                                         onChange={e => setPwData(p => ({ ...p, matkhauCu: e.target.value }))}
                                         placeholder="Nhập mật khẩu đang dùng"
                                         className="w-full border-b-2 border-cyan-500 bg-cyan-50/30 pl-2 pr-10 py-1.5 text-slate-800 font-medium focus:outline-none rounded-t-md text-sm placeholder:text-slate-400 placeholder:font-normal placeholder:italic"
                                     />
-                                    <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
-                                        <span className="material-symbols-outlined text-[18px]">{showPw ? "visibility_off" : "visibility"}</span>
+                                    <button type="button" onClick={() => setShowPw(v => ({ ...v, matkhauCu: !v.matkhauCu }))} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                        <span className="material-symbols-outlined text-[18px]">{showPw.matkhauCu ? "visibility_off" : "visibility"}</span>
                                     </button>
                                 </div>
                             </Field>
@@ -290,26 +299,31 @@ export default function Profile() {
                             <Field label="Mật khẩu mới">
                                 <div className="relative">
                                     <input
-                                        type={showPw ? "text" : "password"}
+                                        type={showPw.matkhauMoi ? "text" : "password"}
                                         value={pwData.matkhauMoi}
                                         onChange={e => setPwData(p => ({ ...p, matkhauMoi: e.target.value }))}
                                         placeholder="Tối thiểu 8 ký tự"
                                         className="w-full border-b-2 border-cyan-500 bg-cyan-50/30 pl-2 pr-10 py-1.5 text-slate-800 font-medium focus:outline-none rounded-t-md text-sm placeholder:text-slate-400 placeholder:font-normal placeholder:italic"
                                     />
-                                    <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
-                                        <span className="material-symbols-outlined text-[18px]">{showPw ? "visibility_off" : "visibility"}</span>
+                                    <button type="button" onClick={() => setShowPw(v => ({ ...v, matkhauMoi: !v.matkhauMoi }))} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                        <span className="material-symbols-outlined text-[18px]">{showPw.matkhauMoi ? "visibility_off" : "visibility"}</span>
                                     </button>
                                 </div>
                             </Field>
 
                             <Field label="Xác nhận mật khẩu mới">
-                                <input
-                                    type={showPw ? "text" : "password"}
-                                    value={pwData.xacNhan}
-                                    onChange={e => setPwData(p => ({ ...p, xacNhan: e.target.value }))}
-                                    placeholder="Nhập lại mật khẩu mới"
-                                    className="w-full border-b-2 border-cyan-500 bg-cyan-50/30 px-2 py-1.5 text-slate-800 font-medium focus:outline-none rounded-t-md text-sm placeholder:text-slate-400 placeholder:font-normal placeholder:italic"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPw.xacNhan ? "text" : "password"}
+                                        value={pwData.xacNhan}
+                                        onChange={e => setPwData(p => ({ ...p, xacNhan: e.target.value }))}
+                                        placeholder="Nhập lại mật khẩu mới"
+                                        className="w-full border-b-2 border-cyan-500 bg-cyan-50/30 pl-2 pr-10 py-1.5 text-slate-800 font-medium focus:outline-none rounded-t-md text-sm placeholder:text-slate-400 placeholder:font-normal placeholder:italic"
+                                    />
+                                    <button type="button" onClick={() => setShowPw(v => ({ ...v, xacNhan: !v.xacNhan }))} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                        <span className="material-symbols-outlined text-[18px]">{showPw.xacNhan ? "visibility_off" : "visibility"}</span>
+                                    </button>
+                                </div>
                             </Field>
 
                             {pwData.matkhauMoi && pwData.xacNhan && pwData.matkhauMoi !== pwData.xacNhan && (

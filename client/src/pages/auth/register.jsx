@@ -27,7 +27,7 @@ export default function Register() {
         if (e) e.preventDefault();
         setError("");
 
-        if (!fullName || !email || !phoneNumber || !address || !password || !confirmPassword) {
+        if (!fullName.trim() || !email || !phoneNumber || !address || !password || !confirmPassword) {
             const msg = "Vui lòng điền đầy đủ các thông tin bắt buộc (*).";
             setError(msg);
             showToast(msg, "error");
@@ -44,7 +44,7 @@ export default function Register() {
         setLoading(true);
 
         try {
-            const nameParts = fullName.trim().split(" ");
+            const nameParts = fullName.trim().split(/\s+/);
             const ten = nameParts.length > 0 ? nameParts.pop() : "";
             const ho = nameParts.join(" ");
 

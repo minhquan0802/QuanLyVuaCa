@@ -50,6 +50,10 @@ export default function DatLaiMatKhau() {
                 setErrorMsg("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ.");
             } else if (code === 1010) {
                 setErrorMsg("Mật khẩu phải từ 8 đến 50 ký tự.");
+            } else if (code === 1034) {
+                setErrorMsg("Mật khẩu này đã từng bị lộ trong các vụ rò rỉ dữ liệu. Vui lòng chọn mật khẩu khác.");
+            } else if (code === 1035) {
+                setErrorMsg("Mật khẩu mới không được trùng mật khẩu hiện tại.");
             } else {
                 setErrorMsg("Có lỗi xảy ra. Vui lòng thử lại.");
             }
