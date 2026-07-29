@@ -30,18 +30,20 @@ public class CustomCookieTokenResolver implements BearerTokenResolver {
             return null;
         }
 
-        // Ưu tiên Authorization header (axios luôn gửi header này)
+        // Ưu tiên Authorization header nếu request gửi Bearer token.
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+            String token = authHeader.substring(7).trim();
+            return token.isEmpty() ? null : token;
         }
 
-        // Fallback: đọc từ cookie (dùng khi gọi từ trình duyệt trực tiếp)
+        // Fallback: đọc access token từ cookie.
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if ("token".equals(cookie.getName())) {
-                    return cookie.getValue();
+                    String token = cookie.getValue();
+                    return token == null || token.isBlank() ? null : token;
                 }
             }
         }
