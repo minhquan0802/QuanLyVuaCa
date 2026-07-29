@@ -7,8 +7,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-class CustomCookieTokenResolverTest {
-    private final CustomCookieTokenResolver resolver = new CustomCookieTokenResolver();
+class JwtCookieTokenResolverTest {
+    private final JwtCookieTokenResolver resolver = new JwtCookieTokenResolver();
 
     @Test
     void authEndpoint_boQuaAccessTokenBiHong() {

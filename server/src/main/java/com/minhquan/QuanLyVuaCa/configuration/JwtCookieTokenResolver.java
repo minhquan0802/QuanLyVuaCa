@@ -9,7 +9,7 @@ import org.springframework.util.AntPathMatcher;
 import java.util.List;
 
 @Component
-public class CustomCookieTokenResolver implements BearerTokenResolver {
+public class JwtCookieTokenResolver implements BearerTokenResolver {
 
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 

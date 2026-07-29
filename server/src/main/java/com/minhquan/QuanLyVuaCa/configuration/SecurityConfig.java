@@ -49,7 +49,7 @@ public class SecurityConfig {
     };
 
     @Autowired
-    private CustomJwtDecoder customJwtDecoder;
+    private JwtTokenDecoder jwtTokenDecoder;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
@@ -61,10 +61,10 @@ public class SecurityConfig {
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer ->
-                        jwtConfigurer.decoder(customJwtDecoder)
+                        jwtConfigurer.decoder(jwtTokenDecoder)
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                         .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
-                        .bearerTokenResolver(new CustomCookieTokenResolver())
+                        .bearerTokenResolver(new JwtCookieTokenResolver())
         );
         CookieCsrfTokenRepository csrfTokenRepository = new CookieCsrfTokenRepository();
         csrfTokenRepository.setCookieName("XSRF-TOKEN");
