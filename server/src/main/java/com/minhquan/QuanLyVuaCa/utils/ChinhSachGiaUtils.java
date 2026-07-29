@@ -1,4 +1,4 @@
-package com.minhquan.QuanLyVuaCa.util;
+package com.minhquan.QuanLyVuaCa.utils;
 
 public final class ChinhSachGiaUtils {
     private ChinhSachGiaUtils() {

@@ -45,7 +45,7 @@ public class PhieunhapService {
     BanggiaRepository banggiaRepository;
 
     @Transactional(readOnly = true)
-    public List<PhieunhapResponse> getDanhSach() {
+    public List<PhieunhapResponse> layDanhSach() {
         return phieunhapRepository.findAll(Sort.by(Sort.Direction.DESC, "ngaynhap"))
                 .stream()
                 .map(this::toFullResponse)
@@ -65,7 +65,7 @@ public class PhieunhapService {
         if (request.getNgaynhap() != null && request.getNgaynhap().isBefore(LocalDate.now())) {
             throw new AppExceptions(ErrorCode.NGAY_NHAP_INVALID);
         }
-        request.getListChiTiet().forEach(this::validateSalePrices);
+        request.getListChiTiet().forEach(this::kiemTraGiaBan);
 
         // --- 1. TẠO PHIẾU NHẬP ---
         Phieunhap phieunhap = phieunhapMapper.toEntity(request);
@@ -91,10 +91,10 @@ public class PhieunhapService {
         phieunhap.setNgaynhap(request.getNgaynhap() != null ? request.getNgaynhap() : LocalDate.now());
 
         // Xử lý Enum Trạng thái thanh toán — chỉ ADMIN mới được đặt DA_THANH_TOAN lúc tạo
-        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+        boolean laAdmin = SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin && request.getTrangthaithanhtoan() != null) {
+        if (laAdmin && request.getTrangthaithanhtoan() != null) {
             try {
                 phieunhap.setTrangthaithanhtoan(TrangThaiThanhToan.valueOf(request.getTrangthaithanhtoan()));
             } catch (IllegalArgumentException e) {
@@ -113,142 +113,142 @@ public class PhieunhapService {
         }
         phieunhap.setTongsoluong(tongSoluong);
 
-        Phieunhap savedPhieu = phieunhapRepository.save(phieunhap);
+        Phieunhap phieuDaLuu = phieunhapRepository.save(phieunhap);
 
         // --- 2. XỬ LÝ CHI TIẾT & KHO ---
         if (request.getListChiTiet() != null) {
-            List<Chitietphieunhap> listEntities = new ArrayList<>();
+            List<Chitietphieunhap> danhSachEntity = new ArrayList<>();
 
-            for (ChitietPhieunhapRequest itemRequest : request.getListChiTiet()) {
-                Chitietphieunhap detail = chitietphieunhapMapper.toEntity(itemRequest);
+            for (ChitietPhieunhapRequest chiTietRequest : request.getListChiTiet()) {
+                Chitietphieunhap chiTiet = chitietphieunhapMapper.toEntity(chiTietRequest);
 
                 // Link tới phiếu cha
-                detail.setIdphieunhap(savedPhieu);
+                chiTiet.setIdphieunhap(phieuDaLuu);
 
                 // Lưu lịch sử giá bán tại thời điểm nhập
-                detail.setGiabanletaithoidiemnhap(itemRequest.getGiabanletaithoidiemnhap());
-                detail.setGiabansitaithoidiemnhap(itemRequest.getGiabansitaithoidiemnhap());
+                chiTiet.setGiabanletaithoidiemnhap(chiTietRequest.getGiabanletaithoidiemnhap());
+                chiTiet.setGiabansitaithoidiemnhap(chiTietRequest.getGiabansitaithoidiemnhap());
 
-                detail.setTrangthaica(TrangThaiCa.CON_HANG);
+                chiTiet.setTrangthaica(TrangThaiCa.CON_HANG);
 
                 // Lô mới luôn full số lượng nhập, dùng để trừ FIFO khi bán/thanh lý
-                detail.setSoluongconlai(itemRequest.getSoluongnhap());
+                chiTiet.setSoluongconlai(chiTietRequest.getSoluongnhap());
 
                 // Ngày thanh lý = Ngày nhập + 2 ngày
-                detail.setNgaythanhly(savedPhieu.getNgaynhap().plusDays(2));
+                chiTiet.setNgaythanhly(phieuDaLuu.getNgaynhap().plusDays(2));
 
                 // --- LOGIC KHO (Bảng chitietcaban) ---
                 // Cần Size để tìm trong kho
-                Sizeca sizeca = sizecaRepository.findById(itemRequest.getIdsizeca())
+                Sizeca sizeca = sizecaRepository.findById(chiTietRequest.getIdsizeca())
                         .orElseThrow(() -> new AppExceptions(ErrorCode.SIZECA_NOT_EXISTED));
 
                 // Tìm trong kho xem đã có cặp (Loại cá - Size) này chưa
-                Chitietcaban khoItem = chitietcabanRepository.findByIdloaicaAndIdsizeca(loaica, sizeca)
+                Chitietcaban khoHienCo = chitietcabanRepository.findByIdloaicaAndIdsizeca(loaica, sizeca)
                         .orElse(null);
 
-                if (khoItem == null) {
-                    khoItem = new Chitietcaban();
-                    khoItem.setIdloaica(loaica);
-                    khoItem.setIdsizeca(sizeca);
-                    khoItem.setSoluongton(BigDecimal.ZERO);
-                } else if (Boolean.TRUE.equals(khoItem.getDeleted())) {
-                    khoItem.setDeleted(false);
+                if (khoHienCo == null) {
+                    khoHienCo = new Chitietcaban();
+                    khoHienCo.setIdloaica(loaica);
+                    khoHienCo.setIdsizeca(sizeca);
+                    khoHienCo.setSoluongton(BigDecimal.ZERO);
+                } else if (Boolean.TRUE.equals(khoHienCo.getDeleted())) {
+                    khoHienCo.setDeleted(false);
                 }
 
                 // Cộng dồn tồn kho
-                khoItem.setSoluongton(khoItem.getSoluongton().add(itemRequest.getSoluongnhap()));
-                Chitietcaban savedKho = chitietcabanRepository.save(khoItem);
+                khoHienCo.setSoluongton(khoHienCo.getSoluongton().add(chiTietRequest.getSoluongnhap()));
+                Chitietcaban khoDaLuu = chitietcabanRepository.save(khoHienCo);
 
                 // Link chi tiết phiếu nhập tới Kho (quan trọng)
-                detail.setIdchitietcaban(savedKho);
+                chiTiet.setIdchitietcaban(khoDaLuu);
 
-                listEntities.add(detail);
+                danhSachEntity.add(chiTiet);
 
                 // Cập nhật Bảng giá hiện hành (Logic riêng)
-                updateBanggia(savedKho, itemRequest.getGiabanletaithoidiemnhap(), itemRequest.getGiabansitaithoidiemnhap());
+                capNhatBangGia(khoDaLuu, chiTietRequest.getGiabanletaithoidiemnhap(), chiTietRequest.getGiabansitaithoidiemnhap());
             }
-            chitietphieunhapRepository.saveAll(listEntities);
+            chitietphieunhapRepository.saveAll(danhSachEntity);
         }
 
-        return toFullResponse(savedPhieu);
+        return toFullResponse(phieuDaLuu);
     }
 
     // Hàm phụ trợ để xử lý Bảng giá
-    private void validateSalePrices(ChitietPhieunhapRequest detail) {
-        BigDecimal retailPrice = detail.getGiabanletaithoidiemnhap();
-        BigDecimal wholesalePrice = detail.getGiabansitaithoidiemnhap();
-        if (retailPrice == null || wholesalePrice == null) {
+    private void kiemTraGiaBan(ChitietPhieunhapRequest chiTiet) {
+        BigDecimal giaLe = chiTiet.getGiabanletaithoidiemnhap();
+        BigDecimal giaSi = chiTiet.getGiabansitaithoidiemnhap();
+        if (giaLe == null || giaSi == null) {
             throw new AppExceptions(ErrorCode.BANGGIA_BOTH_PRICES_REQUIRED);
         }
-        if (retailPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (giaLe.compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppExceptions(ErrorCode.GIABANLE_INVALID);
         }
-        if (wholesalePrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (giaSi.compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppExceptions(ErrorCode.GIABANSI_INVALID);
         }
-        if (wholesalePrice.compareTo(retailPrice) > 0) {
+        if (giaSi.compareTo(giaLe) > 0) {
             throw new AppExceptions(ErrorCode.BANGGIA_RELATION_INVALID);
         }
     }
 
     private PhieunhapResponse toFullResponse(Phieunhap phieunhap) {
         PhieunhapResponse response = phieunhapMapper.toResponse(phieunhap);
-        List<ChiTietPhieunhapInResponse> details = chitietphieunhapRepository.findByIdphieunhap(phieunhap)
+        List<ChiTietPhieunhapInResponse> danhSachChiTiet = chitietphieunhapRepository.findByIdphieunhap(phieunhap)
                 .stream()
-                .map(detail -> {
-                    BigDecimal quantity = detail.getSoluongnhap() != null
-                            ? detail.getSoluongnhap() : BigDecimal.ZERO;
-                    BigDecimal importPrice = detail.getGianhap() != null
-                            ? detail.getGianhap() : BigDecimal.ZERO;
+                .map(chiTiet -> {
+                    BigDecimal soLuong = chiTiet.getSoluongnhap() != null
+                            ? chiTiet.getSoluongnhap() : BigDecimal.ZERO;
+                    BigDecimal giaNhap = chiTiet.getGianhap() != null
+                            ? chiTiet.getGianhap() : BigDecimal.ZERO;
                     return ChiTietPhieunhapInResponse.builder()
-                            .tenSize(detail.getIdchitietcaban() != null
-                                    && detail.getIdchitietcaban().getIdsizeca() != null
-                                    ? detail.getIdchitietcaban().getIdsizeca().getSizeca()
+                            .tenSize(chiTiet.getIdchitietcaban() != null
+                                    && chiTiet.getIdchitietcaban().getIdsizeca() != null
+                                    ? chiTiet.getIdchitietcaban().getIdsizeca().getSizeca()
                                     : "?")
-                            .soluongnhap(quantity)
-                            .gianhap(importPrice)
-                            .giabanletaithoidiemnhap(detail.getGiabanletaithoidiemnhap())
-                            .giabansitaithoidiemnhap(detail.getGiabansitaithoidiemnhap())
-                            .thanhtien(quantity.multiply(importPrice))
+                            .soluongnhap(soLuong)
+                            .gianhap(giaNhap)
+                            .giabanletaithoidiemnhap(chiTiet.getGiabanletaithoidiemnhap())
+                            .giabansitaithoidiemnhap(chiTiet.getGiabansitaithoidiemnhap())
+                            .thanhtien(soLuong.multiply(giaNhap))
                             .build();
                 })
                 .toList();
-        response.setListChiTiet(details);
-        response.setTongtien(details.stream()
+        response.setListChiTiet(danhSachChiTiet);
+        response.setTongtien(danhSachChiTiet.stream()
                 .map(ChiTietPhieunhapInResponse::getThanhtien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
         return response;
     }
 
-    private void updateBanggia(Chitietcaban kho, BigDecimal giaLeMoi, BigDecimal giaSiMoi) {
+    private void capNhatBangGia(Chitietcaban kho, BigDecimal giaLeMoi, BigDecimal giaSiMoi) {
         // Nếu không nhập giá dự kiến thì không cập nhật bảng giá
         if (giaLeMoi == null && giaSiMoi == null) return;
         if (giaLeMoi == null || giaSiMoi == null) {
             throw new AppExceptions(ErrorCode.BANGGIA_BOTH_PRICES_REQUIRED);
         }
 
-        BigDecimal giaLeInput = giaLeMoi;
-        BigDecimal giaSiInput = giaSiMoi;
+        BigDecimal giaLeApDung = giaLeMoi;
+        BigDecimal giaSiApDung = giaSiMoi;
 
         // 1. Tìm giá đang áp dụng hiện tại (ngayketthuc = null)
         // Bạn cần đảm bảo Repository có hàm này: findByChitietcabanAndNgayketthucIsNull(Chitietcaban ct)
         Banggia giaHienTai = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(kho)
                 .orElse(null);
 
-        boolean canCreateNew = false;
+        boolean coTheTaoMoi = false;
 
         if (giaHienTai == null) {
             // Chưa có giá -> Tạo mới
-            canCreateNew = true;
+            coTheTaoMoi = true;
         } else {
             // Đã có giá -> So sánh xem có khác không
-            BigDecimal oldLe = giaHienTai.getGiabanle() != null ? giaHienTai.getGiabanle() : BigDecimal.ZERO;
-            BigDecimal oldSi = giaHienTai.getGiabansi() != null ? giaHienTai.getGiabansi() : BigDecimal.ZERO;
+            BigDecimal leCu = giaHienTai.getGiabanle() != null ? giaHienTai.getGiabanle() : BigDecimal.ZERO;
+            BigDecimal siCu = giaHienTai.getGiabansi() != null ? giaHienTai.getGiabansi() : BigDecimal.ZERO;
 
-            if (oldLe.compareTo(giaLeInput) != 0 || oldSi.compareTo(giaSiInput) != 0) {
+            if (leCu.compareTo(giaLeApDung) != 0 || siCu.compareTo(giaSiApDung) != 0) {
                 if (LocalDate.now().equals(giaHienTai.getNgaybatdau())) {
-                    giaHienTai.setGiabanle(giaLeInput);
-                    giaHienTai.setGiabansi(giaSiInput);
+                    giaHienTai.setGiabanle(giaLeApDung);
+                    giaHienTai.setGiabansi(giaSiApDung);
                     banggiaRepository.save(giaHienTai);
                     return;
                 }
@@ -256,16 +256,16 @@ public class PhieunhapService {
                 giaHienTai.setNgayketthuc(LocalDate.now().minusDays(1));
                 banggiaRepository.save(giaHienTai);
 
-                canCreateNew = true;
+                coTheTaoMoi = true;
             }
         }
 
         // 3. Tạo bảng giá mới
-        if (canCreateNew) {
+        if (coTheTaoMoi) {
             Banggia giaMoi = new Banggia();
             giaMoi.setChitietcaban(kho);
-            giaMoi.setGiabanle(giaLeInput);
-            giaMoi.setGiabansi(giaSiInput);
+            giaMoi.setGiabanle(giaLeApDung);
+            giaMoi.setGiabansi(giaSiApDung);
             giaMoi.setNgaybatdau(LocalDate.now());
             giaMoi.setNgayketthuc(null); // NULL nghĩa là đang hiệu lực
 

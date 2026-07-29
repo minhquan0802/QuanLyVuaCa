@@ -18,7 +18,7 @@ public class JwtCookieTokenResolver implements BearerTokenResolver {
     // ra nhưng xác thực fail (hết hạn/sai), nó trả 401 ngay lập tức bất kể endpoint có
     // permitAll hay không. Vì vậy các endpoint public không được resolve token từ cookie/header.
     private static final List<String> PUBLIC_GET_PATTERNS = List.of(
-            "/Loaicas", "/Loaicas/**", "/Chitietcabans", "/Banggias", "/Donvitinhs",
+            "/Loaicas", "/Loaicas/*", "/Chitietcabans", "/Banggias", "/Donvitinhs",
             "/tai-khoan/verify-email", "/auth/csrf");
 
     private static final List<String> PUBLIC_POST_PATTERNS = List.of(

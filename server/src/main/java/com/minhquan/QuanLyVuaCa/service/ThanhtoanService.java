@@ -34,7 +34,7 @@ public class ThanhtoanService {
 
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
-    public TinhTrangThanhToanResponse getTinhTrang(String idDonhang) {
+    public TinhTrangThanhToanResponse layTinhTrang(String idDonhang) {
         Donhang dh = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 

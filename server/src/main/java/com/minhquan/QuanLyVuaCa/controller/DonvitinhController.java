@@ -19,49 +19,49 @@ public class DonvitinhController {
     private final DonvitinhService donvitinhService;
 
     @GetMapping
-    public ApiResponse<List<DonvitinhResponse>> getAll() {
+    public ApiResponse<List<DonvitinhResponse>> layTatCa() {
         return ApiResponse.<List<DonvitinhResponse>>builder()
                 .code(200)
                 .message("OK")
-                .result(donvitinhService.getAll())
+                .result(donvitinhService.layTatCa())
                 .build();
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<DonvitinhResponse> getById(@PathVariable Integer id) {
+    public ApiResponse<DonvitinhResponse> layTheoId(@PathVariable Integer id) {
         return ApiResponse.<DonvitinhResponse>builder()
                 .code(200)
                 .message("OK")
-                .result(donvitinhService.getById(id))
+                .result(donvitinhService.layTheoId(id))
                 .build();
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<DonvitinhResponse> create(@Valid @RequestBody DonvitinhRequest request) {
+    public ApiResponse<DonvitinhResponse> taoMoi(@Valid @RequestBody DonvitinhRequest request) {
         return ApiResponse.<DonvitinhResponse>builder()
                 .code(200)
                 .message("Thêm đơn vị tính thành công")
-                .result(donvitinhService.create(request))
+                .result(donvitinhService.taoMoi(request))
                 .build();
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<DonvitinhResponse> update(
+    public ApiResponse<DonvitinhResponse> capNhat(
             @PathVariable Integer id,
             @Valid @RequestBody DonvitinhRequest request) {
         return ApiResponse.<DonvitinhResponse>builder()
                 .code(200)
                 .message("Cập nhật đơn vị tính thành công")
-                .result(donvitinhService.update(id, request))
+                .result(donvitinhService.capNhat(id, request))
                 .build();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<String> delete(@PathVariable Integer id) {
-        donvitinhService.delete(id);
+    public ApiResponse<String> xoa(@PathVariable Integer id) {
+        donvitinhService.xoa(id);
         return ApiResponse.<String>builder()
                 .code(200)
                 .message("Xóa đơn vị tính thành công")

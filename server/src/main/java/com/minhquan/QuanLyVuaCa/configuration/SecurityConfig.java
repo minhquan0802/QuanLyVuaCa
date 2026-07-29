@@ -23,7 +23,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-public class SecurityConfig {
+public class SecurtyConfig {
     @Value("${frontend.url}")
     private String frontendUrl;
 
@@ -40,7 +40,7 @@ public class SecurityConfig {
 
     private final String[] PUBLIC_GET_ENDPOINTS = {
             "/Loaicas",
-            "/Loaicas/**",
+            "/Loaicas/*",
             "/Chitietcabans",
             "/Banggias",
             "/Donvitinhs",

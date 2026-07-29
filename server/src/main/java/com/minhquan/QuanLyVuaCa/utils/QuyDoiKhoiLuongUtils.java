@@ -1,4 +1,4 @@
-package com.minhquan.QuanLyVuaCa.util;
+package com.minhquan.QuanLyVuaCa.utils;
 
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Donvitinh;

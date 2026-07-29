@@ -36,8 +36,8 @@ import static org.mockito.Mockito.*;
  * Đơn bán tại quầy (POS) và đơn "thanh toán sau" thì không trừ kho ở đâu cả.
  * Thiết kế sau khi sửa: trừ kho/lô ngay lúc tạo CHỈ khi đơn tạo thẳng trạng thái khác
  * CHO_XAC_NHAN (POS); còn lại (mặc định CHO_XAC_NHAN từ checkout online) để dành trừ ở
- * updateStatus() khi đơn rời CHO_XAC_NHAN — riêng VNPAY tự trừ qua callback riêng (truSoluongTon),
- * không đi qua updateStatus() nên không trừ trùng. Nhờ vậy huyDonHang() không cần hoàn gì cả.
+ * capNhatTrangThai() khi đơn rời CHO_XAC_NHAN — riêng VNPAY tự trừ qua callback riêng (truSoluongTon),
+ * không đi qua capNhatTrangThai() nên không trừ trùng. Nhờ vậy huyDonHang() không cần hoàn gì cả.
  */
 @ExtendWith(MockitoExtension.class)
 class DonhangServiceLoSyncTest {
@@ -177,7 +177,7 @@ class DonhangServiceLoSyncTest {
                     eq(kho), eq(BigDecimal.ZERO)))
                     .thenReturn(List.of(loCu, loMoi));
 
-            donhangService.createDonhang(request);
+            donhangService.taoDonHang(request);
 
             // luongCanTru = 1 * 35kg. FIFO lấy hết lô cũ (30kg) trước, còn thiếu 5kg lấy tiếp lô mới.
             assertEquals(BigDecimal.ZERO, loCu.getSoluongconlai());
@@ -189,12 +189,12 @@ class DonhangServiceLoSyncTest {
         @Test
         void taoDonMacDinhChoXacNhan_khongTruGiCaLoVaKhoTong() {
             // Mặc định CHO_XAC_NHAN (checkout online: COD/VNPAY/thanh toán sau) -> để dành trừ ở
-            // updateStatus() khi đơn rời CHO_XAC_NHAN, không trừ ngay lúc tạo.
+            // capNhatTrangThai() khi đơn rời CHO_XAC_NHAN, không trừ ngay lúc tạo.
             Chitietcaban kho = kho(BigDecimal.valueOf(50));
             DonhangRequestCreation request = requestCoSan().build(); // không set trangthaidonhang
             mockChuoiTinhToan(kho, new Chitietdonhang(), request);
 
-            donhangService.createDonhang(request);
+            donhangService.taoDonHang(request);
 
             assertEquals(BigDecimal.valueOf(50), kho.getSoluongton(), "chưa trừ gì");
             verifyNoInteractions(chitietphieunhapRepository);
@@ -238,7 +238,7 @@ class DonhangServiceLoSyncTest {
             request.setIdChitietdonhang("ct-1");
             request.setSoluongkgthucte(BigDecimal.valueOf(25)); // nặng hơn dự kiến 5kg
 
-            donhangService.updateThucTeDonHang("dh-1", List.of(request));
+            donhangService.capNhatThucTeDonHang("dh-1", List.of(request));
 
             assertEquals(BigDecimal.valueOf(95), kho.getSoluongton(), "kho: hoàn 20 (100+20=120) rồi trừ 25 (120-25=95)");
             assertEquals(BigDecimal.valueOf(25), loA.getSoluongconlai(), "lô bị trừ thêm đúng phần chênh lệch: 30-5=25");
@@ -261,7 +261,7 @@ class DonhangServiceLoSyncTest {
             request.setIdChitietdonhang("ct-1");
             request.setSoluongkgthucte(BigDecimal.valueOf(15)); // nhẹ hơn dự kiến 5kg
 
-            donhangService.updateThucTeDonHang("dh-1", List.of(request));
+            donhangService.capNhatThucTeDonHang("dh-1", List.of(request));
 
             assertEquals(BigDecimal.ZERO, loThanhLy.getSoluongconlai(), "không hoàn vào lô đã thanh lý");
             assertEquals(BigDecimal.valueOf(15), loDaBan.getSoluongconlai(), "hoàn 5kg vào lô đã bán: 10+5=15");
@@ -317,7 +317,7 @@ class DonhangServiceLoSyncTest {
                     eq(kho), eq(BigDecimal.ZERO)))
                     .thenReturn(List.of(loCu, loMoi));
 
-            donhangService.updateStatus("dh-1", TrangThaiDonHang.DANG_DONG_HANG);
+            donhangService.capNhatTrangThai("dh-1", TrangThaiDonHang.DANG_DONG_HANG);
 
             assertEquals(BigDecimal.ZERO, loCu.getSoluongconlai());
             assertEquals(BigDecimal.valueOf(15), loMoi.getSoluongconlai());
@@ -332,7 +332,7 @@ class DonhangServiceLoSyncTest {
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
             when(donhangRepository.save(donhang)).thenReturn(donhang);
 
-            donhangService.updateStatus("dh-1", TrangThaiDonHang.HUY);
+            donhangService.capNhatTrangThai("dh-1", TrangThaiDonHang.HUY);
 
             verifyNoInteractions(chitietdonhangRepository, chitietphieunhapRepository, chitietcabanRepository);
         }
@@ -348,7 +348,7 @@ class DonhangServiceLoSyncTest {
             when(donhangRepository.findById("dh-1")).thenReturn(Optional.of(donhang));
             when(donhangRepository.save(donhang)).thenReturn(donhang);
 
-            donhangService.updateStatus("dh-1", TrangThaiDonHang.DANG_VAN_CHUYEN);
+            donhangService.capNhatTrangThai("dh-1", TrangThaiDonHang.DANG_VAN_CHUYEN);
 
             verifyNoInteractions(chitietdonhangRepository, chitietphieunhapRepository, chitietcabanRepository);
         }

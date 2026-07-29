@@ -39,7 +39,7 @@ public class ChitietCabanService {
 
     // Chỉ trả về các size chưa bị xóa mềm
     @Transactional(readOnly = true)
-    public List<ChitietCabanResponse> getAll() {
+    public List<ChitietCabanResponse> layTatCa() {
         LocalDate nguongConHan = LocalDate.now().minusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
         Map<Integer, BigDecimal> tonConHanTheoSanPham = chitietphieunhapRepository
                 .tongTonConHanTheoTatCaSanPham(nguongConHan)
@@ -60,7 +60,7 @@ public class ChitietCabanService {
     }
 
     // 2. Tạo mới hoặc khôi phục cấu hình sản phẩm (Ghép Loại + Size)
-    public ChitietCabanResponse create(ChitietCabanCreationRequest request) {
+    public ChitietCabanResponse taoMoi(ChitietCabanCreationRequest request) {
         Loaica loaiCa = loaicaRepository.findById(request.getIdloaica())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
 
@@ -92,7 +92,7 @@ public class ChitietCabanService {
     }
 
 
-    public void delete(Integer id) {
+    public void xoa(Integer id) {
         Chitietcaban chitietcaban = chitietcabanRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
         chitietcaban.setDeleted(true);

@@ -23,17 +23,17 @@ public class NhacungcapController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<List<NhacungcapResponse>> getAll() {
+    public ApiResponse<List<NhacungcapResponse>> layTatCa() {
         return ApiResponse.<List<NhacungcapResponse>>builder()
-                .result(nhacungcapService.getAll())
+                .result(nhacungcapService.layTatCa())
                 .build();
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<NhacungcapResponse> create(@RequestBody @Valid NhacungcapRequest request) {
+    public ApiResponse<NhacungcapResponse> taoMoi(@RequestBody @Valid NhacungcapRequest request) {
         return ApiResponse.<NhacungcapResponse>builder()
-                .result(nhacungcapService.create(request))
+                .result(nhacungcapService.taoMoi(request))
                 .build();
     }
 }

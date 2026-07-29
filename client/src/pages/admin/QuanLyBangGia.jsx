@@ -147,7 +147,7 @@ export default function QuanLyBangGia() {
     // --- 2. STATE ĐIỀU KHIỂN TÍNH NĂNG ---
     const [selectedFishTypeIds, setSelectedFishTypeIds] = useState([]);
     const [selectedSizes, setSelectedSizes] = useState([]);
-    const [selectedStatuses, setSelectedStatuses] = useState([]);
+    const [selectedStatuses, setSelectedStatuses] = useState(["Đang áp dụng"]);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10; // Cố định 10 dòng mỗi trang
 
@@ -306,15 +306,23 @@ export default function QuanLyBangGia() {
                                             {renderStatusBadge(item.trangThai)}
                                         </td>
                                         <td className="p-4 text-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => navigate("/admin/QuanLyBangGia/them", {
-                                                    state: { idchitietcaban: item.idChitietcaban }
-                                                })}
-                                                className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 font-bold hover:bg-cyan-100 border border-cyan-200 transition-colors text-xs cursor-pointer"
-                                            >
-                                                Thiết lập giá mới
-                                            </button>
+                                            {item.trangThai !== "Đã hết hạn" ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => navigate("/admin/QuanLyBangGia/them", {
+                                                        state: {
+                                                            idchitietcaban: item.idChitietcaban,
+                                                            giaBanLe: item.giaBanLe,
+                                                            giaBanSi: item.giaBanSi
+                                                        }
+                                                    })}
+                                                    className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 font-bold hover:bg-cyan-100 border border-cyan-200 transition-colors text-xs cursor-pointer"
+                                                >
+                                                    Thiết lập giá mới
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-slate-300">—</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

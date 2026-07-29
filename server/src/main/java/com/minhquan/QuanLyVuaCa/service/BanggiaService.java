@@ -29,22 +29,22 @@ public class BanggiaService {
     BanggiaMapper banggiaMapper;
 
     @Transactional(readOnly = true)
-    public List<BanggiaResponse> getAll() {
+    public List<BanggiaResponse> layTatCa() {
         return banggiaRepository.findAllByNgayketthucIsNull().stream()
-                .map(this::enrichStatus)
+                .map(this::themTrangThaiVaoResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<BanggiaResponse> getHistory() {
+    public List<BanggiaResponse> layLichSu() {
         return banggiaRepository.findAll().stream()
-                .map(this::enrichStatus)
+                .map(this::themTrangThaiVaoResponse)
                 .toList();
     }
 
     @Transactional
-    public BanggiaResponse create(BanggiaRequest request) {
-        validatePrices(request.getGiabanle(), request.getGiabansi());
+    public BanggiaResponse taoMoi(BanggiaRequest request) {
+        kiemTraGia(request.getGiabanle(), request.getGiabansi());
 
         Chitietcaban product = chitietcabanRepository.findById(request.getIdchitietcaban())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
@@ -55,10 +55,14 @@ public class BanggiaService {
         var currentPrice = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(product);
         if (currentPrice.isPresent()) {
             Banggia oldPrice = currentPrice.get();
+            if (request.getGiabanle().compareTo(oldPrice.getGiabanle()) == 0
+                    && request.getGiabansi().compareTo(oldPrice.getGiabansi()) == 0) {
+                throw new AppExceptions(ErrorCode.BANGGIA_TRUNG_GIA_CU);
+            }
             if (LocalDate.now().equals(oldPrice.getNgaybatdau())) {
                 oldPrice.setGiabanle(request.getGiabanle());
                 oldPrice.setGiabansi(request.getGiabansi());
-                return enrichStatus(banggiaRepository.save(oldPrice));
+                return themTrangThaiVaoResponse(banggiaRepository.save(oldPrice));
             }
             oldPrice.setNgayketthuc(LocalDate.now().minusDays(1));
             banggiaRepository.save(oldPrice);
@@ -70,11 +74,11 @@ public class BanggiaService {
         newPrice.setGiabansi(request.getGiabansi());
         newPrice.setNgaybatdau(LocalDate.now());
         newPrice.setNgayketthuc(null);
-        return enrichStatus(banggiaRepository.save(newPrice));
+        return themTrangThaiVaoResponse(banggiaRepository.save(newPrice));
     }
 
     @Transactional
-    public void delete(Integer id) {
+    public void xoa(Integer id) {
         Banggia price = banggiaRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.BANGGIA_NOT_EXISTED));
         if (price.getNgayketthuc() != null) {
@@ -89,11 +93,13 @@ public class BanggiaService {
         banggiaRepository.save(price);
     }
 
-    private void validatePrices(BigDecimal retailPrice, BigDecimal wholesalePrice) {
-        if (retailPrice == null || retailPrice.compareTo(BigDecimal.ZERO) <= 0) {
+    private static final BigDecimal GIA_TOI_THIEU = BigDecimal.valueOf(1000);
+
+    private void kiemTraGia(BigDecimal retailPrice, BigDecimal wholesalePrice) {
+        if (retailPrice == null || retailPrice.compareTo(GIA_TOI_THIEU) <= 0) {
             throw new AppExceptions(ErrorCode.GIABANLE_INVALID);
         }
-        if (wholesalePrice == null || wholesalePrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (wholesalePrice == null || wholesalePrice.compareTo(GIA_TOI_THIEU) <= 0) {
             throw new AppExceptions(ErrorCode.GIABANSI_INVALID);
         }
         if (wholesalePrice.compareTo(retailPrice) > 0) {
@@ -101,7 +107,7 @@ public class BanggiaService {
         }
     }
 
-    private BanggiaResponse enrichStatus(Banggia entity) {
+    private BanggiaResponse themTrangThaiVaoResponse(Banggia entity) {
         BanggiaResponse response = banggiaMapper.toResponse(entity);
         LocalDate today = LocalDate.now();
         if (entity.getNgayketthuc() == null) {

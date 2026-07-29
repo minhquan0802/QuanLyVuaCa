@@ -38,7 +38,7 @@ public class DonhangController {
         return ApiResponse.<List<DonhangResponse>>builder()
                 .code(200)
                 .message("OK")
-                .result(donhangService.getAllDonhangs())
+                .result(donhangService.layTatCaDonHang())
                 .build();
     }
 
@@ -52,7 +52,7 @@ public class DonhangController {
         return ApiResponse.<Page<DonhangResponse>>builder()
                 .code(200)
                 .message("OK")
-                .result(donhangService.searchDonhangs(
+                .result(donhangService.timDonhangs(
                         from.atStartOfDay(),
                         to.plusDays(1).atStartOfDay().minusNanos(1),
                         page,
@@ -66,7 +66,7 @@ public class DonhangController {
         return ApiResponse.<DonhangResponse>builder()
                 .code(200)
                 .message("OK")
-                .result(donhangService.getDonhangById(id))
+                .result(donhangService.layDonHangTheoId(id))
                 .build();
     }
 
@@ -76,7 +76,7 @@ public class DonhangController {
         return ApiResponse.<List<ChitietDonhangResponse>>builder()
                 .code(200)
                 .message("OK")
-                .result(donhangService.getChiTietDonHang(id))
+                .result(donhangService.layChiTietDonHang(id))
                 .build();
     }
 
@@ -89,7 +89,7 @@ public class DonhangController {
         return ApiResponse.<DonhangResponse>builder()
                 .code(200)
                 .message("Cập nhật thành công")
-                .result(donhangService.updateStatus(id, request.getTrangthaidonhang()))
+                .result(donhangService.capNhatTrangThai(id, request.getTrangthaidonhang()))
                 .build();
     }
 
@@ -98,14 +98,14 @@ public class DonhangController {
         return ApiResponse.<DonhangResponse>builder()
                 .code(200)
                 .message("Đặt hàng thành công")
-                .result(donhangService.createDonhang(request))
+                .result(donhangService.taoDonHang(request))
                 .build();
     }
 
     @GetMapping("/my-orders")
     public ApiResponse<List<DonhangResponse>> ThongTinDonhang() {
         return ApiResponse.<List<DonhangResponse>>builder()
-                .result(donhangService.getMyOrders())
+                .result(donhangService.layDonHangCuaToi())
                 .build();
     }
     @PutMapping("/{id}/xac-nhan-nhan-hang")
@@ -128,7 +128,7 @@ public class DonhangController {
 
     @PutMapping("/{id}/cap-nhat-can-nang")
     public ApiResponse<String> updateCanNang(@PathVariable String id, @RequestBody List<UpdateCanNangRequest> request) {
-        donhangService.updateThucTeDonHang(id, request);
+        donhangService.capNhatThucTeDonHang(id, request);
         return ApiResponse.<String>builder().result("Cập nhật cân nặng thành công").build();
     }
 

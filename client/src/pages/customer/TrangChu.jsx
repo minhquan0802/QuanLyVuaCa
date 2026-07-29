@@ -1,6 +1,6 @@
 ﻿
 
-import ProductList from "../../components/product-list"
+import ProductList from "../../components/DanhSachSanPham"
 import { useState } from "react" // [1] Import useState
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";

@@ -22,40 +22,40 @@ public class DonvitinhService {
     private final ChitietdonhangRepository chitietdonhangRepository;
 
     @Transactional(readOnly = true)
-    public List<DonvitinhResponse> getAll() {
+    public List<DonvitinhResponse> layTatCa() {
         return donvitinhRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public DonvitinhResponse getById(Integer id) {
-        return toResponse(findById(id));
+    public DonvitinhResponse layTheoId(Integer id) {
+        return toResponse(layTheoIdNoiBo(id));
     }
 
     @Transactional
-    public DonvitinhResponse create(DonvitinhRequest request) {
+    public DonvitinhResponse taoMoi(DonvitinhRequest request) {
         String ten = request.getTendvt().trim();
         if (donvitinhRepository.existsByTendvtIgnoreCase(ten)) {
             throw new AppExceptions(ErrorCode.DONVITINH_EXISTED);
         }
         Donvitinh entity = new Donvitinh();
-        apply(entity, request, ten);
+        apDung(entity, request, ten);
         return toResponse(donvitinhRepository.save(entity));
     }
 
     @Transactional
-    public DonvitinhResponse update(Integer id, DonvitinhRequest request) {
-        Donvitinh entity = findById(id);
+    public DonvitinhResponse capNhat(Integer id, DonvitinhRequest request) {
+        Donvitinh entity = layTheoIdNoiBo(id);
         String ten = request.getTendvt().trim();
         if (donvitinhRepository.existsByTendvtIgnoreCaseAndIdNot(ten, id)) {
             throw new AppExceptions(ErrorCode.DONVITINH_EXISTED);
         }
-        apply(entity, request, ten);
+        apDung(entity, request, ten);
         return toResponse(donvitinhRepository.save(entity));
     }
 
     @Transactional
-    public void delete(Integer id) {
-        Donvitinh entity = findById(id);
+    public void xoa(Integer id) {
+        Donvitinh entity = layTheoIdNoiBo(id);
         if (chitietGioHangRepository.existsByIddonvitinh(entity)
                 || chitietdonhangRepository.existsByIddonvitinh(entity)) {
             throw new AppExceptions(ErrorCode.CANNOT_DELETE_DATA_IN_USE);
@@ -63,12 +63,12 @@ public class DonvitinhService {
         donvitinhRepository.delete(entity);
     }
 
-    private Donvitinh findById(Integer id) {
+    private Donvitinh layTheoIdNoiBo(Integer id) {
         return donvitinhRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONVITINH_NOT_EXISTED));
     }
 
-    private void apply(Donvitinh entity, DonvitinhRequest request, String ten) {
+    private void apDung(Donvitinh entity, DonvitinhRequest request, String ten) {
         entity.setTendvt(ten);
         entity.setHesokg(request.getHesokg());
         entity.setGhichu(request.getGhichu() == null ? null : request.getGhichu().trim());

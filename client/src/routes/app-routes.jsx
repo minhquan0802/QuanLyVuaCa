@@ -1,15 +1,15 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
-import Login from '../pages/auth/login';
-import Register from '../pages/auth/register';
+import Login from '../pages/auth/DangNhap';
+import Register from '../pages/auth/DangKy';
 import XacThucEmail from '../pages/auth/XacThucEmail';
 import QuenMatKhau from '../pages/auth/QuenMatKhau';
 import DatLaiMatKhau from '../pages/auth/DatLaiMatKhau';
 
 // Customer pages
-import Home from '../pages/customer/home';
-import ProductDetail from '../pages/customer/product-detail';
-import Cart from '../pages/customer/cart';
-import Checkout from '../pages/customer/checkout';
+import Home from '../pages/customer/TrangChu';
+import ProductDetail from '../pages/customer/ChiTietSanPham';
+import Cart from '../pages/customer/GioHang';
+import Checkout from '../pages/customer/ThanhToan';
 import Profile from '../pages/customer/Profile';
 import OrderSuccess from '../pages/customer/OrderSuccess';
 import OrderFailed from '../pages/customer/OrderFailed';
@@ -36,8 +36,8 @@ import QuanLyCongNo from '../pages/admin/QuanLyCongNo';
 
 // Components
 import ProtectedRoute from './ProtectedRoute';
-import Header from '../components/header';
-import Footer from '../components/footer';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 function CustomerLayout() {
     return (
@@ -89,8 +89,8 @@ export default function AppRoutes() {
                 <Route path='/admin/QuanLyBangGia/them' element={<ThemBangGia />} />
                 <Route path='/admin/QuanLyKho' element={<QuanLyKho />} />
                 <Route path='/admin/QuanLyKho/nhap-hang' element={<NhapHang />} />
-                <Route path='/admin/QuanLyThanhLy' element={<QuanLyThanhLy />} />
                 <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+                    <Route path='/admin/QuanLyThanhLy' element={<QuanLyThanhLy />} />
                     <Route path='/admin/QuanLyThanhLy/tao-phieu' element={<TaoPhieuThanhLy />} />
                     <Route path='/admin/QuanLyThanhLy/thanh-ly/:idLo' element={<ThanhLyMotLo />} />
                 </Route>

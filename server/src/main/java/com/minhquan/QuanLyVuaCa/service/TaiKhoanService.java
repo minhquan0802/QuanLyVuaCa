@@ -186,7 +186,7 @@ public class TaiKhoanService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public List<TaikhoanResponse> getTaiKhoans() {
+    public List<TaikhoanResponse> layDanhSachTaiKhoan() {
         return taiKhoanRepository.findAll().stream().map(taikhoanMapper::toTaikhoanResponse).toList();
     }
 
@@ -197,7 +197,7 @@ public class TaiKhoanService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
-    public TaikhoanResponse updateTaiKhoan(String idTaiKhoan, TaiKhoanUpdateRequest request) {
+    public TaikhoanResponse capNhatTaiKhoan(String idTaiKhoan, TaiKhoanUpdateRequest request) {
         Taikhoan taikhoan = taiKhoanRepository.findById(idTaiKhoan).orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
         taikhoanMapper.updateTaikhoan(taikhoan, request);
 
@@ -238,7 +238,7 @@ public class TaiKhoanService {
         return "Đổi mật khẩu thành công.";
     }
 
-    public TaikhoanResponse getMyInfo() {
+    public TaikhoanResponse layThongTinCaNhan() {
         var context = SecurityContextHolder.getContext();
         String email = context.getAuthentication().getName();
         Taikhoan tk = taiKhoanRepository.findByEmail(email).orElseThrow(
