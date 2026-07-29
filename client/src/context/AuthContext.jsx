@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
                         });
                         setUser(data.result);
                     } catch {
+                        await dangXuat({ redirect: false });
                         setUser(null);
                     }
                 } else {
