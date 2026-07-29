@@ -40,10 +40,9 @@ public class XulyException {
         // Lấy message lỗi chính
         String message = exception.getMessage();
 
-        // NẾU CÓ NGUYÊN NHÂN SÂU XA (ROOT CAUSE), NỐI THÊM VÀO ĐỂ DỄ ĐỌC LỖI
         if (exception.getCause() != null) {
             message += " -> Caused by: " + exception.getCause().getMessage();
-            // Đào sâu thêm 1 lớp nữa nếu có (thường là lỗi SQL nằm ở đây)
+            // thường là lỗi SQL nằm ở đây
             if (exception.getCause().getCause() != null) {
                 message += " -> Root: " + exception.getCause().getCause().getMessage();
             }

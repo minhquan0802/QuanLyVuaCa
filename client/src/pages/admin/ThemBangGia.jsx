@@ -14,8 +14,8 @@ export default function ThemBangGia() {
         idchitietcaban: location.state?.idchitietcaban
             ? String(location.state.idchitietcaban)
             : "",
-        giabanle: "",
-        gibansi: ""
+        giabanle: location.state?.giaBanLe != null ? String(location.state.giaBanLe) : "",
+        gibansi: location.state?.giaBanSi != null ? String(location.state.giaBanSi) : ""
     });
 
     useEffect(() => {
@@ -64,7 +64,7 @@ export default function ThemBangGia() {
                             <label className="block text-sm font-bold text-slate-700 mb-1.5">Giá Bán Lẻ</label>
                             <div className="relative flex items-center">
                                 <input
-                                    type="number" required min="0" placeholder="0"
+                                    type="number" required min="1001" placeholder="0"
                                     className="w-full p-3 pl-8 border border-slate-200 rounded-xl focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none font-mono font-bold text-slate-700 shadow-xs text-sm transition-all"
                                     value={formData.giabanle}
                                     onChange={e => setFormData({ ...formData, giabanle: e.target.value })}
@@ -76,7 +76,7 @@ export default function ThemBangGia() {
                             <label className="block text-sm font-bold text-slate-700 mb-1.5">Giá Bán Sỉ</label>
                             <div className="relative flex items-center">
                                 <input
-                                    type="number" required min="0" placeholder="0"
+                                    type="number" required min="1001" placeholder="0"
                                     className="w-full p-3 pl-8 border border-slate-200 rounded-xl focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none font-mono font-bold text-slate-700 shadow-xs text-sm transition-all"
                                     value={formData.gibansi}
                                     onChange={e => setFormData({ ...formData, gibansi: e.target.value })}

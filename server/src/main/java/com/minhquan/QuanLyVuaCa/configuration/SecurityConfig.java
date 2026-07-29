@@ -40,7 +40,7 @@ public class SecurityConfig {
 
     private final String[] PUBLIC_GET_ENDPOINTS = {
             "/Loaicas",
-            "/Loaicas/**",
+            "/Loaicas/*",
             "/Chitietcabans",
             "/Banggias",
             "/Donvitinhs",

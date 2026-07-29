@@ -77,34 +77,34 @@ public class LoaicaService {
             throw new AppExceptions(ErrorCode.DATA_EXISTED);
         }
 
-        MultipartFile newFile = request.getHinhanh();
-        String oldImageUrl = loaica.getHinhanhurl();
-        String newImageUrl = null;
-        if (newFile != null && !newFile.isEmpty()) {
-            kiemTraAnh(newFile);
-            newImageUrl = saveImage(newFile, taoTenFileAnh(tenLoaiCa, newFile));
+        MultipartFile fileMoi = request.getHinhanh();
+        String urlAnhCu = loaica.getHinhanhurl();
+        String urlAnhMoi = null;
+        if (fileMoi != null && !fileMoi.isEmpty()) {
+            kiemTraAnh(fileMoi);
+            urlAnhMoi = saveImage(fileMoi, taoTenFileAnh(tenLoaiCa, fileMoi));
         }
 
         loaica.setTenloaica(tenLoaiCa);
         loaica.setMieuta(chuanHoaChuoi(request.getMieuta()));
-        if (newImageUrl != null) {
-            loaica.setHinhanhurl(newImageUrl);
+        if (urlAnhMoi != null) {
+            loaica.setHinhanhurl(urlAnhMoi);
         }
 
-        Loaica updated;
+        Loaica daCapNhat;
         try {
-            updated = loaicaRepository.saveAndFlush(loaica);
+            daCapNhat = loaicaRepository.saveAndFlush(loaica);
         } catch (RuntimeException exception) {
-            if (newImageUrl != null) {
-                xoaFile(newImageUrl);
+            if (urlAnhMoi != null) {
+                xoaFile(urlAnhMoi);
             }
             throw exception;
         }
 
-        if (newImageUrl != null && oldImageUrl != null && !oldImageUrl.equals(newImageUrl)) {
-            xoaFile(oldImageUrl);
+        if (urlAnhMoi != null && urlAnhCu != null && !urlAnhCu.equals(urlAnhMoi)) {
+            xoaFile(urlAnhCu);
         }
-        return mapper.toLoaicaResponse(updated);
+        return mapper.toLoaicaResponse(daCapNhat);
     }
 
     @Transactional
@@ -150,18 +150,18 @@ public class LoaicaService {
         loaica.setMieuta(chuanHoaChuoi(request.getMieuta()));
 
         MultipartFile file = request.getHinhanh();
-        String imageUrl = null;
+        String urlAnh = null;
         if (file != null && !file.isEmpty()) {
             kiemTraAnh(file);
-            imageUrl = saveImage(file, taoTenFileAnh(tenLoaiCa, file));
-            loaica.setHinhanhurl(imageUrl);
+            urlAnh = saveImage(file, taoTenFileAnh(tenLoaiCa, file));
+            loaica.setHinhanhurl(urlAnh);
         }
 
         try {
             return mapper.toLoaicaResponse(loaicaRepository.saveAndFlush(loaica));
         } catch (RuntimeException exception) {
-            if (imageUrl != null) {
-                xoaFile(imageUrl);
+            if (urlAnh != null) {
+                xoaFile(urlAnh);
             }
             throw exception;
         }
@@ -198,17 +198,17 @@ public class LoaicaService {
                 .toLowerCase();
     }
 
-    public String saveImage(MultipartFile file, String fileName) {
+    public String saveImage(MultipartFile file, String tenFile) {
         try {
-            String publicIdName = fileName.replaceAll("\\.[^.]+$", "");
-            Map<?, ?> result = cloudinary.uploader().upload(
+            String publicId = tenFile.replaceAll("\\.[^.]+$", "");
+            Map<?, ?> ketQua = cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
-                            "public_id", "loaica/" + publicIdName,
+                            "public_id", "loaica/" + publicId,
                             "overwrite", false
                     )
             );
-            return (String) result.get("secure_url");
+            return (String) ketQua.get("secure_url");
         } catch (IOException exception) {
             throw new AppExceptions(
                     ErrorCode.UPLOAD_ANH_THAT_BAI,
@@ -218,13 +218,13 @@ public class LoaicaService {
         }
     }
 
-    private void xoaFile(String imageUrl) {
-        if (imageUrl == null || imageUrl.isBlank() || !imageUrl.contains("/loaica/")) {
+    private void xoaFile(String urlAnh) {
+        if (urlAnh == null || urlAnh.isBlank() || !urlAnh.contains("/loaica/")) {
             return;
         }
         try {
-            String publicId = imageUrl
-                    .substring(imageUrl.indexOf("/loaica/") + 1)
+            String publicId = urlAnh
+                    .substring(urlAnh.indexOf("/loaica/") + 1)
                     .replaceAll("\\.[^.]+$", "");
             cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
         } catch (Exception exception) {

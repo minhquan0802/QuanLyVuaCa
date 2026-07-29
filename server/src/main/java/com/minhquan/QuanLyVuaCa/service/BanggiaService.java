@@ -55,6 +55,10 @@ public class BanggiaService {
         var currentPrice = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(product);
         if (currentPrice.isPresent()) {
             Banggia oldPrice = currentPrice.get();
+            if (request.getGiabanle().compareTo(oldPrice.getGiabanle()) == 0
+                    && request.getGiabansi().compareTo(oldPrice.getGiabansi()) == 0) {
+                throw new AppExceptions(ErrorCode.BANGGIA_TRUNG_GIA_CU);
+            }
             if (LocalDate.now().equals(oldPrice.getNgaybatdau())) {
                 oldPrice.setGiabanle(request.getGiabanle());
                 oldPrice.setGiabansi(request.getGiabansi());
@@ -89,11 +93,13 @@ public class BanggiaService {
         banggiaRepository.save(price);
     }
 
+    private static final BigDecimal GIA_TOI_THIEU = BigDecimal.valueOf(1000);
+
     private void kiemTraGia(BigDecimal retailPrice, BigDecimal wholesalePrice) {
-        if (retailPrice == null || retailPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (retailPrice == null || retailPrice.compareTo(GIA_TOI_THIEU) <= 0) {
             throw new AppExceptions(ErrorCode.GIABANLE_INVALID);
         }
-        if (wholesalePrice == null || wholesalePrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (wholesalePrice == null || wholesalePrice.compareTo(GIA_TOI_THIEU) <= 0) {
             throw new AppExceptions(ErrorCode.GIABANSI_INVALID);
         }
         if (wholesalePrice.compareTo(retailPrice) > 0) {
