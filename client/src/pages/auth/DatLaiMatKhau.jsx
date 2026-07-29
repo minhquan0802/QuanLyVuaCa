@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import api from "../../config/axios";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function DatLaiMatKhau() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token");
     const navigate = useNavigate();
+    const { confirm } = useConfirm();
 
     const [matkhauMoi, setMatkhauMoi] = useState("");
     const [xacNhanMatKhau, setXacNhanMatKhau] = useState("");
@@ -38,6 +40,14 @@ export default function DatLaiMatKhau() {
             setErrorMsg("Mật khẩu xác nhận không khớp.");
             return;
         }
+
+        const accepted = await confirm({
+            title: "Đặt lại mật khẩu",
+            message: "Xác nhận sử dụng mật khẩu mới cho tài khoản?",
+            confirmText: "Đặt lại mật khẩu",
+            variant: "warning",
+        });
+        if (!accepted) return;
 
         setStatus("loading");
         setErrorMsg("");

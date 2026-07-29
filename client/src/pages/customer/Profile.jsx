@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const ROLE_LABEL = { ADMIN: "Quản trị viên", STAFF: "Nhân viên", CUSTOMER: "Khách hàng" };
 const STATUS_CONFIG = {
@@ -42,6 +43,7 @@ export default function Profile() {
     const navigate = useNavigate();
     const { user, setUser, loading } = useAuth();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ho: "", ten: "", sodienthoai: "", diachi: "" });
@@ -66,6 +68,13 @@ export default function Profile() {
             showToast("Họ và tên không được để trống", "error");
             return;
         }
+        const accepted = await confirm({
+            title: "Cập nhật hồ sơ",
+            message: "Lưu các thay đổi thông tin cá nhân?",
+            confirmText: "Lưu thay đổi",
+            variant: "primary",
+        });
+        if (!accepted) return;
         setIsSaving(true);
         try {
             const { data } = await api.put(`/tai-khoan/${user.idtaikhoan}`, {
@@ -97,6 +106,13 @@ export default function Profile() {
             showToast("Mật khẩu xác nhận không khớp", "error");
             return;
         }
+        const accepted = await confirm({
+            title: "Đổi mật khẩu",
+            message: "Đổi mật khẩu tài khoản? Bạn sẽ cần đăng nhập lại sau khi hoàn tất.",
+            confirmText: "Đổi mật khẩu",
+            variant: "warning",
+        });
+        if (!accepted) return;
         setIsSavingPw(true);
         try {
             await api.put("/tai-khoan/doi-mat-khau", {
@@ -232,17 +248,17 @@ export default function Profile() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div className="bg-slate-50 rounded-xl p-4">
                                     <p className="text-xs text-slate-400 mb-1">Hạn mức tín dụng</p>
-                                    <p className="font-bold text-slate-800 text-lg">{hanmuc.toLocaleString()}đ</p>
+                                    <p className="font-bold text-slate-800 text-lg">{hanmuc.toLocaleString("vi-VN")} VNĐ</p>
                                 </div>
                                 {congno < 0 ? (
                                     <div className="bg-green-50 rounded-xl p-4">
                                         <p className="text-xs text-green-500 mb-1">Số dư trả trước</p>
-                                        <p className="font-bold text-green-700 text-lg">{Math.abs(congno).toLocaleString()}đ</p>
+                                        <p className="font-bold text-green-700 text-lg">{Math.abs(congno).toLocaleString("vi-VN")} VNĐ</p>
                                     </div>
                                 ) : (
                                     <div className="bg-red-50 rounded-xl p-4">
                                         <p className="text-xs text-red-400 mb-1">Công nợ hiện tại</p>
-                                        <p className="font-bold text-red-600 text-lg">{congno.toLocaleString()}đ</p>
+                                        <p className="font-bold text-red-600 text-lg">{congno.toLocaleString("vi-VN")} VNĐ</p>
                                     </div>
                                 )}
                             </div>
@@ -252,7 +268,7 @@ export default function Profile() {
                                     <p className="font-bold mb-1">🔒 Tài khoản đang bị khóa đặt hàng</p>
                                     <p className="text-slate-300">
                                         Do quá hạn công nợ kéo dài. Cần thanh toán tối thiểu{" "}
-                                        <span className="font-bold text-white">{soTienCanTraToiThieu.toLocaleString()}đ</span> để mở lại.
+                                        <span className="font-bold text-white">{soTienCanTraToiThieu.toLocaleString("vi-VN")} VNĐ</span> để mở lại.
                                     </p>
                                 </div>
                             ) : phanTram >= 100 ? (

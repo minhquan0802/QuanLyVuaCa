@@ -221,17 +221,13 @@ export default function QuanLyLoaiCa() {
             setCategories(prev => prev.map(c => c.id === item.id ? { ...c, deleted: true } : c));
             showToast("Đã ngừng bán loại cá!", "success");
         } catch (err) {
-            const msg = err.response?.data?.message;
-            showToast(msg?.includes("ton kho") ? "Loại cá này còn tồn kho, không thể ngừng bán!" : "Thao tác thất bại!", "error");
+            const errorData = err.response?.data;
+            if (Number(errorData?.code) === 1060) {
+                showToast("Loại cá vẫn còn tồn kho, không thể ngừng bán!", "error");
+                return;
+            }
+            showToast(errorData?.message || "Không thể ngừng bán loại cá. Vui lòng thử lại!", "error");
         }
-    };
-
-    const handleMoLai = async (item) => {
-        try {
-            await api.patch(`/Loaicas/${item.id}/khoi-phuc`);
-            setCategories(prev => prev.map(c => c.id === item.id ? { ...c, deleted: false } : c));
-            showToast("Đã mở lại loại cá!", "success");
-        } catch { showToast("Thao tác thất bại!", "error"); }
     };
 
     return (
@@ -305,7 +301,7 @@ export default function QuanLyLoaiCa() {
                                                         Ngừng bán
                                                     </button>
                                                 ) : (
-                                                    <button onClick={() => handleMoLai(item)} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer">
+                                                    <button onClick={() => navigate(`/admin/QuanLyLoaiCa/mo-lai/${item.id}`, { state: { category: item } })} className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors text-xs cursor-pointer">
                                                         Mở lại
                                                     </button>
                                                 )}

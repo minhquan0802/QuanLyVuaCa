@@ -14,7 +14,7 @@ const ORDER_STATUS = {
     HUY:                   { label: "Đã hủy",          color: "bg-red-50 text-red-700 border-red-200" },
 };
 
-const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + " VNĐ";
 
 export default function ChiTietDonHang() {
     const { id } = useParams();
@@ -73,6 +73,13 @@ export default function ChiTietDonHang() {
             idChitietdonhang: item.idchitietdonhang,
             soluongkgthucte: parseFloat(item.editWeight) || 0
         }));
+        const accepted = await confirm({
+            title: "Cập nhật cân nặng thực tế",
+            message: "Lưu cân nặng thực tế mới? Tổng tiền thực tế của đơn hàng có thể thay đổi.",
+            confirmText: "Lưu cân nặng",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
             await api.put(`/Donhangs/${id}/cap-nhat-can-nang`, payload);
             const resDetails = await api.get(`/Donhangs/${id}/chitiet`);

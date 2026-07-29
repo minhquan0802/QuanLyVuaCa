@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const ROLES = [
     { value: "ADMIN", label: "Quản trị viên" },
@@ -16,8 +17,10 @@ export default function ThemSuaTaiKhoan() {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [showPassword, setShowPassword] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [currentUser, setCurrentUser] = useState({
         ho: "", ten: "", email: "", matkhau: "",
         sodienthoai: "", diachi: "", vaitro: "CUSTOMER", trangthaitk: "HOAT_DONG",
@@ -54,7 +57,17 @@ export default function ThemSuaTaiKhoan() {
             diachi: currentUser.diachi,
             ...(isEditing && { trangthaitk: currentUser.trangthaitk }),
         };
+        const accepted = await confirm({
+            title: isEditing ? "Cập nhật tài khoản" : "Thêm tài khoản mới",
+            message: isEditing
+                ? "Lưu các thay đổi của tài khoản này?"
+                : `Tạo tài khoản mới cho “${currentUser.ho} ${currentUser.ten}”?`,
+            confirmText: isEditing ? "Lưu thay đổi" : "Tạo tài khoản",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
+            setSubmitting(true);
             if (isEditing) {
                 await api.put(`/tai-khoan/${id}`, payload);
             } else {
@@ -64,13 +77,27 @@ export default function ThemSuaTaiKhoan() {
             navigate("/admin/QuanLyTaiKhoan");
         } catch (error) {
             showToast(`Có lỗi xảy ra: ${error.response?.data?.message || "Thao tác thất bại"}`, "error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
     return (
         <AdminLayout title={isEditing ? "Cập nhật Tài khoản" : "Thêm Tài khoản mới"}>
             <div className="max-w-2xl mx-auto">
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-black overflow-hidden">
+                    <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                        <h3 className="font-bold text-lg text-white">
+                            {isEditing ? "Cập nhật tài khoản" : "Thêm tài khoản mới"}
+                        </h3>
+                        <p className="text-xs text-cyan-50">
+                            {isEditing
+                                ? "Điều chỉnh thông tin, vai trò và trạng thái tài khoản."
+                                : "Nhập thông tin để tạo tài khoản trong hệ thống."}
+                        </p>
+                    </div>
+
+                    <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label className="label-text">Họ</label>
                         <input type="text" required className="input-field" value={currentUser.ho} onChange={e => setCurrentUser({ ...currentUser, ho: e.target.value })} />
@@ -154,18 +181,20 @@ export default function ThemSuaTaiKhoan() {
                         </div>
                     )}
 
-                    <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t mt-2">
-                        <button type="button" onClick={() => navigate("/admin/QuanLyTaiKhoan")} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium cursor-pointer text-sm">Hủy</button>
-                        <button type="submit" className="px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 shadow-md shadow-cyan-100 cursor-pointer text-sm">
-                            {isEditing ? "Lưu thay đổi" : "Thêm mới"}
+                    </div>
+
+                    <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                        <button type="button" disabled={submitting} onClick={() => navigate("/admin/QuanLyTaiKhoan")} className="px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 disabled:opacity-50 cursor-pointer text-sm">Hủy</button>
+                        <button type="submit" disabled={submitting} className="px-6 py-2.5 rounded-xl border border-black bg-white text-cyan-800 font-bold hover:bg-cyan-50 shadow-sm disabled:bg-slate-200 disabled:text-slate-400 disabled:border-slate-300 cursor-pointer disabled:cursor-not-allowed text-sm">
+                            {submitting ? "Đang lưu..." : (isEditing ? "Lưu thay đổi" : "Thêm mới")}
                         </button>
                     </div>
                 </form>
             </div>
 
             <style>{`
-                .label-text { display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.375rem; }
-                .input-field { width: 100%; padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; outline: none; transition: all 0.2s; font-size: 0.875rem; }
+                .label-text { display: block; font-size: 0.75rem; line-height: 1rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.375rem; }
+                .input-field { width: 100%; padding: 0.5rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; background: #f8fafc; outline: none; transition: all 0.2s; font-size: 0.875rem; }
                 .input-field:focus { border-color: #0891b2; box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2); }
             `}</style>
         </AdminLayout>

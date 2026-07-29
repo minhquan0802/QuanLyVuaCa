@@ -3,17 +3,19 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const formatKg = (value) =>
     Number(value || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 
 const formatCurrency = (value) =>
-    value == null ? "Chưa có" : `${Number(value).toLocaleString("vi-VN")}đ`;
+    value == null ? "Chưa có" : `${Number(value).toLocaleString("vi-VN")} VNĐ`;
 
 export default function TaoPhieuThanhLy() {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [loading, setLoading] = useState(true);
     const [allLots, setAllLots] = useState([]);
@@ -227,6 +229,14 @@ export default function TaoPhieuThanhLy() {
             }
         }
 
+        const accepted = await confirm({
+            title: "Lập phiếu thanh lý",
+            message: `Xác nhận thanh lý ${addedDetails.length} lô hàng đã chọn? Tồn kho sẽ được cập nhật.`,
+            confirmText: "Lập phiếu thanh lý",
+            variant: "warning",
+        });
+        if (!accepted) return;
+
         try {
             await api.post("/Phieuthanhlys", {
                 ...headerForm,
@@ -336,7 +346,7 @@ export default function TaoPhieuThanhLy() {
                             Tổng thanh lý: <strong>{formatKg(totalQuantity)} kg</strong>
                         </p>
                         <p className="text-sm text-cyan-800">
-                            Tổng tiền: <strong>{totalMoney.toLocaleString("vi-VN")}đ</strong>
+                            Tổng tiền: <strong>{totalMoney.toLocaleString("vi-VN")} VNĐ</strong>
                         </p>
                     </div>
                 </div>
@@ -493,7 +503,7 @@ export default function TaoPhieuThanhLy() {
                                                     ? `${(
                                                         Number(detail.soluongthanhly || 0)
                                                         * Number(detail.dongia || 0)
-                                                    ).toLocaleString("vi-VN")}đ`
+                                                    ).toLocaleString("vi-VN")} VNĐ`
                                                     : "—"}
                                             </td>
                                         </tr>

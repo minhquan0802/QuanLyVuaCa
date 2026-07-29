@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
@@ -214,7 +214,7 @@ export default function ProductDetail() {
                                         </p>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-3xl font-bold text-blue-600">
-                                                {Number(currentPricePerKg).toLocaleString("vi-VN")}đ
+                                                {Number(currentPricePerKg).toLocaleString("vi-VN")} VNĐ
                                             </span>
                                             <span className="text-base text-slate-400">/ kg</span>
                                         </div>
@@ -304,7 +304,7 @@ export default function ProductDetail() {
                                                 Ước lượng: <span className="text-blue-600">{totalWeight.toFixed(1)}kg</span>
                                             </p>
                                             <p className="text-xl font-bold text-blue-700">
-                                                {Number(totalPrice).toLocaleString("vi-VN")}đ
+                                                {Number(totalPrice).toLocaleString("vi-VN")} VNĐ
                                             </p>
                                         </div>
                                     )}
@@ -330,10 +330,10 @@ export default function ProductDetail() {
                                         {adding ? "Đang thêm..." : maxQuantity <= 0 ? "Hết hàng" : selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size"}
                                     </button>
                                 ) : (
-                                    <a href="/" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all">
+                                    <Link to="/login" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all">
                                         <span className="material-symbols-outlined text-[20px]">login</span>
                                         Đăng nhập để đặt hàng
-                                    </a>
+                                    </Link>
                                 )}
                             </div>
                         </div>
