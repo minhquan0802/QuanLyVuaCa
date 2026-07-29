@@ -202,7 +202,7 @@ class PhieunhapServiceTest {
         when(phieunhapMapper.toResponse(phieu)).thenReturn(PhieunhapResponse.builder().build());
         when(chitietphieunhapRepository.findByIdphieunhap(phieu)).thenReturn(List.of(detail));
 
-        PhieunhapResponse response = phieunhapService.getDanhSach().getFirst();
+        PhieunhapResponse response = phieunhapService.layDanhSach().getFirst();
 
         assertEquals(new BigDecimal("30000"), response.getListChiTiet().getFirst().getGianhap());
         assertEquals(new BigDecimal("50000"),

@@ -22,12 +22,12 @@ public class NhacungcapService {
     NhacungcapRepository nhacungcapRepository;
 
     @Transactional(readOnly = true)
-    public List<NhacungcapResponse> getAll() {
+    public List<NhacungcapResponse> layTatCa() {
         return nhacungcapRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     @Transactional
-    public NhacungcapResponse create(NhacungcapRequest request) {
+    public NhacungcapResponse taoMoi(NhacungcapRequest request) {
         String name = request.getTenncc().trim();
         String phone = request.getSodienthoai().trim();
         if (nhacungcapRepository.existsByTennccIgnoreCase(name)

@@ -48,7 +48,7 @@ public class PhieuthanhlyService {
 
     @Transactional
     public PhieuthanhlyResponse taoPhieuThanhly(PhieuthanhlyRequest request) {
-        TrangThaiThanhLy trangThai = validateRequest(request);
+        TrangThaiThanhLy trangThai = kiemTraRequest(request);
 
         // --- 1. Người tạo phiếu (lấy từ user đang đăng nhập) ---
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -62,14 +62,14 @@ public class PhieuthanhlyService {
 
         phieuthanhly.setTrangthai(trangThai);
 
-        Phieuthanhly savedPhieu = phieuthanhlyRepository.save(phieuthanhly);
+        Phieuthanhly phieuDaLuu = phieuthanhlyRepository.save(phieuthanhly);
 
         // --- 3. Xử lý từng dòng chi tiết: trừ lô, trừ kho tổng, lưu chi tiết ---
-        for (ChitietPhieuthanhlyRequest itemRequest : request.getListChiTiet()) {
-            Chitietphieunhap lo = chitietphieunhapRepository.findById(itemRequest.getIdchitietphieunhap())
+        for (ChitietPhieuthanhlyRequest chiTietRequest : request.getListChiTiet()) {
+            Chitietphieunhap lo = chitietphieunhapRepository.findById(chiTietRequest.getIdchitietphieunhap())
                     .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIETPHIEUNHAP_NOT_EXISTED));
 
-            BigDecimal soLuongThanhLy = itemRequest.getSoluongthanhly();
+            BigDecimal soLuongThanhLy = chiTietRequest.getSoluongthanhly();
 
             if (lo.getSoluongconlai() == null || lo.getSoluongconlai().compareTo(soLuongThanhLy) < 0) {
                 throw new AppExceptions(ErrorCode.SOLUONG_THANHLY_VUOT_QUA_TON_LO);
@@ -95,17 +95,17 @@ public class PhieuthanhlyService {
             chitietcabanRepository.save(kho);
 
             // Tạo dòng chi tiết phiếu thanh lý
-            Chitietphieuthanhly chiTiet = chitietphieuthanhlyMapper.toEntity(itemRequest);
-            chiTiet.setIdphieuthanhly(savedPhieu);
+            Chitietphieuthanhly chiTiet = chitietphieuthanhlyMapper.toEntity(chiTietRequest);
+            chiTiet.setIdphieuthanhly(phieuDaLuu);
             chiTiet.setIdchitietcaban(kho);
-            chiTiet.setThanhtien(soLuongThanhLy.multiply(itemRequest.getDongia()));
+            chiTiet.setThanhtien(soLuongThanhLy.multiply(chiTietRequest.getDongia()));
             chitietphieuthanhlyRepository.save(chiTiet);
         }
 
-        return toResponse(savedPhieu);
+        return toResponse(phieuDaLuu);
     }
 
-    private TrangThaiThanhLy validateRequest(PhieuthanhlyRequest request) {
+    private TrangThaiThanhLy kiemTraRequest(PhieuthanhlyRequest request) {
         if (request == null || request.getListChiTiet() == null || request.getListChiTiet().isEmpty()) {
             throw new AppExceptions(ErrorCode.CHITIET_THANHLY_EMPTY);
         }
@@ -117,13 +117,13 @@ public class PhieuthanhlyService {
             throw new AppExceptions(ErrorCode.TRANGTHAI_THANHLY_INVALID);
         }
 
-        for (ChitietPhieuthanhlyRequest item : request.getListChiTiet()) {
-            if (item == null || item.getSoluongthanhly() == null
-                    || item.getSoluongthanhly().compareTo(BigDecimal.ZERO) <= 0) {
+        for (ChitietPhieuthanhlyRequest chiTiet : request.getListChiTiet()) {
+            if (chiTiet == null || chiTiet.getSoluongthanhly() == null
+                    || chiTiet.getSoluongthanhly().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new AppExceptions(ErrorCode.SOLUONG_THANHLY_INVALID);
             }
 
-            BigDecimal donGia = item.getDongia();
+            BigDecimal donGia = chiTiet.getDongia();
             if (donGia == null || donGia.compareTo(BigDecimal.ZERO) < 0) {
                 throw new AppExceptions(ErrorCode.DONGIA_THANHLY_INVALID);
             }
@@ -166,16 +166,16 @@ public class PhieuthanhlyService {
                         BigDecimal.ZERO, nguong));
     }
 
-    private List<LoHangResponse> toLoHangResponses(List<Chitietphieunhap> lots) {
-        List<Chitietcaban> products = lots.stream()
+    private List<LoHangResponse> toLoHangResponses(List<Chitietphieunhap> danhSachLo) {
+        List<Chitietcaban> danhSachSanPham = danhSachLo.stream()
                 .map(Chitietphieunhap::getIdchitietcaban)
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
 
-        Map<Integer, Banggia> activePrices = products.isEmpty()
+        Map<Integer, Banggia> danhSachGiaApDung = danhSachSanPham.isEmpty()
                 ? Map.of()
-                : banggiaRepository.findByChitietcabanInAndNgayketthucIsNull(products)
+                : banggiaRepository.findByChitietcabanInAndNgayketthucIsNull(danhSachSanPham)
                         .stream()
                         .collect(Collectors.toMap(
                                 price -> price.getChitietcaban().getId(),
@@ -183,17 +183,17 @@ public class PhieuthanhlyService {
                                 (first, second) -> first.getId() >= second.getId() ? first : second
                         ));
 
-        return lots.stream()
-                .map(lot -> toLoHangResponse(
-                        lot,
-                        lot.getIdchitietcaban() == null
+        return danhSachLo.stream()
+                .map(lo -> toLoHangResponse(
+                        lo,
+                        lo.getIdchitietcaban() == null
                                 ? null
-                                : activePrices.get(lot.getIdchitietcaban().getId())
+                                : danhSachGiaApDung.get(lo.getIdchitietcaban().getId())
                 ))
                 .toList();
     }
 
-    private LoHangResponse toLoHangResponse(Chitietphieunhap lo, Banggia activePrice) {
+    private LoHangResponse toLoHangResponse(Chitietphieunhap lo, Banggia giaApDung) {
         Chitietcaban kho = lo.getIdchitietcaban();
         return LoHangResponse.builder()
                 .idchitietphieunhap(lo.getIdchitietphieunhap())
@@ -204,26 +204,26 @@ public class PhieuthanhlyService {
                 .soluongnhap(lo.getSoluongnhap())
                 .soluongconlai(lo.getSoluongconlai())
                 .gianhap(lo.getGianhap())
-                .giabanleHienTai(activePrice != null ? activePrice.getGiabanle() : null)
-                .giabansiHienTai(activePrice != null ? activePrice.getGiabansi() : null)
+                .giabanleHienTai(giaApDung != null ? giaApDung.getGiabanle() : null)
+                .giabansiHienTai(giaApDung != null ? giaApDung.getGiabansi() : null)
                 .trangthaica(lo.getTrangthaica() != null ? lo.getTrangthaica().name() : null)
                 .build();
     }
 
     @Transactional(readOnly = true)
     public List<PhieuthanhlyResponse> layDanhSachPhieuThanhLy() {
-        List<Phieuthanhly> phieus = phieuthanhlyRepository.findAllByOrderByNgaythanhlyDesc();
-        if (phieus.isEmpty()) {
+        List<Phieuthanhly> danhSachPhieu = phieuthanhlyRepository.findAllByOrderByNgaythanhlyDesc();
+        if (danhSachPhieu.isEmpty()) {
             return List.of();
         }
-        Map<String, List<Chitietphieuthanhly>> detailsByReceipt =
-                chitietphieuthanhlyRepository.findAllByPhieusWithProduct(phieus).stream()
+        Map<String, List<Chitietphieuthanhly>> danhSachChiTietTheoPhieu =
+                chitietphieuthanhlyRepository.findAllByPhieusWithProduct(danhSachPhieu).stream()
                         .collect(Collectors.groupingBy(
-                                detail -> detail.getIdphieuthanhly().getIdphieuthanhly()));
-        return phieus.stream()
+                                chiTiet -> chiTiet.getIdphieuthanhly().getIdphieuthanhly()));
+        return danhSachPhieu.stream()
                 .map(phieu -> toResponse(
                         phieu,
-                        detailsByReceipt.getOrDefault(phieu.getIdphieuthanhly(), List.of())))
+                        danhSachChiTietTheoPhieu.getOrDefault(phieu.getIdphieuthanhly(), List.of())))
                 .toList();
     }
 
@@ -233,10 +233,10 @@ public class PhieuthanhlyService {
 
     private PhieuthanhlyResponse toResponse(
             Phieuthanhly phieu,
-            List<Chitietphieuthanhly> details) {
+            List<Chitietphieuthanhly> danhSachChiTiet) {
         Taikhoan nguoiTao = phieu.getIdnguoitaophieu();
 
-        List<ChitietPhieuthanhlyResponse> listChiTietResponse = details.stream()
+        List<ChitietPhieuthanhlyResponse> danhSachChiTietResponse = danhSachChiTiet.stream()
                 .map(chitietphieuthanhlyMapper::toResponse)
                 .toList();
 
@@ -247,7 +247,7 @@ public class PhieuthanhlyService {
                 .lydothanhly(phieu.getLydothanhly())
                 .trangthai(phieu.getTrangthai() != null ? phieu.getTrangthai().name() : null)
                 .ghichu(phieu.getGhichu())
-                .listChiTiet(listChiTietResponse)
+                .listChiTiet(danhSachChiTietResponse)
                 .build();
     }
 }

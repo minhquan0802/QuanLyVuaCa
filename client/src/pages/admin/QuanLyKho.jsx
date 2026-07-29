@@ -454,7 +454,7 @@ export default function QuanLyKho() {
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex flex-col items-stretch gap-2">
-                                                        {item.soluongQuaHan > 0 && (
+                                                        {isAdmin && item.soluongQuaHan > 0 && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => navigate("/admin/QuanLyThanhLy?tab=quahan")}

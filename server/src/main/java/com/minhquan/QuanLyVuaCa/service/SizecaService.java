@@ -26,21 +26,21 @@ public class SizecaService {
     SizecaMapper sizecaMapper;
 
     // Thêm Size mới
-    public SizecaResponse createSize(SizecaRequest request) {
+    public SizecaResponse taoSize(SizecaRequest request) {
         Sizeca sizeca = sizecaMapper.toSizeca(request);
         sizecaRepository.save(sizeca);
         return sizecaMapper.toSizecaResponse(sizeca);
     }
 
     // Xóa Size
-    public void deleteSize(Integer id) {
+    public void xoaSize(Integer id) {
         if (!sizecaRepository.existsById(id)) {
             throw new AppExceptions(ErrorCode.SIZECA_NOT_EXISTED);
         }
         sizecaRepository.deleteById(id);
     }
 
-    public List<SizecaResponse> getAll() {
+    public List<SizecaResponse> layTatCa() {
         return sizecaRepository.findAll().stream()
                 .map(sizecaMapper::toSizecaResponse)
                 .collect(Collectors.toList());

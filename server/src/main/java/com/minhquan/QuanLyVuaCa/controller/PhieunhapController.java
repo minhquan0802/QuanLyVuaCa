@@ -23,10 +23,10 @@ public class PhieunhapController {
     PhieunhapService phieunhapService;
 
     @GetMapping
-    public ApiResponse<List<PhieunhapResponse>> getDanhSach() {
+    public ApiResponse<List<PhieunhapResponse>> layDanhSach() {
         return ApiResponse.<List<PhieunhapResponse>>builder()
                 .code(200)
-                .result(phieunhapService.getDanhSach())
+                .result(phieunhapService.layDanhSach())
                 .build();
     }
 

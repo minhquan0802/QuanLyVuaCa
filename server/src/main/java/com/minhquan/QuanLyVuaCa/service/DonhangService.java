@@ -14,8 +14,8 @@ import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.DonhangMapper;
 import com.minhquan.QuanLyVuaCa.repository.*;
-import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
-import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
+import com.minhquan.QuanLyVuaCa.utils.ChinhSachGiaUtils;
+import com.minhquan.QuanLyVuaCa.utils.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +55,7 @@ public class DonhangService {
     ThongBaoService thongBaoService;
 
     @Transactional
-    public DonhangResponse createDonhang(DonhangRequestCreation request) {
+    public DonhangResponse taoDonHang(DonhangRequestCreation request) {
 
         Donhang donhang = donhangMapper.toDonhang(request);
         donhang.setTongtien(BigDecimal.ZERO);
@@ -85,47 +85,47 @@ public class DonhangService {
         }
 
         // Xác định loại khách hàng để áp giá đúng
-        boolean isWholesale = false;
+        boolean laKhachSi = false;
         if (request.getIdthongtinkhachhang() != null) {
             var khachOpt = taikhoanRepository.findById(request.getIdthongtinkhachhang());
             if (khachOpt.isPresent()) {
-                isWholesale = ChinhSachGiaUtils.laKhachSi(khachOpt.get().getVaitro());
+                laKhachSi = ChinhSachGiaUtils.laKhachSi(khachOpt.get().getVaitro());
             }
         }
 
         // Công nợ Phase 4: chặn TRƯỚC KHI lưu đơn để tránh tính đôi giỏ hàng
         // (nếu check sau save thì đơn mới đã vào DB → tongTienDonDangXuLy đếm nó + gioHang đếm lại = double count)
         if (request.getIdthongtinkhachhang() != null) {
-            congNoService.kiemTraDuocDatHang(request.getIdthongtinkhachhang(), isWholesale);
+            congNoService.kiemTraDuocDatHang(request.getIdthongtinkhachhang(), laKhachSi);
         }
 
         // Lưu đơn hàng sau khi đã qua kiểm tra công nợ
-        Donhang savedDonhang = donhangRepository.save(donhang);
+        Donhang donHangDaLuu = donhangRepository.save(donhang);
         BigDecimal tongTienDonHang = BigDecimal.ZERO;
 
         // 2. Xử lý chi tiết đơn hàng
         if (request.getChiTietDonHang() != null && !request.getChiTietDonHang().isEmpty()) {
 
-            List<Chitietdonhang> listChiTietEntity = new ArrayList<>();
+            List<Chitietdonhang> danhSachChiTiet = new ArrayList<>();
 
             for (ChitietDonhangRequest ctdhRequest : request.getChiTietDonHang()) {
                 Chitietdonhang ct = donhangMapper.toChitietEntity(ctdhRequest);
-                ct.setIddonhang(savedDonhang);
+                ct.setIddonhang(donHangDaLuu);
 
                 // --- A. Xử lý Chitietcaban (Sản phẩm kho) ---
-                Chitietcaban chitietcabanTemp = null;
+                Chitietcaban chitietcabanTam = null;
                 if (ctdhRequest.getIdchitietcaban() != null) {
                     Integer idChiTiet = Integer.parseInt(ctdhRequest.getIdchitietcaban());
                     // Lock row này lại để tránh concurrency nếu cần (hoặc chỉ findById)
-                    chitietcabanTemp = chitietcabanRepository.findById(idChiTiet)
+                    chitietcabanTam = chitietcabanRepository.findById(idChiTiet)
                             .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED,
                                     "Không tìm thấy sản phẩm kho ID: " + ctdhRequest.getIdchitietcaban()));
                 } else {
                     throw new AppExceptions(ErrorCode.THIEU_ID_CHITIET_CABAN);
                 }
-                ct.setIdchitietcaban(chitietcabanTemp);
+                ct.setIdchitietcaban(chitietcabanTam);
 
-                Chitietcaban finalChitietcaban = chitietcabanTemp;
+                Chitietcaban chitietcabanCuoi = chitietcabanTam;
 
                 // --- B. Tính toán Tiền & Số lượng quy đổi ---
 
@@ -138,15 +138,15 @@ public class DonhangService {
                             .orElseThrow(() -> new AppExceptions(ErrorCode.DONVITINH_NOT_EXISTED));
                 ct.setIddonvitinh(donvitinh);
 
-                BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(donvitinh, finalChitietcaban);
+                BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(donvitinh, chitietcabanCuoi);
 
                 // B2. Lấy giá bán hiện tại
-                Banggia banggia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(finalChitietcaban)
+                Banggia banggia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(chitietcabanCuoi)
                         .orElseThrow(() -> new AppExceptions(ErrorCode.BANGGIA_CHUA_AP_DUNG,
-                                "Sản phẩm chưa có bảng giá áp dụng (ID Kho: " + finalChitietcaban.getId() + ")"));
+                                "Sản phẩm chưa có bảng giá áp dụng (ID Kho: " + chitietcabanCuoi.getId() + ")"));
 
                 // B3. Xác định giá áp dụng (Sỉ hay Lẻ)
-                BigDecimal donGiaApDung = isWholesale ? banggia.getGiabansi() : banggia.getGiabanle();
+                BigDecimal donGiaApDung = laKhachSi ? banggia.getGiabansi() : banggia.getGiabanle();
                 if (donGiaApDung == null) donGiaApDung = banggia.getGiabanle();
                 if (donGiaApDung == null || donGiaApDung.compareTo(BigDecimal.ZERO) <= 0) {
                     throw new AppExceptions(ErrorCode.BANGGIA_CHUA_AP_DUNG);
@@ -174,40 +174,40 @@ public class DonhangService {
                 // Cả hai != CHO_XAC_NHAN → trừ kho/lô ngay lúc tạo.
                 // Đơn online CHO_XAC_NHAN: trừ kho khi admin xác nhận qua updateStatus()
                 // hoặc khi VNPAY callback gọi truSoluongTon().
-                if (savedDonhang.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
+                if (donHangDaLuu.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
                     BigDecimal luongCanTru = soLuongKgQuyDoi;
-                    BigDecimal tonCoTheBan = tinhTonCoTheBan(finalChitietcaban);
+                    BigDecimal tonCoTheBan = tinhTonCoTheBan(chitietcabanCuoi);
 
                     if (tonCoTheBan.compareTo(luongCanTru) < 0) {
-                        throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + finalChitietcaban.getIdloaica().getTenloaica()
+                        throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH, "Sản phẩm " + chitietcabanCuoi.getIdloaica().getTenloaica()
                                 + " không đủ hàng! (Có thể bán: " + tonCoTheBan + ", Đặt: " + luongCanTru + ")");
                     }
 
-                    truLoFifo(finalChitietcaban, luongCanTru);
-                    finalChitietcaban.setSoluongton(finalChitietcaban.getSoluongton().subtract(luongCanTru));
-                    chitietcabanRepository.save(finalChitietcaban);
+                    truLoFifo(chitietcabanCuoi, luongCanTru);
+                    chitietcabanCuoi.setSoluongton(chitietcabanCuoi.getSoluongton().subtract(luongCanTru));
+                    chitietcabanRepository.save(chitietcabanCuoi);
                 }
 
                 // --- D. Xử lý Đơn vị tính ---
                 // Đơn vị tính đã được set ở B1
 
-                listChiTietEntity.add(ct);
+                danhSachChiTiet.add(ct);
             }
 
-            if (!listChiTietEntity.isEmpty()) {
-                chitietdonhangRepository.saveAll(listChiTietEntity);
+            if (!danhSachChiTiet.isEmpty()) {
+                chitietdonhangRepository.saveAll(danhSachChiTiet);
             }
         }
 
-        savedDonhang.setTongtien(tongTienDonHang);
-        savedDonhang = donhangRepository.save(savedDonhang);
+        donHangDaLuu.setTongtien(tongTienDonHang);
+        donHangDaLuu = donhangRepository.save(donHangDaLuu);
 
         // 3. Chuẩn bị dữ liệu trả về
         String tenKhach;
         String sdtKhach;
 
-        if (savedDonhang.getIdthongtinkhachhang() != null) {
-            var khachOpt = taikhoanRepository.findById(savedDonhang.getIdthongtinkhachhang());
+        if (donHangDaLuu.getIdthongtinkhachhang() != null) {
+            var khachOpt = taikhoanRepository.findById(donHangDaLuu.getIdthongtinkhachhang());
             if (khachOpt.isPresent()) {
                 var khach = khachOpt.get();
                 tenKhach = khach.getHo() + " " + khach.getTen();
@@ -217,26 +217,26 @@ public class DonhangService {
                 sdtKhach = "";
             }
         } else {
-            tenKhach = (savedDonhang.getTenKhachLe() != null && !savedDonhang.getTenKhachLe().isBlank())
-                    ? savedDonhang.getTenKhachLe() : "Khách vãng lai";
-            sdtKhach = savedDonhang.getSdtKhachLe() != null ? savedDonhang.getSdtKhachLe() : "";
+            tenKhach = (donHangDaLuu.getTenKhachLe() != null && !donHangDaLuu.getTenKhachLe().isBlank())
+                    ? donHangDaLuu.getTenKhachLe() : "Khách vãng lai";
+            sdtKhach = donHangDaLuu.getSdtKhachLe() != null ? donHangDaLuu.getSdtKhachLe() : "";
         }
 
         // Báo cho Admin/Staff biết có đơn mới, bấm vào thông báo nhảy thẳng tới trang chi tiết đơn
         // (giống cơ chế thông báo lô hàng quá hạn -> trang thanh lý ở LoHangQuaHanScheduler).
-        String noidungThongBao = "Đơn hàng mới #" + savedDonhang.getIddonhang().substring(0, 8).toUpperCase() + " từ " + tenKhach;
-        String linkThongBao = "/admin/QuanLyDonHang/chi-tiet/" + savedDonhang.getIddonhang();
+        String noidungThongBao = "Đơn hàng mới #" + donHangDaLuu.getIddonhang().substring(0, 8).toUpperCase() + " từ " + tenKhach;
+        String linkThongBao = "/admin/QuanLyDonHang/chi-tiet/" + donHangDaLuu.getIddonhang();
         thongBaoService.guiChoVaiTro("ADMIN", noidungThongBao, "DON_HANG_MOI", linkThongBao);
         thongBaoService.guiChoVaiTro("STAFF", noidungThongBao, "DON_HANG_MOI", linkThongBao);
 
-        return donhangMapper.toDonhangResponse(savedDonhang, tenKhach, sdtKhach);
+        return donhangMapper.toDonhangResponse(donHangDaLuu, tenKhach, sdtKhach);
     }
 
 
     // --- 1b. LẤY 1 ĐƠN HÀNG THEO ID ---
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public DonhangResponse getDonhangById(String id) {
+    public DonhangResponse layDonHangTheoId(String id) {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
 
@@ -264,18 +264,18 @@ public class DonhangService {
     // --- 2. LẤY TẤT CẢ ĐƠN HÀNG ---
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public List<DonhangResponse> getAllDonhangs() {
+    public List<DonhangResponse> layTatCaDonHang() {
 
         // ---- CACH 1 ----
         // Lấy danh sách entity từ DB
         // Đơn hàng mới nhất sẽ nằm đầu danh sách
-        List<Donhang> listEntity = donhangRepository.findAllByOrderByNgaydatDesc();
+        List<Donhang> danhSachEntity = donhangRepository.findAllByOrderByNgaydatDesc();
 
         // Tạo một list rỗng để chứa kết quả
-        List<DonhangResponse> responseList = new ArrayList<>();
+        List<DonhangResponse> danhSachResponse = new ArrayList<>();
 
         // Duyệt từng đơn hàng bằng vòng lặp
-        for (Donhang donhang : listEntity) {
+        for (Donhang donhang : danhSachEntity) {
             String tenKhach;
             String sdtKhach;
 
@@ -296,9 +296,9 @@ public class DonhangService {
             }
 
             DonhangResponse response = donhangMapper.toDonhangResponse(donhang, tenKhach, sdtKhach);
-            responseList.add(response);
+            danhSachResponse.add(response);
         }
-        return responseList;
+        return danhSachResponse;
 
         // ---- CACH 2 ----
 //        return donhangRepository.findAllByOrderByNgaydatDesc().stream()
@@ -320,7 +320,7 @@ public class DonhangService {
 
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public Page<DonhangResponse> searchDonhangs(
+    public Page<DonhangResponse> timDonhangs(
             LocalDateTime from,
             LocalDateTime to,
             int page,
@@ -334,47 +334,47 @@ public class DonhangService {
 
     private DonhangResponse mapDonhangResponse(Donhang donhang) {
         if (donhang.getIdthongtinkhachhang() != null) {
-            Optional<Taikhoan> customer = taikhoanRepository.findById(donhang.getIdthongtinkhachhang());
-            if (customer.isPresent()) {
-                Taikhoan account = customer.get();
+            Optional<Taikhoan> khachOpt = taikhoanRepository.findById(donhang.getIdthongtinkhachhang());
+            if (khachOpt.isPresent()) {
+                Taikhoan khach = khachOpt.get();
                 return donhangMapper.toDonhangResponse(
                         donhang,
-                        account.getHo() + " " + account.getTen(),
-                        account.getSodienthoai());
+                        khach.getHo() + " " + khach.getTen(),
+                        khach.getSodienthoai());
             }
         }
-        String guestName = donhang.getTenKhachLe() != null && !donhang.getTenKhachLe().isBlank()
+        String tenKhachVangLai = donhang.getTenKhachLe() != null && !donhang.getTenKhachLe().isBlank()
                 ? donhang.getTenKhachLe() : "Khách vãng lai";
-        String guestPhone = donhang.getSdtKhachLe() != null ? donhang.getSdtKhachLe() : "";
-        return donhangMapper.toDonhangResponse(donhang, guestName, guestPhone);
+        String sdtKhachVangLai = donhang.getSdtKhachLe() != null ? donhang.getSdtKhachLe() : "";
+        return donhangMapper.toDonhangResponse(donhang, tenKhachVangLai, sdtKhachVangLai);
     }
 
     // --- 3. LẤY CHI TIẾT ĐƠN HÀNG ---
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
-    public List<ChitietDonhangResponse> getChiTietDonHang(String idDonhang) {
+    public List<ChitietDonhangResponse> layChiTietDonHang(String idDonhang) {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
 
         //---- CACH 1 ----
         // Lấy list entity chi tiết
-        List<Chitietdonhang> details = chitietdonhangRepository.findByIddonhang(donhang);
+        List<Chitietdonhang> danhSachChiTiet = chitietdonhangRepository.findByIddonhang(donhang);
 
         // Tạo list rỗng để chứa kết quả
-        List<ChitietDonhangResponse> responseList = new ArrayList<>();
+        List<ChitietDonhangResponse> danhSachResponse = new ArrayList<>();
 
         List<TrangThaiDonHang> dangCho = List.of(
                 TrangThaiDonHang.CHO_XAC_NHAN, TrangThaiDonHang.DANG_DONG_HANG);
 
-        for (Chitietdonhang ct : details) {
+        for (Chitietdonhang ct : danhSachChiTiet) {
             ChitietDonhangResponse response = donhangMapper.toChitietResponse(ct);
             BigDecimal kgDonKhac = chitietdonhangRepository.tongKgDangChoKhac(
                     ct.getIdchitietcaban(), dangCho, idDonhang);
             response.setTongKgDonKhacDangCho(kgDonKhac);
-            responseList.add(response);
+            danhSachResponse.add(response);
         }
 
-        return responseList;
+        return danhSachResponse;
 
         //---- CACH 2 ----
 //        return chitietdonhangRepository.findByIddonhang(donhang).stream()
@@ -393,22 +393,22 @@ public class DonhangService {
             throw new AppExceptions(ErrorCode.ORDER_STATUS_INVALID, "Đơn hàng không ở trạng thái đang giao");
         }
 
-        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
+        String emailHienTai = SecurityContextHolder.getContext().getAuthentication().getName();
+        Taikhoan nguoiDungHienTai = taikhoanRepository.findByEmail(emailHienTai)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
-        if (!String.valueOf(currentUser.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
+        if (!String.valueOf(nguoiDungHienTai.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
             throw new AppExceptions(ErrorCode.ACCESS_DENIED, "Bạn không có quyền xác nhận đơn hàng này");
         }
 
         chanGiaoDonRong(idDonhang);
 
         donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
-        Donhang saved = donhangRepository.save(donhang);
+        Donhang daLuu = donhangRepository.save(donhang);
 
-        congNoService.xuLyDonGiaoThanhCong(saved, tinhTongTienDonHang(saved.getIddonhang()));
+        congNoService.xuLyDonGiaoThanhCong(daLuu, tinhTongTienDonHang(daLuu.getIddonhang()));
 
-        return donhangMapper.toDonhangResponse(saved, currentUser.getHo() + " " + currentUser.getTen(), currentUser.getSodienthoai());
+        return donhangMapper.toDonhangResponse(daLuu, nguoiDungHienTai.getHo() + " " + nguoiDungHienTai.getTen(), nguoiDungHienTai.getSodienthoai());
     }
 
     // --- 5. HỦY ĐƠN HÀNG (khách tự hủy khi còn CHO_XAC_NHAN) ---
@@ -422,46 +422,46 @@ public class DonhangService {
             throw new AppExceptions(ErrorCode.ORDER_STATUS_INVALID, "Chỉ có thể hủy đơn hàng đang chờ xác nhận");
         }
 
-        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
+        String emailHienTai = SecurityContextHolder.getContext().getAuthentication().getName();
+        Taikhoan nguoiDungHienTai = taikhoanRepository.findByEmail(emailHienTai)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
-        if (!String.valueOf(currentUser.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
+        if (!String.valueOf(nguoiDungHienTai.getIdtaikhoan()).equals(donhang.getIdthongtinkhachhang())) {
             throw new AppExceptions(ErrorCode.ACCESS_DENIED, "Bạn không có quyền hủy đơn hàng này");
         }
 
         // Không cần hoàn kho/lô gì cả: đơn còn CHO_XAC_NHAN nghĩa là chưa từng bị trừ kho (xem
-        // createDonhang/updateStatus — kho/lô chỉ bị trừ khi đơn rời CHO_XAC_NHAN).
+        // taoDonHang/capNhatTrangThai — kho/lô chỉ bị trừ khi đơn rời CHO_XAC_NHAN).
         donhang.setTrangthaidonhang(TrangThaiDonHang.HUY);
-        Donhang saved = donhangRepository.save(donhang);
-        return donhangMapper.toDonhangResponse(saved, currentUser.getHo() + " " + currentUser.getTen(), currentUser.getSodienthoai());
+        Donhang daLuu = donhangRepository.save(donhang);
+        return donhangMapper.toDonhangResponse(daLuu, nguoiDungHienTai.getHo() + " " + nguoiDungHienTai.getTen(), nguoiDungHienTai.getSodienthoai());
     }
 
     // --- 5. CẬP NHẬT TRẠNG THÁI (admin/staff) ---
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public DonhangResponse updateStatus(String id, TrangThaiDonHang newStatus) {
+    public DonhangResponse capNhatTrangThai(String id, TrangThaiDonHang trangThaiMoi) {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
 
-        TrangThaiDonHang oldStatus = donhang.getTrangthaidonhang();
+        TrangThaiDonHang trangThaiCu = donhang.getTrangthaidonhang();
 
-        if (newStatus == TrangThaiDonHang.DANG_VAN_CHUYEN && oldStatus != TrangThaiDonHang.DANG_VAN_CHUYEN) {
+        if (trangThaiMoi == TrangThaiDonHang.DANG_VAN_CHUYEN && trangThaiCu != TrangThaiDonHang.DANG_VAN_CHUYEN) {
             chanGiaoDonRong(id);
         }
 
-        donhang.setTrangthaidonhang(newStatus);
-        Donhang savedDonhang = donhangRepository.save(donhang);
+        donhang.setTrangthaidonhang(trangThaiMoi);
+        Donhang donHangDaLuu = donhangRepository.save(donhang);
 
         // Đơn rời CHO_XAC_NHAN qua đường admin xác nhận (COD/thanh toán sau) -> trừ kho/lô lúc này
         // (đơn VNPAY không đi qua đây để rời CHO_XAC_NHAN — callback thanh toán tự trừ trực tiếp
         // qua truSoluongTon(), không trừ trùng).
         List<String> canhBaoGiaoThieu = new ArrayList<>();
 
-        if (oldStatus == TrangThaiDonHang.CHO_XAC_NHAN
-                && newStatus != TrangThaiDonHang.CHO_XAC_NHAN
-                && newStatus != TrangThaiDonHang.HUY) {
-            for (Chitietdonhang ctdh : chitietdonhangRepository.findByIddonhang(savedDonhang)) {
+        if (trangThaiCu == TrangThaiDonHang.CHO_XAC_NHAN
+                && trangThaiMoi != TrangThaiDonHang.CHO_XAC_NHAN
+                && trangThaiMoi != TrangThaiDonHang.HUY) {
+            for (Chitietdonhang ctdh : chitietdonhangRepository.findByIddonhang(donHangDaLuu)) {
                 Chitietcaban kho = ctdh.getIdchitietcaban();
                 BigDecimal luongCanTru = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
                 if (luongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
@@ -494,22 +494,22 @@ public class DonhangService {
             }
         }
 
-        if (!canhBaoGiaoThieu.isEmpty() && savedDonhang.getIdthongtinkhachhang() != null) {
+        if (!canhBaoGiaoThieu.isEmpty() && donHangDaLuu.getIdthongtinkhachhang() != null) {
             String noidung = "Đơn hàng của bạn không đủ hàng để giao đủ số lượng đã đặt: "
                     + String.join("; ", canhBaoGiaoThieu) + ". Chúng tôi đã điều chỉnh lại số lượng và tiền thực tế.";
-            thongBaoService.guiChoTaiKhoan(savedDonhang.getIdthongtinkhachhang(), noidung, "GIAO_THIEU_HANG", "/my-orders");
+            thongBaoService.guiChoTaiKhoan(donHangDaLuu.getIdthongtinkhachhang(), noidung, "GIAO_THIEU_HANG", "/my-orders");
         }
 
         if (!canhBaoGiaoThieu.isEmpty()) {
-            capNhatTongTien(savedDonhang);
+            capNhatTongTien(donHangDaLuu);
         }
 
         // Đơn bị hủy sau khi đã lỡ trừ kho (rời CHO_XAC_NHAN rồi mới hủy, vd đang "Đang đóng hàng")
         // -> hoàn lại kho + lô đúng bằng số đã trừ, tránh mất hàng vĩnh viễn khỏi kho.
-        if (newStatus == TrangThaiDonHang.HUY
-                && oldStatus != TrangThaiDonHang.CHO_XAC_NHAN
-                && oldStatus != TrangThaiDonHang.HUY) {
-            for (Chitietdonhang ctdh : chitietdonhangRepository.findByIddonhang(savedDonhang)) {
+        if (trangThaiMoi == TrangThaiDonHang.HUY
+                && trangThaiCu != TrangThaiDonHang.CHO_XAC_NHAN
+                && trangThaiCu != TrangThaiDonHang.HUY) {
+            for (Chitietdonhang ctdh : chitietdonhangRepository.findByIddonhang(donHangDaLuu)) {
                 Chitietcaban kho = ctdh.getIdchitietcaban();
                 BigDecimal luongHoanTra = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
                 if (luongHoanTra.compareTo(BigDecimal.ZERO) <= 0) continue;
@@ -521,11 +521,11 @@ public class DonhangService {
         }
 
         // Admin có thể set thẳng GIAO_HANG_THANH_CONG ở đây, không chỉ qua xacNhanNhanHang() của khách
-        if (newStatus == TrangThaiDonHang.GIAO_HANG_THANH_CONG && oldStatus != TrangThaiDonHang.GIAO_HANG_THANH_CONG) {
-            congNoService.xuLyDonGiaoThanhCong(savedDonhang, tinhTongTienDonHang(savedDonhang.getIddonhang()));
+        if (trangThaiMoi == TrangThaiDonHang.GIAO_HANG_THANH_CONG && trangThaiCu != TrangThaiDonHang.GIAO_HANG_THANH_CONG) {
+            congNoService.xuLyDonGiaoThanhCong(donHangDaLuu, tinhTongTienDonHang(donHangDaLuu.getIddonhang()));
         }
 
-        DonhangResponse response = donhangMapper.toDonhangResponse(savedDonhang, null, null);
+        DonhangResponse response = donhangMapper.toDonhangResponse(donHangDaLuu, null, null);
         response.setCanhBaoGiaoThieu(canhBaoGiaoThieu);
         return response;
     }
@@ -549,89 +549,54 @@ public class DonhangService {
         }
     }
 
-//    @PreAuthorize("isAuthenticated()")
-//    public List<DonhangResponse> getMyOrders() {
-//        // 1. Lấy User hiện tại
-//        var context = SecurityContextHolder.getContext();
-//        String currentEmail = context.getAuthentication().getName();
-//
-//        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
-//                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-//
-//        // 2. Lấy danh sách Entity
-//        // Lưu ý: Đảm bảo bảng donhang lưu ID khách dạng String hay Int để gọi hàm find cho đúng
-//        List<Donhang> myOrders = donhangRepository.findByIdthongtinkhachhang(String.valueOf(currentUser.getIdtaikhoan()));
-//
-//        List<DonhangResponse> responseList = new ArrayList<>();
-//
-//        // 3. Duyệt và map sang DTO
-//        for (Donhang donhang : myOrders) {
-//            // Map sang DTO trước
-//            DonhangResponse response = donhangMapper.toDonhangResponse(donhang,
-//                    currentUser.getHo() + " " + currentUser.getTen(),
-//                    currentUser.getSodienthoai());
-//
-//            // 4. [QUAN TRỌNG] Tính tổng tiền và set vào DTO Response
-//            // Vì Entity Donhang không có trường tongtien, nên ta set thẳng vào Response để trả về FE
-//            BigDecimal calculatedTotal = tinhTongTienDonHang(donhang.getIddonhang());
-//            response.setTongtien(calculatedTotal);
-//
-//            responseList.add(response);
-//        }
-//
-//        // 5. Sắp xếp mới nhất lên đầu
-//        responseList.sort((a, b) -> b.getNgaydat().compareTo(a.getNgaydat()));
-//
-//        return responseList;
-//    }
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
-    public List<DonhangResponse> getMyOrders() {
+    public List<DonhangResponse> layDonHangCuaToi() {
         // 1. Lấy User hiện tại
         var context = SecurityContextHolder.getContext();
-        String currentEmail = context.getAuthentication().getName();
+        String emailHienTai = context.getAuthentication().getName();
 
-        Taikhoan currentUser = taikhoanRepository.findByEmail(currentEmail)
+        Taikhoan nguoiDungHienTai = taikhoanRepository.findByEmail(emailHienTai)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
 
         // 2. Lấy danh sách Entity Đơn hàng
-        List<Donhang> myOrders = donhangRepository.findByIdthongtinkhachhang(String.valueOf(currentUser.getIdtaikhoan()));
+        List<Donhang> danhSachDonHangCuaToi = donhangRepository.findByIdthongtinkhachhang(String.valueOf(nguoiDungHienTai.getIdtaikhoan()));
 
-        List<DonhangResponse> responseList = new ArrayList<>();
+        List<DonhangResponse> danhSachResponse = new ArrayList<>();
 
         // 3. Duyệt và map sang DTO
-        for (Donhang donhang : myOrders) {
+        for (Donhang donhang : danhSachDonHangCuaToi) {
             // A. Map thông tin cơ bản sang DTO
             DonhangResponse response = donhangMapper.toDonhangResponse(donhang,
-                    currentUser.getHo() + " " + currentUser.getTen(),
-                    currentUser.getSodienthoai());
+                    nguoiDungHienTai.getHo() + " " + nguoiDungHienTai.getTen(),
+                    nguoiDungHienTai.getSodienthoai());
 
             // B. Tính tổng tiền (Logic cũ của bạn - Giữ nguyên)
-            BigDecimal calculatedTotal = tinhTongTienDonHang(donhang.getIddonhang());
-            response.setTongtien(calculatedTotal);
+            BigDecimal tongTienTinhDuoc = tinhTongTienDonHang(donhang.getIddonhang());
+            response.setTongtien(tongTienTinhDuoc);
 
             // --- [MỚI] BỔ SUNG LẤY CHI TIẾT SẢN PHẨM ---
 
             // C.1 Tìm danh sách chi tiết của đơn hàng này từ DB
-            List<Chitietdonhang> details = chitietdonhangRepository.findByIddonhang(donhang);
+            List<Chitietdonhang> danhSachChiTiet = chitietdonhangRepository.findByIddonhang(donhang);
 
             // C.2 Map danh sách Entity -> Danh sách Response DTO (Dùng lại mapper bạn đã có)
-            List<ChitietDonhangResponse> detailResponses = details.stream()
+            List<ChitietDonhangResponse> danhSachChiTietResponse = danhSachChiTiet.stream()
                     .map(donhangMapper::toChitietResponse)
                     .collect(Collectors.toList());
 
             // C.3 Gán danh sách chi tiết vào DonhangResponse (Cần đảm bảo DTO đã có trường này)
-            response.setChiTietDonHangs(detailResponses);
+            response.setChiTietDonHangs(danhSachChiTietResponse);
 
             // -------------------------------------------
 
-            responseList.add(response);
+            danhSachResponse.add(response);
         }
 
         // 4. Sắp xếp mới nhất lên đầu
-        responseList.sort((a, b) -> b.getNgaydat().compareTo(a.getNgaydat()));
+        danhSachResponse.sort((a, b) -> b.getNgaydat().compareTo(a.getNgaydat()));
 
-        return responseList;
+        return danhSachResponse;
     }
 
     @Transactional
@@ -641,15 +606,15 @@ public class DonhangService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng: " + idDonhang));
 
         // 2. [THAY ĐỔI] Tìm danh sách chi tiết từ Repository của ChiTietDonHang
-        List<Chitietdonhang> listChiTiet = chitietdonhangRepository.findByIddonhang(donhang);
+        List<Chitietdonhang> danhSachChiTiet = chitietdonhangRepository.findByIddonhang(donhang);
 
-        if (listChiTiet.isEmpty()) {
+        if (danhSachChiTiet.isEmpty()) {
             // Trường hợp đơn hàng rỗng (hiếm gặp nhưng nên check)
             return;
         }
 
         // 3. Duyệt và trừ kho
-        for (Chitietdonhang chitiet : listChiTiet) {
+        for (Chitietdonhang chitiet : danhSachChiTiet) {
             Chitietcaban sanphamTrongKho = chitiet.getIdchitietcaban();
 
             // Lấy số kg đã quy đổi (không dùng soluong thô — đó là số Con/Bao/Kg theo đơn đặt,
@@ -718,7 +683,7 @@ public class DonhangService {
         }
     }
 
-    // Hoàn trả vào lô khi cân thực tế nhẹ hơn dự kiến (xem updateThucTeDonHang) — ưu tiên hoàn vào lô
+    // Hoàn trả vào lô khi cân thực tế nhẹ hơn dự kiến (xem capNhatThucTeDonHang) — ưu tiên hoàn vào lô
     // vừa bị trừ gần đây nhất (ngaynhap mới nhất trước, ngược lại với FIFO lúc trừ). Bỏ qua lô đã
     // THANH_LY vì phần đó là hao hụt đã chốt sổ, không phải hàng còn bán được.
     private void hoanTraLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongHoanTra) {
@@ -823,7 +788,7 @@ public class DonhangService {
     }
 
     @Transactional
-    public void updateThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> listUpdates) {
+    public void capNhatThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> danhSachCapNhat) {
         // 1. Kiểm tra đơn hàng
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
@@ -833,7 +798,7 @@ public class DonhangService {
             throw new AppExceptions(ErrorCode.ORDER_STATUS_INVALID);
         }
 
-        for (UpdateCanNangRequest request : listUpdates) {
+        for (UpdateCanNangRequest request : danhSachCapNhat) {
             Chitietdonhang ctdh = chitietdonhangRepository.findById(request.getIdChitietdonhang())
                     .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_DONHANG_NOT_EXISTED));
 

@@ -22,11 +22,11 @@ public class SizecaController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<SizecaResponse> createSize(@RequestBody SizecaRequest request) {
+    public ApiResponse<SizecaResponse> taoSize(@RequestBody SizecaRequest request) {
         return ApiResponse.<SizecaResponse>builder()
                 .code(200)
                 .message("Thêm size thành công")
-                .result(sizecaService.createSize(request))
+                .result(sizecaService.taoSize(request))
                 .build();
     }
 
@@ -34,8 +34,8 @@ public class SizecaController {
     // URL: /Sizecas/{id} (DELETE)
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<String> deleteSize(@PathVariable Integer id) {
-        sizecaService.deleteSize(id);
+    public ApiResponse<String> xoaSize(@PathVariable Integer id) {
+        sizecaService.xoaSize(id);
         return ApiResponse.<String>builder()
                 .code(200)
                 .message("Đã xóa size")
@@ -44,9 +44,9 @@ public class SizecaController {
     }
 
     @GetMapping
-    public ApiResponse<List<SizecaResponse>> getAll() {
+    public ApiResponse<List<SizecaResponse>> layTatCa() {
         return ApiResponse.<List<SizecaResponse>>builder()
-                .result(sizecaService.getAll())
+                .result(sizecaService.layTatCa())
                 .build();
     }
 }

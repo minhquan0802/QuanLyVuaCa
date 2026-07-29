@@ -23,32 +23,32 @@ public class BanggiaController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<BanggiaResponse> create(@RequestBody @Valid BanggiaRequest request) {
+    public ApiResponse<BanggiaResponse> taoMoi(@RequestBody @Valid BanggiaRequest request) {
         return ApiResponse.<BanggiaResponse>builder()
-                .result(banggiaService.create(request))
+                .result(banggiaService.taoMoi(request))
                 .message("Thiết lập giá thành công")
                 .build();
     }
 
     @GetMapping
-    public ApiResponse<List<BanggiaResponse>> getAll() {
+    public ApiResponse<List<BanggiaResponse>> layTatCa() {
         return ApiResponse.<List<BanggiaResponse>>builder()
-                .result(banggiaService.getAll())
+                .result(banggiaService.layTatCa())
                 .build();
     }
 
     @GetMapping("/history")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<List<BanggiaResponse>> getHistory() {
+    public ApiResponse<List<BanggiaResponse>> layLichSu() {
         return ApiResponse.<List<BanggiaResponse>>builder()
-                .result(banggiaService.getHistory())
+                .result(banggiaService.layLichSu())
                 .build();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<String> delete(@PathVariable Integer id) {
-        banggiaService.delete(id);
+    public ApiResponse<String> xoa(@PathVariable Integer id) {
+        banggiaService.xoa(id);
         return ApiResponse.<String>builder()
                 .result("Đã ngừng áp dụng giá")
                 .build();

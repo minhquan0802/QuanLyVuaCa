@@ -9,8 +9,8 @@ import com.minhquan.QuanLyVuaCa.enums.TrangThaiGioHang;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.repository.*;
-import com.minhquan.QuanLyVuaCa.util.ChinhSachGiaUtils;
-import com.minhquan.QuanLyVuaCa.util.QuyDoiKhoiLuongUtils;
+import com.minhquan.QuanLyVuaCa.utils.ChinhSachGiaUtils;
+import com.minhquan.QuanLyVuaCa.utils.QuyDoiKhoiLuongUtils;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ public class GioHangService {
     DonvitinhRepository donvitinhRepository;
     BanggiaRepository banggiaRepository;
 
-    // ── Lấy hoặc tạo giỏ hàng đang hoạt động của user hiện tại ──────────────
+    // ── Lấy hoặc tạo giỏ hàng đang hoạt động của taikhoan hiện tại ──────────────
     private GioHang layHoacTaoGioHang(Taikhoan taikhoan) {
         return gioHangRepository
                 .findByIdtaikhoan_IdtaikhoanAndTrangthai(taikhoan.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
@@ -48,42 +48,42 @@ public class GioHangService {
                 });
     }
 
-    private Taikhoan layUserHienTai() {
+    private Taikhoan layTaiKhoanHienTai() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return taikhoanRepository.findByEmail(email)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
     }
 
     // ── Map sang Response, tính giá real-time ────────────────────────────────
-    private GioHangResponse mapToResponse(GioHang gioHang, boolean isWholesale) {
-        List<ChitietGioHang> items = chitietGioHangRepository.findByIdgiohang_Idgiohang(gioHang.getIdgiohang());
+    private GioHangResponse xayDungGioHangResponse(GioHang gioHang, boolean laKhachSi) {
+        List<ChitietGioHang> danhSachMuc = chitietGioHangRepository.findByIdgiohang_Idgiohang(gioHang.getIdgiohang());
         BigDecimal tongTien = BigDecimal.ZERO;
-        List<ChitietGioHangResponse> itemResponses = new ArrayList<>();
+        List<ChitietGioHangResponse> danhSachMucResponse = new ArrayList<>();
 
-        for (ChitietGioHang item : items) {
-            Chitietcaban sanpham = item.getIdchitietcaban();
-            Donvitinh dvt = item.getIddonvitinh();
+        for (ChitietGioHang muc : danhSachMuc) {
+            Chitietcaban sanpham = muc.getIdchitietcaban();
+            Donvitinh donvitinh = muc.getIddonvitinh();
 
-            BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(dvt, sanpham);
+            BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(donvitinh, sanpham);
 
             BigDecimal giaBan = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(sanpham)
-                    .map(bg -> isWholesale && bg.getGiabansi() != null ? bg.getGiabansi() : bg.getGiabanle())
+                    .map(bg -> laKhachSi && bg.getGiabansi() != null ? bg.getGiabansi() : bg.getGiabanle())
                     .filter(gia -> gia != null && gia.compareTo(BigDecimal.ZERO) > 0)
                     .orElseThrow(() -> new AppExceptions(ErrorCode.BANGGIA_CHUA_AP_DUNG));
 
-            BigDecimal khoiluong = heSoQuyDoi.multiply(new BigDecimal(item.getSoluong()));
+            BigDecimal khoiluong = heSoQuyDoi.multiply(new BigDecimal(muc.getSoluong()));
             BigDecimal thanhTien = khoiluong.multiply(giaBan);
             tongTien = tongTien.add(thanhTien);
 
-            itemResponses.add(ChitietGioHangResponse.builder()
-                    .idchitietgiohang(item.getIdchitietgiohang())
+            danhSachMucResponse.add(ChitietGioHangResponse.builder()
+                    .idchitietgiohang(muc.getIdchitietgiohang())
                     .idchitietcaban(sanpham.getId())
                     .tenLoaiCa(sanpham.getIdloaica().getTenloaica())
                     .tenSize(sanpham.getIdsizeca().getSizeca())
                     .hinhAnhUrl(sanpham.getIdloaica().getHinhanhurl())
-                    .iddonvitinh(dvt.getId())
-                    .tenDonViTinh(dvt.getTendvt())
-                    .soluong(item.getSoluong())
+                    .iddonvitinh(donvitinh.getId())
+                    .tenDonViTinh(donvitinh.getTendvt())
+                    .soluong(muc.getSoluong())
                     .khoiluongDuKien(khoiluong)
                     .giaBan(giaBan)
                     .thanhTien(thanhTien)
@@ -92,16 +92,16 @@ public class GioHangService {
 
         return GioHangResponse.builder()
                 .idgiohang(gioHang.getIdgiohang())
-                .items(itemResponses)
+                .items(danhSachMucResponse)
                 .tongTien(tongTien)
                 .build();
     }
 
     // Dùng cho Phase 4 công nợ: tính nợ dự kiến trước khi cho checkout
     @Transactional(readOnly = true)
-    public BigDecimal tinhTongTienGioHangHienTai(String idtaikhoan, boolean isWholesale) {
+    public BigDecimal tinhTongTienGioHangHienTai(String idtaikhoan, boolean laKhachSi) {
         return gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai(idtaikhoan, TrangThaiGioHang.DANG_HOAT_DONG)
-                .map(gh -> mapToResponse(gh, isWholesale).getTongTien())
+                .map(gh -> xayDungGioHangResponse(gh, laKhachSi).getTongTien())
                 .orElse(BigDecimal.ZERO);
     }
 
@@ -109,10 +109,10 @@ public class GioHangService {
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse layGioHang() {
-        Taikhoan user = layUserHienTai();
+        Taikhoan taikhoan = layTaiKhoanHienTai();
         return gioHangRepository
-                .findByIdtaikhoan_IdtaikhoanAndTrangthai(user.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
-                .map(gh -> mapToResponse(gh, ChinhSachGiaUtils.laKhachSi(user.getVaitro())))
+                .findByIdtaikhoan_IdtaikhoanAndTrangthai(taikhoan.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
+                .map(gh -> xayDungGioHangResponse(gh, ChinhSachGiaUtils.laKhachSi(taikhoan.getVaitro())))
                 .orElse(GioHangResponse.builder().items(List.of()).tongTien(BigDecimal.ZERO).build());
     }
 
@@ -120,80 +120,80 @@ public class GioHangService {
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse themSanPham(ThemVaoGioHangRequest request) {
-        Taikhoan user = layUserHienTai();
-        GioHang gioHang = layHoacTaoGioHang(user);
+        Taikhoan taikhoan = layTaiKhoanHienTai();
+        GioHang gioHang = layHoacTaoGioHang(taikhoan);
 
         Chitietcaban sanpham = chitietcabanRepository.findById(request.getIdchitietcaban())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED,
                         "Không tìm thấy sản phẩm ID: " + request.getIdchitietcaban()));
 
-        Donvitinh dvt = donvitinhRepository.findById(request.getIddonvitinh())
+        Donvitinh donvitinh = donvitinhRepository.findById(request.getIddonvitinh())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONVITINH_NOT_EXISTED,
                         "Không tìm thấy đơn vị tính ID: " + request.getIddonvitinh()));
 
-        var existingItem = chitietGioHangRepository
-                .findItem(gioHang.getIdgiohang(), sanpham.getId(), dvt.getId());
-        int tongSoLuong = existingItem
-                .map(existing -> existing.getSoluong() + request.getSoluong())
+        var mucHienCo = chitietGioHangRepository
+                .findItem(gioHang.getIdgiohang(), sanpham.getId(), donvitinh.getId());
+        int tongSoLuong = mucHienCo
+                .map(muc -> muc.getSoluong() + request.getSoluong())
                 .orElse(request.getSoluong());
-        kiemTraTonKho(sanpham, dvt, tongSoLuong);
+        kiemTraTonKho(sanpham, donvitinh, tongSoLuong);
 
-        existingItem.ifPresentOrElse(
-                existing -> existing.setSoluong(tongSoLuong),
+        mucHienCo.ifPresentOrElse(
+                muc -> muc.setSoluong(tongSoLuong),
                 () -> {
                     ChitietGioHang moi = new ChitietGioHang();
                     moi.setIdgiohang(gioHang);
                     moi.setIdchitietcaban(sanpham);
-                    moi.setIddonvitinh(dvt);
+                    moi.setIddonvitinh(donvitinh);
                     moi.setSoluong(request.getSoluong());
                     chitietGioHangRepository.save(moi);
                 }
         );
 
-        boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
-        return mapToResponse(gioHang, isWholesale);
+        boolean laKhachSi = ChinhSachGiaUtils.laKhachSi(taikhoan.getVaitro());
+        return xayDungGioHangResponse(gioHang, laKhachSi);
     }
 
     // ── 3. Cập nhật số lượng (soluong = 0 → xóa luôn) ───────────────────────
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse capNhatSoLuong(String idChitietGioHang, CapNhatSoLuongRequest request) {
-        ChitietGioHang item = chitietGioHangRepository.findById(idChitietGioHang)
+        ChitietGioHang muc = chitietGioHangRepository.findById(idChitietGioHang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_GIOHANG_NOT_EXISTED));
 
         if (request.getSoluong() == 0) {
-            chitietGioHangRepository.delete(item);
+            chitietGioHangRepository.delete(muc);
         } else {
-            kiemTraTonKho(item.getIdchitietcaban(), item.getIddonvitinh(), request.getSoluong());
-            item.setSoluong(request.getSoluong());
+            kiemTraTonKho(muc.getIdchitietcaban(), muc.getIddonvitinh(), request.getSoluong());
+            muc.setSoluong(request.getSoluong());
         }
 
-        Taikhoan user = layUserHienTai();
-        boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
-        return mapToResponse(item.getIdgiohang(), isWholesale);
+        Taikhoan taikhoan = layTaiKhoanHienTai();
+        boolean laKhachSi = ChinhSachGiaUtils.laKhachSi(taikhoan.getVaitro());
+        return xayDungGioHangResponse(muc.getIdgiohang(), laKhachSi);
     }
 
     // ── 4. Xóa 1 sản phẩm khỏi giỏ ──────────────────────────────────────────
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse xoaSanPham(String idChitietGioHang) {
-        ChitietGioHang item = chitietGioHangRepository.findById(idChitietGioHang)
+        ChitietGioHang muc = chitietGioHangRepository.findById(idChitietGioHang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_GIOHANG_NOT_EXISTED));
 
-        GioHang gioHang = item.getIdgiohang();
-        chitietGioHangRepository.delete(item);
+        GioHang gioHang = muc.getIdgiohang();
+        chitietGioHangRepository.delete(muc);
 
-        Taikhoan user = layUserHienTai();
-        boolean isWholesale = ChinhSachGiaUtils.laKhachSi(user.getVaitro());
-        return mapToResponse(gioHang, isWholesale);
+        Taikhoan taikhoan = layTaiKhoanHienTai();
+        boolean laKhachSi = ChinhSachGiaUtils.laKhachSi(taikhoan.getVaitro());
+        return xayDungGioHangResponse(gioHang, laKhachSi);
     }
 
     // ── 5. Xóa toàn bộ giỏ ───────────────────────────────────────────────────
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public void xoaToGioHang() {
-        Taikhoan user = layUserHienTai();
-        gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai(user.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
+        Taikhoan taikhoan = layTaiKhoanHienTai();
+        gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai(taikhoan.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
                 .ifPresent(gioHang -> chitietGioHangRepository.deleteByIdgiohang(gioHang.getIdgiohang()));
     }
 

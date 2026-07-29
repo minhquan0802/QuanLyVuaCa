@@ -26,6 +26,6 @@ public class DonhangResponse {
 
     List<ChitietDonhangResponse> chiTietDonHangs;
 
-    // Danh sách cảnh báo "giao thiếu" khi kho không đủ lúc bắt đầu đóng hàng (xem DonhangService.updateStatus)
+    // Danh sách cảnh báo "giao thiếu" khi kho không đủ lúc bắt đầu đóng hàng (xem DonhangService.capNhatTrangThai)
     List<String> canhBaoGiaoThieu;
 }

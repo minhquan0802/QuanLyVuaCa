@@ -294,7 +294,7 @@ export default function SalesDashboard() {
                     </div>
                 </div>
 
-                {timeRange === "TODAY" && (
+                {timeRange === "TODAY" && user?.vaitro === "ADMIN" && (
                     <button
                         type="button"
                         onClick={() => navigate("/admin/QuanLyThanhLy?tab=quahan")}

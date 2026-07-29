@@ -27,7 +27,7 @@ public class TaiKhoanController {
     private AuthenticationService authenticationService;
 
     @PostMapping
-    private ApiResponse<TaikhoanResponse> taoTaikhoan(@Valid @RequestBody TaiKhoanCreationRequest request) {
+    private ApiResponse<TaikhoanResponse> taoTaiKhoan(@Valid @RequestBody TaiKhoanCreationRequest request) {
         return ApiResponse.<TaikhoanResponse>builder()
                 .code(200)
                 .message("Tạo tài khoản thành công")
@@ -39,7 +39,7 @@ public class TaiKhoanController {
         return ApiResponse.<List<TaikhoanResponse>>builder()
                 .code(200)
                 .message("OK")
-                .result(taiKhoanService.getTaiKhoans())
+                .result(taiKhoanService.layDanhSachTaiKhoan())
                 .build();
     }
 
@@ -53,16 +53,16 @@ public class TaiKhoanController {
     }
 
     @PutMapping("/{idtaikhoan}")
-    private ApiResponse<TaikhoanResponse> updateUser(@PathVariable("idtaikhoan") String idtaikhoan, @RequestBody TaiKhoanUpdateRequest request) {
+    private ApiResponse<TaikhoanResponse> capNhatTaiKhoan(@PathVariable("idtaikhoan") String idtaikhoan, @RequestBody TaiKhoanUpdateRequest request) {
         return ApiResponse.<TaikhoanResponse>builder()
                 .code(200)
                 .message("Cập nhật tài khoản thành công")
-                .result(taiKhoanService.updateTaiKhoan(idtaikhoan, request))
+                .result(taiKhoanService.capNhatTaiKhoan(idtaikhoan, request))
                 .build();
     }
 
     @DeleteMapping("/{idtaikhoan}")
-    private ApiResponse<String> xoaTK(@PathVariable("idtaikhoan") String idtaikhoan) {
+    private ApiResponse<String> xoaTaiKhoan(@PathVariable("idtaikhoan") String idtaikhoan) {
         taiKhoanService.xoaTaiKhoan(idtaikhoan);
         return ApiResponse.<String>builder()
                 .message("Xóa tài khoản thành công")
@@ -83,7 +83,7 @@ public class TaiKhoanController {
     @GetMapping("/my-info")
     private ApiResponse<TaikhoanResponse> thongTinTaiKhoan() {
         return ApiResponse.<TaikhoanResponse>builder()
-                .result(taiKhoanService.getMyInfo())
+                .result(taiKhoanService.layThongTinCaNhan())
                 .build();
     }
 
@@ -117,7 +117,7 @@ public class TaiKhoanController {
     }
 
     @GetMapping("/verify-email")
-    public ApiResponse<String> verifyEmail(@RequestParam String token) {
+    public ApiResponse<String> xacThucEmail(@RequestParam String token) {
         return ApiResponse.<String>builder()
                 .code(200)
                 .result(taiKhoanService.xacThucEmail(token))

@@ -191,9 +191,11 @@ export default function TaoPhieuThanhLy() {
         0
     );
 
+    const lyDoLabel = headerForm.trangthai === "DA_TIEU_HUY" ? "Lý do tiêu hủy" : "Lý do thanh lý";
+
     const handleSubmit = async () => {
         if (!headerForm.lydothanhly.trim()) {
-            showToast("Vui lòng nhập lý do thanh lý!", "error");
+            showToast(`Vui lòng nhập ${lyDoLabel.toLowerCase()}!`, "error");
             return;
         }
         if (addedDetails.length === 0) {
@@ -260,7 +262,7 @@ export default function TaoPhieuThanhLy() {
 
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-                            Lý do thanh lý
+                            {lyDoLabel}
                         </label>
                         <input
                             type="text"
