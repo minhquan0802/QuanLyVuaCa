@@ -81,7 +81,7 @@ export default function SalesDashboard() {
     const processedFishData = [...fishVolumeData]
         .sort((a, b) => b.ban - a.ban); // Ưu tiên xếp theo loại cá bán chạy nhất
 
-    const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+    const formatCurrency = (value) => `${new Intl.NumberFormat('vi-VN').format(value || 0)} VNĐ`;
 
     const getRangeBounds = () => {
         const now = new Date();
@@ -204,24 +204,24 @@ export default function SalesDashboard() {
                     <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-center text-sm">
                             <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-blue-500"></span> Đã nhập:</span>
-                            <span className="font-bold text-slate-800">{getValue("nhap").toLocaleString()} kg</span>
+                            <span className="font-bold text-slate-800">{getValue("nhap").toLocaleString("vi-VN")} kg</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-green-500"></span> Đã bán:</span>
-                            <span className="font-bold text-slate-800">{getValue("ban").toLocaleString()} kg</span>
+                            <span className="font-bold text-slate-800">{getValue("ban").toLocaleString("vi-VN")} kg</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-orange-500"></span> Bán thanh lý:</span>
-                            <span className="font-bold text-slate-800">{getValue("banThanhLy").toLocaleString()} kg</span>
+                            <span className="font-bold text-slate-800">{getValue("banThanhLy").toLocaleString("vi-VN")} kg</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-red-500"></span> Tiêu hủy:</span>
-                            <span className="font-bold text-slate-800">{getValue("tieuHuy").toLocaleString()} kg</span>
+                            <span className="font-bold text-slate-800">{getValue("tieuHuy").toLocaleString("vi-VN")} kg</span>
                         </div>
                         {showTonKho && (
                             <div className="flex justify-between items-center text-sm pt-1 mt-1 border-t border-slate-50">
                                 <span className="flex items-center gap-1.5 text-slate-600"><span className="w-3 h-3 rounded-sm bg-purple-500"></span> Tồn kho hiện tại:</span>
-                                <span className="font-bold text-purple-700">{getValue("tonKho").toLocaleString()} kg</span>
+                                <span className="font-bold text-purple-700">{getValue("tonKho").toLocaleString("vi-VN")} kg</span>
                             </div>
                         )}
                     </div>
@@ -385,12 +385,12 @@ export default function SalesDashboard() {
                                 {processedFishData.map((row, index) => (
                                     <tr key={index} className="hover:bg-slate-50/80 transition-colors">
                                         <td className="py-4 px-6 font-semibold text-slate-800">{row.name}</td>
-                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-slate-700">{row.nhap.toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-slate-700">{row.ban.toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-orange-600">{Number(row.banThanhLy || 0).toLocaleString()}</td>
-                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-red-500">{Number(row.tieuHuy || 0).toLocaleString()}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-slate-700">{row.nhap.toLocaleString("vi-VN")}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-slate-700">{row.ban.toLocaleString("vi-VN")}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-orange-600">{Number(row.banThanhLy || 0).toLocaleString("vi-VN")}</td>
+                                        <td className="py-4 px-6 text-right font-semibold tabular-nums text-red-500">{Number(row.tieuHuy || 0).toLocaleString("vi-VN")}</td>
                                         {showTonKho && (
-                                            <td className="py-4 px-6 text-right font-bold tabular-nums text-cyan-700">{Number(row.tonKho || 0).toLocaleString()}</td>
+                                            <td className="py-4 px-6 text-right font-bold tabular-nums text-cyan-700">{Number(row.tonKho || 0).toLocaleString("vi-VN")}</td>
                                         )}
                                     </tr>
                                 ))}

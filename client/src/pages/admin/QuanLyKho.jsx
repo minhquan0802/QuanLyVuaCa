@@ -5,8 +5,9 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
-const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + " VNĐ";
 
 const THANHTOAN_STATUS = {
     "CHUA_THANH_TOAN": { label: "Chưa thanh toán", badge: "bg-orange-50 text-orange-700 border-orange-200" },
@@ -160,6 +161,7 @@ export default function QuanLyKho() {
     const { user } = useAuth();
     const isAdmin = user?.vaitro === "ADMIN";
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [tab, setTab] = useState("kho"); // "kho" | "nhap"
     const [currentPage, setCurrentPage] = useState(1);
@@ -180,7 +182,6 @@ export default function QuanLyKho() {
     const [selectedImportDates, setSelectedImportDates] = useState([]);
     const [selectedImportFishNames, setSelectedImportFishNames] = useState([]);
     const [selectedPaymentStatuses, setSelectedPaymentStatuses] = useState([]);
-    const [confirmId, setConfirmId] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
 
@@ -349,11 +350,17 @@ export default function QuanLyKho() {
     };
 
     const handleMarkPaid = async (id) => {
+        const accepted = await confirm({
+            title: "Xác nhận thanh toán phiếu nhập",
+            message: "Ghi nhận phiếu nhập này đã được thanh toán? Trạng thái công nợ nhà cung cấp sẽ thay đổi.",
+            confirmText: "Đã thanh toán",
+            variant: "primary",
+        });
+        if (!accepted) return;
         setSubmitting(true);
         try {
             await api.patch(`/Phieunhaps/${id}/thanh-toan`);
             showToast("Đã cập nhật trạng thái thanh toán!", "success");
-            setConfirmId(null);
             fetchPhieus();
         } catch {
             showToast("Có lỗi xảy ra, vui lòng thử lại!", "error");
@@ -533,7 +540,6 @@ export default function QuanLyKho() {
                                 ) : paginated.length > 0 ? (
                                     paginated.map(p => {
                                         const status = THANHTOAN_STATUS[p.trangthaithanhtoan] || { label: p.trangthaithanhtoan, badge: "bg-gray-50 text-gray-600 border-slate-200" };
-                                        const isConfirming = confirmId === p.idphieunhap;
                                         const isExpanded = expandedId === p.idphieunhap;
                                         const hasDetail = p.listChiTiet && p.listChiTiet.length > 0;
                                         return (
@@ -553,7 +559,7 @@ export default function QuanLyKho() {
                                                     <td className="p-4 font-semibold text-slate-800">{p.tenNhaCungCap}</td>
                                                     <td className="p-4 font-semibold text-slate-800">{p.tenLoaiCa}</td>
                                                     <td className="p-4 text-slate-600">{p.tenNguoiTaoPhieu || "—"}</td>
-                                                    <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(p.tongsoluong || 0).toLocaleString()}</td>
+                                                    <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(p.tongsoluong || 0).toLocaleString("vi-VN")}</td>
                                                     <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(p.tongtien)}</td>
                                                     <td className="p-4">
                                                         <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${status.badge}`}>
@@ -562,31 +568,13 @@ export default function QuanLyKho() {
                                                     </td>
                                                     <td className="p-4">
                                                         {isAdmin && p.trangthaithanhtoan === "CHUA_THANH_TOAN" ? (
-                                                            isConfirming ? (
-                                                                <div className="flex flex-col items-stretch gap-2">
-                                                                    <button
-                                                                        onClick={() => handleMarkPaid(p.idphieunhap)}
-                                                                        disabled={submitting}
-                                                                        className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold hover:bg-emerald-100 disabled:opacity-50 transition-colors text-xs cursor-pointer"
-                                                                    >
-                                                                        {submitting ? "..." : "Xác nhận"}
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setConfirmId(null)}
-                                                                        disabled={submitting}
-                                                                        className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 font-bold hover:bg-slate-100 disabled:opacity-50 transition-colors text-xs cursor-pointer"
-                                                                    >
-                                                                        Hủy
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => setConfirmId(p.idphieunhap)}
-                                                                    className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold hover:bg-cyan-100 transition-colors text-xs cursor-pointer"
-                                                                >
-                                                                    Thanh toán
-                                                                </button>
-                                                            )
+                                                            <button
+                                                                onClick={() => handleMarkPaid(p.idphieunhap)}
+                                                                disabled={submitting}
+                                                                className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold hover:bg-cyan-100 disabled:opacity-50 transition-colors text-xs cursor-pointer"
+                                                            >
+                                                                {submitting ? "..." : "Thanh toán"}
+                                                            </button>
                                                         ) : (
                                                             <span className="text-xs text-slate-400">—</span>
                                                         )}
@@ -609,7 +597,7 @@ export default function QuanLyKho() {
                                                                     {p.listChiTiet.map((ct, idx) => (
                                                                         <tr key={idx} className="text-slate-700">
                                                                             <td className="py-1.5 font-semibold">{ct.tenSize}</td>
-                                                                            <td className="py-1.5 text-right font-semibold tabular-nums">{Number(ct.soluongnhap || 0).toLocaleString()}</td>
+                                                                            <td className="py-1.5 text-right font-semibold tabular-nums">{Number(ct.soluongnhap || 0).toLocaleString("vi-VN")}</td>
                                                                             <td className="py-1.5 text-right font-semibold tabular-nums">{formatCurrency(ct.gianhap)}</td>
                                                                             <td className="py-1.5 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
                                                                         </tr>

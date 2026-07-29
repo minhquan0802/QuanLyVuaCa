@@ -4,9 +4,10 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const formatCurrency = (value) =>
-    `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+    `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 const formatPreviousCurrency = (value) =>
     value == null ? "—" : formatCurrency(value);
 const getLocalToday = () => {
@@ -21,6 +22,7 @@ export default function NhapHang() {
     const location = useLocation();
     const { showToast } = useToast();
     const { user } = useAuth();
+    const { confirm } = useConfirm();
     const isAdmin = user?.vaitro === "ADMIN";
     const isQuickImport = Boolean(location.state?.id);
     const today = getLocalToday();
@@ -216,7 +218,7 @@ export default function NhapHang() {
         const existing = addedDetails.find(d => Number(d.idsizeca) === Number(currentDetail.idsizeca));
         if (existing) {
             if (parseFloat(existing.gianhap) !== parseFloat(currentDetail.gianhap)) {
-                showToast(`Size này đã có giá nhập ${Number(existing.gianhap).toLocaleString()}đ. Không thể nhập cùng size với giá khác trong 1 phiếu!`, "error");
+                showToast(`Size này đã có giá nhập ${Number(existing.gianhap).toLocaleString("vi-VN")} VNĐ. Không thể nhập cùng size với giá khác trong 1 phiếu!`, "error");
                 return;
             }
             setAddedDetails(prev => prev.map(d =>
@@ -247,6 +249,13 @@ export default function NhapHang() {
 
     const handleAddNcc = async () => {
         if (!nccForm.tenncc.trim()) { showToast("Vui lòng nhập tên nhà cung cấp!", "error"); return; }
+        const accepted = await confirm({
+            title: "Thêm nhà cung cấp",
+            message: `Tạo nhà cung cấp mới “${nccForm.tenncc.trim()}”?`,
+            confirmText: "Thêm nhà cung cấp",
+            variant: "primary",
+        });
+        if (!accepted) return;
         setSavingNcc(true);
         try {
             const res = await api.post("/Nhacungcaps", nccForm);
@@ -296,6 +305,14 @@ export default function NhapHang() {
                 giabansitaithoidiemnhap: parseFloat(d.giabansidukien),
             })),
         };
+
+        const accepted = await confirm({
+            title: "Xác nhận nhập hàng",
+            message: `Lập phiếu nhập ${calculateTotalWeight().toLocaleString("vi-VN")} kg hàng với tổng tiền ${calculateTotalImportMoney().toLocaleString("vi-VN")} VNĐ?`,
+            confirmText: "Nhập hàng",
+            variant: "primary",
+        });
+        if (!accepted) return;
 
         try {
             await api.post("/Phieunhaps", payload);
@@ -454,7 +471,7 @@ export default function NhapHang() {
                             </div>
                             <div className="col-span-2">
                                 <label className="text-xs font-bold text-slate-500 block mb-1.5">Giá Nhập</label>
-                                <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" placeholder="đ" value={currentDetail.gianhap} onChange={e => setCurrentDetail({ ...currentDetail, gianhap: e.target.value })} />
+                                <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none" placeholder="VNĐ" value={currentDetail.gianhap} onChange={e => setCurrentDetail({ ...currentDetail, gianhap: e.target.value })} />
                             </div>
                             <div className="col-span-2">
                                 <label className="text-xs font-bold text-slate-500 block mb-1.5">Giá Bán Lẻ</label>
@@ -542,9 +559,9 @@ export default function NhapHang() {
                                     <tr key={item.idTemp} className="hover:bg-slate-50/50">
                                         <td className="p-3 font-semibold text-slate-800">{item.sizeName}</td>
                                         <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{item.soluongnhap}</td>
-                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(item.gianhap).toLocaleString()}</td>
-                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(item.giabanledukien).toLocaleString()}</td>
-                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(item.giabansidukien).toLocaleString()}</td>
+                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(item.gianhap).toLocaleString("vi-VN")}</td>
+                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(item.giabanledukien).toLocaleString("vi-VN")}</td>
+                                        <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(item.giabansidukien).toLocaleString("vi-VN")}</td>
                                         <td className="p-3 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(item.soluongnhap * item.gianhap)}</td>
                                         <td className="p-3 text-center">
                                             <button

@@ -3,13 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function ThemBangGia() {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [products, setProducts] = useState([]);
+    const [submitting, setSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         idchitietcaban: location.state?.idchitietcaban
             ? String(location.state.idchitietcaban)
@@ -27,7 +30,15 @@ export default function ThemBangGia() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.idchitietcaban) { showToast("Vui lòng chọn sản phẩm!", "error"); return; }
+        const accepted = await confirm({
+            title: "Thiết lập giá bán mới",
+            message: "Lưu bảng giá mới và kết thúc hiệu lực của bảng giá hiện tại?",
+            confirmText: "Lưu bảng giá",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
+            setSubmitting(true);
             await api.post("/Banggias", {
                 idchitietcaban: parseInt(formData.idchitietcaban),
                 giabanle: parseFloat(formData.giabanle),
@@ -37,18 +48,26 @@ export default function ThemBangGia() {
             navigate("/admin/QuanLyBangGia");
         } catch (error) {
             showToast(`Lỗi: ${error.response?.data?.message || "Không thể lưu giá"}`, "error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
     return (
         <AdminLayout title="Thiết lập giá bán mới">
-            <div className="max-w-lg mx-auto">
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+            <div className="max-w-2xl mx-auto">
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-black overflow-hidden">
+                    <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                        <h3 className="font-bold text-lg text-white">Thiết lập giá bán mới</h3>
+                        <p className="text-xs text-cyan-50">Chọn sản phẩm và nhập mức giá có hiệu lực từ hôm nay.</p>
+                    </div>
+
+                    <div className="p-5 space-y-3">
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Chọn sản phẩm (Cá + Size)</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Chọn sản phẩm (Cá + Size)</label>
                         <select
                             required
-                            className="w-full p-3 border border-slate-200 rounded-xl bg-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none shadow-xs text-sm transition-all"
+                            className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none text-sm transition-all"
                             value={formData.idchitietcaban}
                             onChange={e => setFormData({ ...formData, idchitietcaban: e.target.value })}
                         >
@@ -59,34 +78,34 @@ export default function ThemBangGia() {
                         </select>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Giá Bán Lẻ</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Giá bán lẻ</label>
                             <div className="relative flex items-center">
                                 <input
                                     type="number" required min="1001" placeholder="0"
-                                    className="w-full p-3 pl-8 border border-slate-200 rounded-xl focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none font-mono font-bold text-slate-700 shadow-xs text-sm transition-all"
+                                    className="w-full p-2 pl-8 border border-slate-200 rounded-xl bg-slate-50 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none font-mono font-bold text-slate-700 text-sm transition-all"
                                     value={formData.giabanle}
                                     onChange={e => setFormData({ ...formData, giabanle: e.target.value })}
                                 />
-                                <span className="absolute left-3.5 font-bold text-slate-400 select-none text-sm">₫</span>
+                                <span className="absolute left-3.5 font-bold text-slate-400 select-none text-sm">VNĐ</span>
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Giá Bán Sỉ</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Giá bán sỉ</label>
                             <div className="relative flex items-center">
                                 <input
                                     type="number" required min="1001" placeholder="0"
-                                    className="w-full p-3 pl-8 border border-slate-200 rounded-xl focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none font-mono font-bold text-slate-700 shadow-xs text-sm transition-all"
+                                    className="w-full p-2 pl-8 border border-slate-200 rounded-xl bg-slate-50 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none font-mono font-bold text-slate-700 text-sm transition-all"
                                     value={formData.gibansi}
                                     onChange={e => setFormData({ ...formData, gibansi: e.target.value })}
                                 />
-                                <span className="absolute left-3.5 font-bold text-slate-400 select-none text-sm">₫</span>
+                                <span className="absolute left-3.5 font-bold text-slate-400 select-none text-sm">VNĐ</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-cyan-50/70 p-4 rounded-xl border border-cyan-100 flex items-start gap-3">
+                    <div className="bg-cyan-50 p-3 rounded-xl border border-black flex items-start gap-3">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-5 text-cyan-600 shrink-0 mt-0.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 0-.551-.657l-.403-.087a48 48 0 0 0-.195 0m0 0a9 9 0 1 1 12.728 0M12 20.25a8.25 8.25 0 1 0 0-16.5 8.25 8.25 0 0 0 0 16.5Zm-1.352-12.006A1.5 1.5 0 1 1 12 9.75a1.5 1.5 0 0 1-1.352-1.506Z" />
                         </svg>
@@ -96,10 +115,12 @@ export default function ThemBangGia() {
                         </p>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-                        <button type="button" onClick={() => navigate("/admin/QuanLyBangGia")} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium text-sm cursor-pointer">Hủy</button>
-                        <button type="submit" className="px-6 py-3 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 shadow-md shadow-cyan-200 transition-all active:scale-95 cursor-pointer text-sm">
-                            Xác nhận & Lưu Giá
+                    </div>
+
+                    <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                        <button type="button" disabled={submitting} onClick={() => navigate("/admin/QuanLyBangGia")} className="px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 disabled:opacity-50 text-sm cursor-pointer">Hủy</button>
+                        <button type="submit" disabled={submitting} className="px-6 py-2.5 border border-black bg-white text-cyan-800 font-bold rounded-xl hover:bg-cyan-50 shadow-sm disabled:bg-slate-200 disabled:text-slate-400 disabled:border-slate-300 transition-all cursor-pointer disabled:cursor-not-allowed text-sm">
+                            {submitting ? "Đang lưu..." : "Xác nhận & Lưu giá"}
                         </button>
                     </div>
                 </form>

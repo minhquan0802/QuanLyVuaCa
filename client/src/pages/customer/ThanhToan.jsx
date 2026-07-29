@@ -4,12 +4,14 @@ import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function Checkout() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { cart, totalPrice, clearCart } = useCart();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const isWholesale = user?.vaitro === "CUSTOMER";
 
@@ -50,6 +52,14 @@ export default function Checkout() {
             showToast("Số điện thoại không hợp lệ!", "error");
             return;
         }
+
+        const accepted = await confirm({
+            title: "Xác nhận đặt hàng",
+            message: `Đặt đơn hàng trị giá ${Number(totalPrice).toLocaleString("vi-VN")} VNĐ và giao đến “${shipInfo.diachi}”?`,
+            confirmText: "Đặt hàng",
+            variant: "primary",
+        });
+        if (!accepted) return;
 
         setLoading(true);
         try {
@@ -177,7 +187,7 @@ export default function Checkout() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between">
                                                     <p className="text-sm font-bold text-blue-900 truncate pr-2">{item.tenLoaiCa}</p>
-                                                    <p className="text-sm font-bold text-blue-600">{Number(item.thanhTien).toLocaleString()}đ</p>
+                                                    <p className="text-sm font-bold text-blue-600">{Number(item.thanhTien).toLocaleString("vi-VN")} VNĐ</p>
                                                 </div>
                                                 <p className="text-xs text-slate-500 mt-0.5">
                                                     {item.tenSize} • x{item.soluong} {item.tenDonViTinh}
@@ -191,11 +201,11 @@ export default function Checkout() {
                                 <div className="border-t border-dashed border-slate-300 pt-4 space-y-2">
                                     <div className="flex justify-between text-sm text-slate-500">
                                         <span>Tạm tính</span>
-                                        <span>{Number(totalPrice).toLocaleString()}đ</span>
+                                        <span>{Number(totalPrice).toLocaleString("vi-VN")} VNĐ</span>
                                     </div>
                                     <div className="flex justify-between text-lg font-bold text-blue-900 pt-2 border-t border-slate-100 mt-2">
                                         <span>Tổng cộng</span>
-                                        <span className="text-blue-600">{Number(totalPrice).toLocaleString()}đ</span>
+                                        <span className="text-blue-600">{Number(totalPrice).toLocaleString("vi-VN")} VNĐ</span>
                                     </div>
                                 </div>
 

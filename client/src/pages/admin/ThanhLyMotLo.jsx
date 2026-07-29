@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 // Trang thanh lý 1 lô hàng duy nhất (thay cho popup cũ).
 // idLo lấy từ URL, ví dụ /admin/QuanLyThanhLy/thanh-ly/abc-123
@@ -10,6 +11,7 @@ export default function ThanhLyMotLo() {
     const navigate = useNavigate();
     const { idLo } = useParams();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [lot, setLot] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -69,6 +71,14 @@ export default function ThanhLyMotLo() {
                 dongia: donGia,
             }],
         };
+
+        const accepted = await confirm({
+            title: "Xác nhận thanh lý lô hàng",
+            message: `Thanh lý ${soLuong} kg ${lot.tenLoaiCa} (${lot.tenSize})? Thao tác này sẽ làm thay đổi tồn kho.`,
+            confirmText: "Xác nhận thanh lý",
+            variant: "warning",
+        });
+        if (!accepted) return;
 
         setSubmitting(true);
         try {
@@ -204,7 +214,7 @@ export default function ThanhLyMotLo() {
 
                     <div className="flex justify-between items-center bg-cyan-50 border border-black rounded-xl p-2.5 text-sm">
                         <span className="text-slate-500">Thành tiền</span>
-                        <span className="font-bold text-slate-800 text-lg">{(Number(form.soluongthanhly || 0) * Number(form.dongia || 0)).toLocaleString()} VNĐ</span>
+                        <span className="font-bold text-slate-800 text-lg">{(Number(form.soluongthanhly || 0) * Number(form.dongia || 0)).toLocaleString("vi-VN")} VNĐ</span>
                     </div>
                 </div>
 

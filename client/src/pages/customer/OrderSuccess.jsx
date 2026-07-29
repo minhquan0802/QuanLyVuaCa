@@ -29,7 +29,7 @@ export default function OrderSuccess() {
                     <div className="bg-slate-50 p-4 rounded-xl mb-6">
                         <p className="flex justify-between text-sm mb-2">
                             <span className="text-slate-500">Tổng tiền:</span>
-                            <span className="font-bold text-slate-800">{amount.toLocaleString()}đ</span>
+                            <span className="font-bold text-slate-800">{amount.toLocaleString("vi-VN")} VNĐ</span>
                         </p>
                         <p className="flex justify-between text-sm">
                             <span className="text-slate-500">Trạng thái:</span>

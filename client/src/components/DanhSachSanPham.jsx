@@ -151,7 +151,7 @@ export default function ProductList({ searchTerm }) {
                                                 <div className="flex flex-col">
                                                     <span className="text-xs text-slate-400 font-medium uppercase">{priceInfo.label}:</span>
                                                     <p className="font-bold text-blue-600 text-xl">
-                                                        {Number(priceInfo.price).toLocaleString('vi-VN')}đ 
+                                                        {Number(priceInfo.price).toLocaleString('vi-VN')} VNĐ
                                                         <span className="text-sm font-normal text-slate-400 ml-1">/kg</span>
                                                     </p>
                                                 </div>

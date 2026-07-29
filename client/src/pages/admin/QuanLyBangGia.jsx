@@ -259,8 +259,8 @@ export default function QuanLyBangGia() {
                                         />
                                     </div>
                                 </th>
-                                <th className="p-4 text-right">Giá Bán Lẻ (vnđ)</th>
-                                <th className="p-4 text-right">Giá Bán Sỉ (vnđ)</th>
+                                <th className="p-4 text-right">Giá Bán Lẻ</th>
+                                <th className="p-4 text-right">Giá Bán Sỉ</th>
                                 <th className="p-4 text-center">Hiệu lực</th>
                                 <th className="p-4">
                                     <div className="flex items-center justify-between gap-3">
@@ -287,10 +287,10 @@ export default function QuanLyBangGia() {
                                             <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 whitespace-nowrap">{item.tenSize}</span>
                                         </td>
                                         <td className="p-4 text-right font-semibold tabular-nums text-slate-700">
-                                            {Number(item.giaBanLe).toLocaleString('vi-VN')}
+                                            {Number(item.giaBanLe).toLocaleString('vi-VN')} VNĐ
                                         </td>
                                         <td className="p-4 text-right font-semibold tabular-nums text-slate-700">
-                                            {Number(item.giaBanSi).toLocaleString('vi-VN')}
+                                            {Number(item.giaBanSi).toLocaleString('vi-VN')} VNĐ
                                         </td>
                                         <td className="p-4 text-center text-xs text-slate-500">
                                             <div className="flex flex-col gap-0.5 items-center">

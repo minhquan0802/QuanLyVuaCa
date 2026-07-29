@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
-const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + " VNĐ";
 
 export default function TaoDonHang() {
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [customerType, setCustomerType] = useState("LE"); // "LE" hoặc "SI"
     const [customerConfirmed, setCustomerConfirmed] = useState(false);
@@ -182,6 +184,13 @@ export default function TaoDonHang() {
                 tongtiendukien: item.total, tongtienthucte: item.total,
             })),
         };
+        const accepted = await confirm({
+            title: "Tạo đơn hàng",
+            message: `Tạo đơn hàng trị giá ${newOrderTotal.toLocaleString("vi-VN")} VNĐ? Tồn kho và công nợ liên quan sẽ được cập nhật.`,
+            confirmText: "Tạo đơn hàng",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
             await api.post("/Donhangs", payload);
             showToast("Tạo đơn hàng thành công!", "success");

@@ -657,7 +657,7 @@ export default function QuanLyThanhLy() {
                                                 <td className="p-4 font-semibold text-slate-800">{tenSanPham(item.listChiTiet)}</td>
                                                 <td className="p-4">{item.lydothanhly}</td>
                                                 <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{tinhTongSoLuong(item.listChiTiet)}</td>
-                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{tinhTongTien(item.listChiTiet).toLocaleString()}</td>
+                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{tinhTongTien(item.listChiTiet).toLocaleString("vi-VN")}</td>
                                                 <td className="p-4">
                                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${statusConfig.badge}`}>
                                                         {statusConfig.label}

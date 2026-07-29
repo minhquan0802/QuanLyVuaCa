@@ -168,11 +168,19 @@ export default function ThongTinDonHang() {
         if (payType === 'partial' && soTien < getMinPartial()) {
             await showAlert({
                 title: "Số tiền chưa đạt mức tối thiểu",
-                message: `Số tiền tối thiểu là 10% số còn nợ: ${getMinPartial().toLocaleString()}đ.`,
+                message: `Số tiền tối thiểu là 10% số còn nợ: ${getMinPartial().toLocaleString("vi-VN")} VNĐ.`,
                 variant: "warning",
             });
             return;
         }
+
+        const accepted = await confirm({
+            title: "Xác nhận thanh toán",
+            message: `Tiếp tục thanh toán ${soTien.toLocaleString("vi-VN")} VNĐ qua VNPAY?`,
+            confirmText: "Thanh toán",
+            variant: "primary",
+        });
+        if (!accepted) return;
 
         setPayLoading(true);
         try {
@@ -421,7 +429,7 @@ export default function ThongTinDonHang() {
                                                     {/* Giá của món này (Optional - hiển thị bên phải) */}
                                                     <div className="text-right flex flex-col justify-center">
                                                         <span className="text-sm font-medium text-slate-700">
-                                                            {(firstItem.tongtienthucte ?? firstItem.tongtiendukien ?? 0).toLocaleString()}đ
+                                                            {Number(firstItem.tongtienthucte ?? firstItem.tongtiendukien ?? 0).toLocaleString("vi-VN")} VNĐ
                                                         </span>
                                                     </div>
                                                 </>
@@ -445,7 +453,7 @@ export default function ThongTinDonHang() {
                                             <div className="flex justify-end items-center gap-2 mb-4">
                                                 <span className="text-sm text-slate-600">Thành tiền:</span>
                                                 <span className="text-lg font-bold text-blue-600">
-                                                    {order.tongtien ? order.tongtien.toLocaleString() : 0}₫
+                                                    {Number(order.tongtien || 0).toLocaleString("vi-VN")} VNĐ
                                                 </span>
                                             </div>
 
@@ -589,11 +597,11 @@ export default function ThongTinDonHang() {
                                                         </td>
                                                         <td className="p-3 text-right text-slate-400 text-xs">
                                                             {item.soluongkgthuctequydoi
-                                                                ? Math.round(item.tongtiendukien / item.soluongkgthuctequydoi).toLocaleString()
-                                                                : (item.dongia ?? 0).toLocaleString()}đ/kg
+                                                                ? Math.round(item.tongtiendukien / item.soluongkgthuctequydoi).toLocaleString("vi-VN")
+                                                                : Number(item.dongia ?? 0).toLocaleString("vi-VN")} VNĐ/kg
                                                         </td>
                                                         <td className="p-3 text-right font-bold text-slate-700">
-                                                            {(item.tongtienthucte ?? item.tongtiendukien ?? 0).toLocaleString()}đ
+                                                            {Number(item.tongtienthucte ?? item.tongtiendukien ?? 0).toLocaleString("vi-VN")} VNĐ
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -604,7 +612,7 @@ export default function ThongTinDonHang() {
                                     <div className="flex justify-between items-center pt-4 border-t border-dashed border-slate-200">
                                         <span className="font-bold text-slate-600">Tổng thanh toán:</span>
                                         <span className="font-display text-2xl font-bold text-blue-600">
-                                            {selectedOrder.tongtien ? selectedOrder.tongtien.toLocaleString() : 0}đ
+                                            {Number(selectedOrder.tongtien || 0).toLocaleString("vi-VN")} VNĐ
                                         </span>
                                     </div>
                                 </div>
@@ -646,15 +654,15 @@ export default function ThongTinDonHang() {
                                 <div className="grid grid-cols-3 gap-3 text-center">
                                     <div className="bg-slate-50 rounded-xl p-3">
                                         <p className="text-xs text-slate-400 mb-1">Tổng đơn</p>
-                                        <p className="font-bold text-slate-700">{Number(tinhTrang.tongTien).toLocaleString()}đ</p>
+                                        <p className="font-bold text-slate-700">{Number(tinhTrang.tongTien).toLocaleString("vi-VN")} VNĐ</p>
                                     </div>
                                     <div className="bg-green-50 rounded-xl p-3">
                                         <p className="text-xs text-green-500 mb-1">Đã trả</p>
-                                        <p className="font-bold text-green-600">{Number(tinhTrang.daTra).toLocaleString()}đ</p>
+                                        <p className="font-bold text-green-600">{Number(tinhTrang.daTra).toLocaleString("vi-VN")} VNĐ</p>
                                     </div>
                                     <div className="bg-red-50 rounded-xl p-3">
                                         <p className="text-xs text-red-400 mb-1">Còn nợ</p>
-                                        <p className="font-bold text-red-600">{Number(tinhTrang.conNo).toLocaleString()}đ</p>
+                                        <p className="font-bold text-red-600">{Number(tinhTrang.conNo).toLocaleString("vi-VN")} VNĐ</p>
                                     </div>
                                 </div>
                             ) : null}
@@ -670,9 +678,9 @@ export default function ThongTinDonHang() {
                                             {tinhTrang && Number(tinhTrang.conNo) <= 0 ? (
                                                 <p className="text-xs text-green-600">Đã thanh toán đầy đủ</p>
                                             ) : tinhTrang && Number(tinhTrang.conNo) < VNPAY_MIN ? (
-                                                <p className="text-xs text-orange-600">{VNPAY_MIN.toLocaleString()}đ <span className="text-slate-400">(tối thiểu VNPAY)</span></p>
+                                                <p className="text-xs text-orange-600">{VNPAY_MIN.toLocaleString("vi-VN")} VNĐ <span className="text-slate-400">(tối thiểu VNPAY)</span></p>
                                             ) : (
-                                                <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString() : 0}đ</p>
+                                                <p className="text-xs text-orange-600">{tinhTrang ? Number(tinhTrang.conNo).toLocaleString("vi-VN") : 0} VNĐ</p>
                                             )}
                                         </div>
                                     </label>
@@ -686,7 +694,7 @@ export default function ThongTinDonHang() {
                                 </div>
                                 {tinhTrang && Number(tinhTrang.conNo) > 0 && Number(tinhTrang.conNo) < VNPAY_MIN && payType === 'full' && (
                                     <p className="text-xs text-amber-600 mt-2">
-                                        Số nợ còn lại dưới 10,000đ — VNPAY yêu cầu tối thiểu 10,000đ. Phần dư sẽ được ghi nhận làm tín dụng cho đơn tiếp theo.
+                                        Số nợ còn lại dưới 10.000 VNĐ — VNPAY yêu cầu tối thiểu 10.000 VNĐ. Phần dư sẽ được ghi nhận làm tín dụng cho đơn tiếp theo.
                                     </p>
                                 )}
                                 {payType === 'partial' && (
@@ -700,7 +708,7 @@ export default function ThongTinDonHang() {
                                             min={getMinPartial()}
                                         />
                                         <p className="text-xs text-slate-400 mt-1">
-                                            Tối thiểu: <span className="font-semibold text-orange-500">{getMinPartial().toLocaleString()}đ</span>
+                                            Tối thiểu: <span className="font-semibold text-orange-500">{getMinPartial().toLocaleString("vi-VN")} VNĐ</span>
                                             {getMinPartial() === VNPAY_MIN && <span className="text-slate-400"> (giới hạn tối thiểu VNPAY)</span>}
                                         </p>
                                     </div>
@@ -729,7 +737,7 @@ export default function ThongTinDonHang() {
                                         {tinhTrang.lichSuThanhToan.filter(item => !(item.phuongthuc === 'VNPAY' && item.trangthai === 'CHO_XAC_NHAN')).map(item => (
                                             <div key={item.idthanhtoan} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
                                                 <div>
-                                                    <span className="font-medium">{Number(item.sotien).toLocaleString()}đ</span>
+                                                    <span className="font-medium">{Number(item.sotien).toLocaleString("vi-VN")} VNĐ</span>
                                                     <span className="text-slate-400 ml-2 text-xs">
                                                         ({item.phuongthuc === 'SO_DU' ? 'Số dư trả trước' : item.phuongthuc})
                                                     </span>

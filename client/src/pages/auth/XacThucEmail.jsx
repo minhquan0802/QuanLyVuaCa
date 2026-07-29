@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import api from "../../config/axios";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function XacThucEmail() {
+    const { confirm } = useConfirm();
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token");
 
@@ -89,6 +91,13 @@ export default function XacThucEmail() {
                             <button
                                 disabled={resending || !resendEmail}
                                 onClick={async () => {
+                                    const accepted = await confirm({
+                                        title: "Gửi lại email xác thực",
+                                        message: `Gửi liên kết xác thực mới đến “${resendEmail}”?`,
+                                        confirmText: "Gửi lại",
+                                        variant: "primary",
+                                    });
+                                    if (!accepted) return;
                                     setResending(true);
                                     try {
                                         await api.post(`/tai-khoan/resend-verification?email=${encodeURIComponent(resendEmail)}`);
