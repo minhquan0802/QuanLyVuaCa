@@ -2,11 +2,13 @@
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function Register() {
     const navigate = useNavigate();
 
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
@@ -40,6 +42,14 @@ export default function Register() {
             showToast(msg, "error");
             return;
         }
+
+        const accepted = await confirm({
+            title: "Đăng ký tài khoản",
+            message: `Tạo tài khoản mới với email “${email}”?`,
+            confirmText: "Đăng ký",
+            variant: "primary",
+        });
+        if (!accepted) return;
 
         setLoading(true);
 
@@ -128,6 +138,13 @@ export default function Register() {
                             <button
                                 disabled={resending}
                                 onClick={async () => {
+                                    const accepted = await confirm({
+                                        title: "Gửi lại email xác thực",
+                                        message: `Gửi liên kết xác thực mới đến “${email}”?`,
+                                        confirmText: "Gửi lại",
+                                        variant: "primary",
+                                    });
+                                    if (!accepted) return;
                                     setResending(true);
                                     try {
                                         await api.post(`/tai-khoan/resend-verification?email=${encodeURIComponent(email)}`);

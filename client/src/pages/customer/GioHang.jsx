@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -36,7 +36,7 @@ export default function Cart() {
             <div className="bg-slate-50 min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-slate-500 mb-4">Vui lòng đăng nhập để xem giỏ hàng.</p>
-                    <a href="/" className="px-6 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">Đăng nhập</a>
+                    <Link to="/login" className="px-6 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">Đăng nhập</Link>
                 </div>
             </div>
         );
@@ -110,14 +110,14 @@ export default function Cart() {
 
                                             {/* Đơn giá (quy về giá/kg) */}
                                             <div className="hidden md:block col-span-2 text-right text-sm text-slate-500">
-                                                <div className="font-medium text-slate-700">{Number(item.giaBan).toLocaleString("vi-VN")}đ</div>
+                                                <div className="font-medium text-slate-700">{Number(item.giaBan).toLocaleString("vi-VN")} VNĐ</div>
                                                 <div className="text-xs text-slate-400">/kg</div>
                                             </div>
 
                                             {/* Thành tiền + Xóa */}
                                             <div className="col-span-3 flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-slate-100 pt-4 md:pt-0 mt-2 md:mt-0">
                                                 <div className="text-right">
-                                                    <span className="font-bold text-blue-600 text-lg block">{Number(item.thanhTien).toLocaleString("vi-VN")}đ</span>
+                                                    <span className="font-bold text-blue-600 text-lg block">{Number(item.thanhTien).toLocaleString("vi-VN")} VNĐ</span>
                                                     {item.khoiluongDuKien > 0 && (
                                                         <span className="text-[10px] text-slate-400">(~{item.khoiluongDuKien.toFixed(1)} kg)</span>
                                                     )}
@@ -139,7 +139,7 @@ export default function Cart() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between text-sm text-slate-500">
                                         <span>Tạm tính</span>
-                                        <span className="font-medium text-slate-700">{Number(totalPrice).toLocaleString("vi-VN")}đ</span>
+                                        <span className="font-medium text-slate-700">{Number(totalPrice).toLocaleString("vi-VN")} VNĐ</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-slate-500">
                                         <span>Phí vận chuyển</span>
@@ -148,7 +148,7 @@ export default function Cart() {
                                     <div className="pt-4 border-t border-slate-100">
                                         <div className="flex justify-between items-end">
                                             <span className="font-bold text-blue-900">Tổng cộng</span>
-                                            <span className="font-display text-2xl font-bold text-blue-600">{Number(totalPrice).toLocaleString("vi-VN")}đ</span>
+                                            <span className="font-display text-2xl font-bold text-blue-600">{Number(totalPrice).toLocaleString("vi-VN")} VNĐ</span>
                                         </div>
                                         <p className="text-xs text-slate-400 mt-2 text-right">(Chưa bao gồm phí vận chuyển)</p>
                                     </div>

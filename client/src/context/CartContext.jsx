@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useMemo } from "react";
 import { useToast } from "./ToastContext";
 import { useAuth } from "./AuthContext";
+import { useConfirm } from "./ConfirmContext";
 import api from "../config/axios";
 
 const CartContext = createContext(null);
@@ -9,6 +10,7 @@ export function CartProvider({ children }) {
     const [gioHang, setGioHang] = useState(null);
     const { user, loading: authLoading } = useAuth();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     // Load giỏ hàng từ API khi user đăng nhập
     useEffect(() => {
@@ -26,6 +28,13 @@ export function CartProvider({ children }) {
             showToast("Vui lòng đăng nhập để thêm vào giỏ hàng!", "error");
             return false;
         }
+        const accepted = await confirm({
+            title: "Thêm vào giỏ hàng",
+            message: `Thêm ${tenSanPham || "sản phẩm này"} vào giỏ hàng?`,
+            confirmText: "Thêm vào giỏ",
+            variant: "primary",
+        });
+        if (!accepted) return false;
         try {
             const { data } = await api.post("/gio-hang/items", { idchitietcaban, iddonvitinh, soluong });
             setGioHang(data.result);
@@ -39,6 +48,13 @@ export function CartProvider({ children }) {
 
     // Cập nhật số lượng (soluong = 0 → xóa)
     const updateQuantity = async (idchitietgiohang, soluong) => {
+        const accepted = await confirm({
+            title: "Cập nhật giỏ hàng",
+            message: `Đổi số lượng sản phẩm trong giỏ thành ${soluong}?`,
+            confirmText: "Cập nhật",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
             const { data } = await api.put(`/gio-hang/items/${idchitietgiohang}`, { soluong });
             setGioHang(data.result);
@@ -49,6 +65,13 @@ export function CartProvider({ children }) {
 
     // Xóa 1 sản phẩm
     const removeFromCart = async (idchitietgiohang, tenSanPham) => {
+        const accepted = await confirm({
+            title: "Xóa khỏi giỏ hàng",
+            message: `Xóa ${tenSanPham || "sản phẩm này"} khỏi giỏ hàng?`,
+            confirmText: "Xóa",
+            variant: "danger",
+        });
+        if (!accepted) return;
         try {
             const { data } = await api.delete(`/gio-hang/items/${idchitietgiohang}`);
             setGioHang(data.result);

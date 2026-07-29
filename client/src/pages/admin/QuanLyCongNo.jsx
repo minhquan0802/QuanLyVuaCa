@@ -4,6 +4,7 @@ import ColumnFilter from "../../components/admin/ColumnFilter";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 function trangThaiCongNo(khach) {
     if (khach.dangBiKhoa) return { value: "BI_KHOA", label: "Bị khóa", badge: "bg-slate-800 text-white border-slate-800" };
@@ -26,6 +27,7 @@ const DEBT_STATUS_OPTIONS = [
 
 export default function QuanLyCongNo() {
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
     const { user } = useAuth();
     const isAdmin = user?.vaitro === "ADMIN";
 
@@ -91,6 +93,13 @@ export default function QuanLyCongNo() {
         if (!hanMucModal.idtaikhoan) { showToast("Vui lòng chọn khách hàng!", "error"); return; }
         const han = Number(hanMucInput);
         if (!han || han <= 0) { showToast("Hạn mức tín dụng phải lớn hơn 0!", "error"); return; }
+        const accepted = await confirm({
+            title: hanMucModal.laMoMoi ? "Mở công nợ" : "Sửa hạn mức tín dụng",
+            message: `Áp dụng hạn mức ${han.toLocaleString("vi-VN")} VNĐ cho khách hàng này?`,
+            confirmText: "Xác nhận",
+            variant: "primary",
+        });
+        if (!accepted) return;
 
         setSubmitting(true);
         try {
@@ -115,6 +124,13 @@ export default function QuanLyCongNo() {
         const sotien = Number(dieuChinhForm.sotien);
         if (!sotien || sotien <= 0) { showToast("Số tiền phải lớn hơn 0!", "error"); return; }
         if (!dieuChinhForm.ghichu.trim()) { showToast("Vui lòng nhập lý do điều chỉnh!", "error"); return; }
+        const accepted = await confirm({
+            title: "Điều chỉnh công nợ",
+            message: `${dieuChinhForm.tang ? "Cộng" : "Trừ"} ${sotien.toLocaleString("vi-VN")} VNĐ vào công nợ của “${dieuChinhModal.ten}”?`,
+            confirmText: "Xác nhận điều chỉnh",
+            variant: dieuChinhForm.tang ? "warning" : "primary",
+        });
+        if (!accepted) return;
 
         setSubmitting(true);
         try {
@@ -138,6 +154,13 @@ export default function QuanLyCongNo() {
 
     const handleSubmitMoKhoa = async () => {
         if (!moKhoaGhiChu.trim()) { showToast("Vui lòng nhập lý do mở khóa!", "error"); return; }
+        const accepted = await confirm({
+            title: "Mở khóa đặt hàng",
+            message: `Cho phép “${moKhoaModal.ten}” tiếp tục đặt hàng?`,
+            confirmText: "Mở khóa",
+            variant: "warning",
+        });
+        if (!accepted) return;
 
         setSubmitting(true);
         try {
@@ -262,12 +285,12 @@ export default function QuanLyCongNo() {
                                                 <p className="text-xs text-slate-400">{khach.email}</p>
                                             </td>
                                             <td className="p-4 font-mono text-slate-500">{khach.sodienthoai || "-"}</td>
-                                            <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(khach.hanmuctindung).toLocaleString()}đ</td>
+                                            <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(khach.hanmuctindung).toLocaleString("vi-VN")} VNĐ</td>
                                             <td className="p-4 text-right font-bold tabular-nums">
                                                 {congno < 0 ? (
-                                                    <span className="text-green-600">{Math.abs(congno).toLocaleString()}đ (dư trả trước)</span>
+                                                    <span className="text-green-600">{Math.abs(congno).toLocaleString("vi-VN")} VNĐ (dư trả trước)</span>
                                                 ) : (
-                                                    <span className="text-red-600">{congno.toLocaleString()}đ</span>
+                                                    <span className="text-red-600">{congno.toLocaleString("vi-VN")} VNĐ</span>
                                                 )}
                                             </td>
                                             <td className="p-4">
@@ -330,18 +353,19 @@ export default function QuanLyCongNo() {
             {/* MODAL: Mở mới / Sửa hạn mức */}
             {hanMucModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                            <h3 className="font-bold text-lg text-slate-800">
+                    <div className="bg-white rounded-2xl border border-black shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                            <h3 className="font-bold text-lg text-white">
                                 {hanMucModal.laMoMoi ? "Mở công nợ cho khách mới" : `Sửa hạn mức — ${hanMucModal.ten}`}
                             </h3>
+                            <p className="text-xs text-cyan-50">Thiết lập hạn mức tín dụng được phép sử dụng.</p>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-5 space-y-3">
                             {hanMucModal.laMoMoi && (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Chọn khách hàng</label>
                                     <select
-                                        className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none"
+                                        className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                                         value={hanMucModal.idtaikhoan}
                                         onChange={e => setHanMucModal({ ...hanMucModal, idtaikhoan: e.target.value })}
                                     >
@@ -356,16 +380,16 @@ export default function QuanLyCongNo() {
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Hạn mức tín dụng (đ)</label>
                                 <input
                                     type="number"
-                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none"
+                                    className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                                     value={hanMucInput}
                                     onChange={e => setHanMucInput(e.target.value)}
                                     placeholder="Ví dụ: 5000000"
                                 />
                             </div>
                         </div>
-                        <div className="p-4 border-t border-slate-200 flex justify-end gap-3">
-                            <button onClick={() => setHanMucModal(null)} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm">Hủy</button>
-                            <button onClick={handleSubmitHanMuc} disabled={submitting} className={`px-6 py-2.5 font-bold rounded-xl text-sm ${submitting ? "bg-slate-200 text-slate-400" : "bg-cyan-600 text-white hover:bg-cyan-700"}`}>
+                        <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                            <button onClick={() => setHanMucModal(null)} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 disabled:opacity-50 text-sm">Hủy</button>
+                            <button onClick={handleSubmitHanMuc} disabled={submitting} className={`px-6 py-2.5 font-bold rounded-xl border text-sm ${submitting ? "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed" : "bg-white text-cyan-800 border-black hover:bg-cyan-50 shadow-sm"}`}>
                                 {submitting ? "Đang xử lý..." : "Lưu"}
                             </button>
                         </div>
@@ -376,11 +400,12 @@ export default function QuanLyCongNo() {
             {/* MODAL: Điều chỉnh công nợ thủ công */}
             {dieuChinhModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                            <h3 className="font-bold text-lg text-slate-800">Điều chỉnh công nợ — {dieuChinhModal.ten}</h3>
+                    <div className="bg-white rounded-2xl border border-black shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                            <h3 className="font-bold text-lg text-white">Điều chỉnh công nợ — {dieuChinhModal.ten}</h3>
+                            <p className="text-xs text-cyan-50">Chọn loại điều chỉnh, nhập số tiền và lý do.</p>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-5 space-y-3">
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setDieuChinhForm({ ...dieuChinhForm, tang: true })}
@@ -399,7 +424,7 @@ export default function QuanLyCongNo() {
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Số tiền (đ)</label>
                                 <input
                                     type="number"
-                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none"
+                                    className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                                     value={dieuChinhForm.sotien}
                                     onChange={e => setDieuChinhForm({ ...dieuChinhForm, sotien: e.target.value })}
                                 />
@@ -407,16 +432,16 @@ export default function QuanLyCongNo() {
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Lý do (bắt buộc)</label>
                                 <textarea
-                                    className="w-full p-2.5 border border-slate-200 rounded-xl resize-none h-20 text-sm outline-none"
+                                    className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 resize-none h-20 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                                     placeholder="Chiết khấu cuối tháng, bồi thường, làm tròn số lẻ..."
                                     value={dieuChinhForm.ghichu}
                                     onChange={e => setDieuChinhForm({ ...dieuChinhForm, ghichu: e.target.value })}
                                 />
                             </div>
                         </div>
-                        <div className="p-4 border-t border-slate-200 flex justify-end gap-3">
-                            <button onClick={() => setDieuChinhModal(null)} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm">Hủy</button>
-                            <button onClick={handleSubmitDieuChinh} disabled={submitting} className={`px-6 py-2.5 font-bold rounded-xl text-sm ${submitting ? "bg-slate-200 text-slate-400" : "bg-cyan-600 text-white hover:bg-cyan-700"}`}>
+                        <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                            <button onClick={() => setDieuChinhModal(null)} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 disabled:opacity-50 text-sm">Hủy</button>
+                            <button onClick={handleSubmitDieuChinh} disabled={submitting} className={`px-6 py-2.5 font-bold rounded-xl border text-sm ${submitting ? "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed" : "bg-white text-cyan-800 border-black hover:bg-cyan-50 shadow-sm"}`}>
                                 {submitting ? "Đang xử lý..." : "Xác nhận"}
                             </button>
                         </div>
@@ -427,24 +452,25 @@ export default function QuanLyCongNo() {
             {/* MODAL: Mở khóa thủ công */}
             {moKhoaModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                            <h3 className="font-bold text-lg text-slate-800">Mở khóa đặt hàng — {moKhoaModal.ten}</h3>
+                    <div className="bg-white rounded-2xl border border-black shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                            <h3 className="font-bold text-lg text-white">Mở khóa đặt hàng — {moKhoaModal.ten}</h3>
+                            <p className="text-xs text-cyan-50">Ghi rõ lý do cho phép khách hàng tiếp tục đặt hàng.</p>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-5 space-y-3">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Lý do (bắt buộc)</label>
                                 <textarea
-                                    className="w-full p-2.5 border border-slate-200 rounded-xl resize-none h-20 text-sm outline-none"
+                                    className="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 resize-none h-20 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                                     placeholder="Khách đã hứa thanh toán, trường hợp đặc biệt..."
                                     value={moKhoaGhiChu}
                                     onChange={e => setMoKhoaGhiChu(e.target.value)}
                                 />
                             </div>
                         </div>
-                        <div className="p-4 border-t border-slate-200 flex justify-end gap-3">
-                            <button onClick={() => setMoKhoaModal(null)} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 text-sm">Hủy</button>
-                            <button onClick={handleSubmitMoKhoa} disabled={submitting} className={`px-6 py-2.5 font-bold rounded-xl text-sm ${submitting ? "bg-slate-200 text-slate-400" : "bg-cyan-600 text-white hover:bg-cyan-700"}`}>
+                        <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                            <button onClick={() => setMoKhoaModal(null)} disabled={submitting} className="px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 disabled:opacity-50 text-sm">Hủy</button>
+                            <button onClick={handleSubmitMoKhoa} disabled={submitting} className={`px-6 py-2.5 font-bold rounded-xl border text-sm ${submitting ? "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed" : "bg-white text-cyan-800 border-black hover:bg-cyan-50 shadow-sm"}`}>
                                 {submitting ? "Đang xử lý..." : "Xác nhận mở khóa"}
                             </button>
                         </div>
@@ -455,10 +481,13 @@ export default function QuanLyCongNo() {
             {/* MODAL: Lịch sử biến động công nợ */}
             {lichSuModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <h3 className="font-bold text-lg text-slate-800">Lịch sử công nợ — {lichSuModal.ten}</h3>
-                            <button onClick={() => setLichSuModal(null)} className="text-slate-400 hover:text-red-500">
+                    <div className="bg-white rounded-2xl border border-black shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="px-6 py-4 border-b border-black flex justify-between items-center bg-cyan-600">
+                            <div>
+                                <h3 className="font-bold text-lg text-white">Lịch sử công nợ — {lichSuModal.ten}</h3>
+                                <p className="text-xs text-cyan-50">Theo dõi toàn bộ biến động và số dư sau giao dịch.</p>
+                            </div>
+                            <button onClick={() => setLichSuModal(null)} className="text-cyan-50 hover:text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-5">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                                 </svg>
@@ -484,8 +513,8 @@ export default function QuanLyCongNo() {
                                             <tr key={ls.idlichsucongno} className="hover:bg-slate-50/50">
                                                 <td className="p-3 text-slate-500 whitespace-nowrap">{new Date(ls.ngaytao).toLocaleString('vi-VN')}</td>
                                                 <td className="p-3 font-semibold text-slate-800">{LOAI_LABEL[ls.loaithaydoi] || ls.loaithaydoi}</td>
-                                                <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(ls.sotien).toLocaleString()}đ</td>
-                                                <td className="p-3 text-right font-bold tabular-nums text-cyan-700">{Number(ls.sodusaukhithaydoi).toLocaleString()}đ</td>
+                                                <td className="p-3 text-right font-semibold tabular-nums text-slate-700">{Number(ls.sotien).toLocaleString("vi-VN")} VNĐ</td>
+                                                <td className="p-3 text-right font-bold tabular-nums text-cyan-700">{Number(ls.sodusaukhithaydoi).toLocaleString("vi-VN")} VNĐ</td>
                                                 <td className="p-3 text-slate-500">{ls.tenNguoiThucHien || "Hệ thống"}</td>
                                                 <td className="p-3 text-slate-500">{ls.ghichu || "-"}</td>
                                             </tr>

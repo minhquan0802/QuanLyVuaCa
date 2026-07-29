@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const NEW_SIZE_SENTINEL = "__NEW__";
 
@@ -12,6 +13,7 @@ export default function ThemSuaLoaiCa() {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [isSaving, setIsSaving] = useState(false);
     const [currentCategory, setCurrentCategory] = useState({ tenloaica: "", mieuta: "", hinhanhurl: "" });
@@ -64,6 +66,15 @@ export default function ThemSuaLoaiCa() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const accepted = await confirm({
+            title: isEditing ? "Cập nhật loại cá" : "Thêm loại cá mới",
+            message: isEditing
+                ? `Lưu các thay đổi của “${currentCategory.tenloaica}”?`
+                : `Tạo loại cá “${currentCategory.tenloaica}” cùng các kích cỡ đã khai báo?`,
+            confirmText: isEditing ? "Lưu thay đổi" : "Thêm loại cá",
+            variant: "primary",
+        });
+        if (!accepted) return;
         setIsSaving(true);
         try {
             const formData = new FormData();
@@ -113,29 +124,40 @@ export default function ThemSuaLoaiCa() {
 
     return (
         <AdminLayout title={isEditing ? "Cập nhật Loại Cá" : "Thêm Loại Cá Mới"}>
-            <div className="max-w-lg mx-auto">
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xs ring-1 ring-slate-200 p-6 space-y-4">
+            <div className="max-w-2xl mx-auto">
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-black overflow-hidden">
+                    <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                        <h3 className="font-bold text-lg text-white">
+                            {isEditing ? "Cập nhật thông tin loại cá" : "Thêm loại cá mới"}
+                        </h3>
+                        <p className="text-xs text-cyan-50">
+                            {isEditing
+                                ? "Điều chỉnh tên, hình ảnh và mô tả của loại cá."
+                                : "Nhập thông tin loại cá và cấu hình kích cỡ ban đầu."}
+                        </p>
+                    </div>
 
+                    <div className="p-5 space-y-3">
                     {/* Tên loại cá */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Tên loại cá <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tên loại cá <span className="text-red-500">*</span></label>
                         <input
                             type="text"
                             required
                             value={currentCategory.tenloaica}
                             onChange={(e) => setCurrentCategory({ ...currentCategory, tenloaica: e.target.value })}
-                            className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all bg-white"
+                            className="w-full p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all bg-slate-50"
                             placeholder="VD: Cá Trắm, Cá Basa..."
                         />
                     </div>
 
                     {/* Hình ảnh */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Hình ảnh minh họa</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Hình ảnh minh họa</label>
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="relative w-full h-44 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:border-cyan-400 hover:bg-cyan-50/10 transition-all overflow-hidden group"
+                            className="relative w-full h-44 rounded-xl border border-black bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-cyan-50 transition-all overflow-hidden group"
                         >
                             {(imagePreview || (isEditing && currentCategory.hinhanhurl)) ? (
                                 <>
@@ -158,27 +180,27 @@ export default function ThemSuaLoaiCa() {
 
                     {/* Miêu tả */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Miêu tả ngắn</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Miêu tả ngắn</label>
                         <textarea
                             rows="3"
                             value={currentCategory.mieuta || ""}
                             onChange={(e) => setCurrentCategory({ ...currentCategory, mieuta: e.target.value })}
-                            className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none resize-none bg-white"
+                            className="w-full p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none resize-none bg-slate-50"
                             placeholder="Thông tin chi tiết về loại cá..."
                         />
                     </div>
 
                     {/* SIZE + KG — chỉ hiện khi CREATE */}
                     {!isEditing && (
-                        <div className="pt-3 border-t border-slate-100">
+                        <div className="pt-3 border-t border-slate-200">
                             <div className="flex items-center justify-between mb-3">
-                                <label className="text-sm font-bold text-slate-700">Kích cỡ &amp; Quy đổi kg</label>
+                                <label className="text-xs font-bold text-slate-500 uppercase">Kích cỡ &amp; Quy đổi kg</label>
                                 <span className="text-xs text-slate-400 italic">Không bắt buộc, có thể thêm sau</span>
                             </div>
 
                             <div className="space-y-2">
                                 {sizeRows.map((row, index) => (
-                                    <div key={index} className="flex gap-2 items-center">
+                                    <div key={index} className="flex gap-2 items-center rounded-xl border border-slate-200 bg-slate-50 p-2">
                                         {/* Size: dropdown hoặc input tạo mới */}
                                         {row.sizeId === NEW_SIZE_SENTINEL ? (
                                             <input
@@ -186,14 +208,14 @@ export default function ThemSuaLoaiCa() {
                                                 value={row.newSizeName}
                                                 onChange={(e) => updateSizeRow(index, 'newSizeName', e.target.value)}
                                                 placeholder="Tên size mới..."
-                                                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-cyan-300 focus:border-cyan-500 outline-none"
+                                                className="flex-1 p-2 text-sm rounded-xl border border-cyan-300 focus:border-cyan-500 outline-none bg-white"
                                                 autoFocus
                                             />
                                         ) : (
                                             <select
                                                 value={row.sizeId}
                                                 onChange={(e) => updateSizeRow(index, 'sizeId', e.target.value)}
-                                                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-cyan-500 outline-none bg-white"
+                                                className="flex-1 p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none bg-white"
                                             >
                                                 <option value="">-- Chọn size --</option>
                                                 {allGlobalSizes.map(s => (
@@ -211,7 +233,7 @@ export default function ThemSuaLoaiCa() {
                                             value={row.kg}
                                             onChange={(e) => updateSizeRow(index, 'kg', e.target.value)}
                                             placeholder="kg/con"
-                                            className="w-24 px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-cyan-500 outline-none text-center"
+                                            className="w-24 p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none text-center bg-white"
                                         />
 
                                         {/* Quay về dropdown nếu đang nhập tên mới */}
@@ -254,14 +276,15 @@ export default function ThemSuaLoaiCa() {
                             </button>
                         </div>
                     )}
+                    </div>
 
                     {/* Buttons */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                        <button type="button" onClick={() => navigate("/admin/QuanLyLoaiCa")} disabled={isSaving} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium disabled:opacity-50 text-sm cursor-pointer">
+                    <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                        <button type="button" onClick={() => navigate("/admin/QuanLyLoaiCa")} disabled={isSaving} className="px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 disabled:opacity-50 text-sm cursor-pointer">
                             Hủy
                         </button>
-                        <button type="submit" disabled={isSaving} className="px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 shadow-md shadow-cyan-100 disabled:opacity-60 flex items-center gap-2 text-sm cursor-pointer">
-                            {isSaving && <div className="size-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                        <button type="submit" disabled={isSaving} className="px-6 py-2.5 rounded-xl border border-black bg-white text-cyan-800 font-bold hover:bg-cyan-50 shadow-sm disabled:bg-slate-200 disabled:text-slate-400 disabled:border-slate-300 flex items-center gap-2 text-sm cursor-pointer disabled:cursor-not-allowed">
+                            {isSaving && <div className="size-3.5 border-2 border-cyan-200 border-t-cyan-700 rounded-full animate-spin" />}
                             {isSaving ? "Đang lưu..." : (isEditing ? "Lưu thay đổi" : "Thêm mới")}
                         </button>
                     </div>

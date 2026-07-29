@@ -24,6 +24,7 @@ import QuanLyBangGia from '../pages/admin/QuanLyBangGia';
 import QuanLyKho from '../pages/admin/QuanLyKho';
 import ThemSuaLoaiCa from '../pages/admin/ThemSuaLoaiCa';
 import KichCoLoaiCa from '../pages/admin/KichCoLoaiCa';
+import MoLaiLoaiCa from '../pages/admin/MoLaiLoaiCa';
 import ThemSuaTaiKhoan from '../pages/admin/ThemSuaTaiKhoan';
 import ThemBangGia from '../pages/admin/ThemBangGia';
 import TaoDonHang from '../pages/admin/TaoDonHang';
@@ -79,6 +80,7 @@ export default function AppRoutes() {
                 <Route path='/admin/QuanLyLoaiCa/them' element={<ThemSuaLoaiCa />} />
                 <Route path='/admin/QuanLyLoaiCa/sua/:id' element={<ThemSuaLoaiCa />} />
                 <Route path='/admin/QuanLyLoaiCa/kich-co/:loaicaId' element={<KichCoLoaiCa />} />
+                <Route path='/admin/QuanLyLoaiCa/mo-lai/:id' element={<MoLaiLoaiCa />} />
                 <Route path='/admin/QuanLyTaiKhoan' element={<QuanLyTaiKhoan />} />
                 <Route path='/admin/QuanLyTaiKhoan/them' element={<ThemSuaTaiKhoan />} />
                 <Route path='/admin/QuanLyTaiKhoan/sua/:id' element={<ThemSuaTaiKhoan />} />

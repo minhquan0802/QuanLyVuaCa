@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../config/axios";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function QuenMatKhau() {
+    const { confirm } = useConfirm();
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState("idle"); // idle | loading | success | error
     const [errorMsg, setErrorMsg] = useState("");
@@ -10,6 +12,14 @@ export default function QuenMatKhau() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!email) return;
+
+        const accepted = await confirm({
+            title: "Yêu cầu đặt lại mật khẩu",
+            message: `Gửi liên kết đặt lại mật khẩu đến “${email}”?`,
+            confirmText: "Gửi liên kết",
+            variant: "primary",
+        });
+        if (!accepted) return;
 
         setStatus("loading");
         setErrorMsg("");

@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const THANHTOAN_STATUS = {
     "CHUA_THANH_TOAN": { label: "Chưa thanh toán", badge: "bg-orange-50 text-orange-700 border-orange-200" },
     "DA_THANH_TOAN":   { label: "Đã thanh toán",   badge: "bg-green-50 text-green-700 border-green-200"  },
 };
 
-const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + "đ";
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + " VNĐ";
 
 function SortTh({ label, sortKey, current, onSort, className = "" }) {
     return (
@@ -23,13 +24,13 @@ function SortTh({ label, sortKey, current, onSort, className = "" }) {
 
 export default function LichSuPhieuNhap() {
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
 
     const [phieus, setPhieus] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [sort, setSort] = useState({ key: "ngaynhap", direction: "desc" });
-    const [confirmId, setConfirmId] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
     const pageSize = 10;
@@ -78,11 +79,17 @@ export default function LichSuPhieuNhap() {
     };
 
     const handleMarkPaid = async (id) => {
+        const accepted = await confirm({
+            title: "Xác nhận thanh toán phiếu nhập",
+            message: "Ghi nhận phiếu nhập này đã được thanh toán? Trạng thái công nợ nhà cung cấp sẽ thay đổi.",
+            confirmText: "Đã thanh toán",
+            variant: "primary",
+        });
+        if (!accepted) return;
         setSubmitting(true);
         try {
             await api.patch(`/Phieunhaps/${id}/thanh-toan`);
             showToast("Đã cập nhật trạng thái thanh toán!", "success");
-            setConfirmId(null);
             fetchPhieus();
         } catch {
             showToast("Có lỗi xảy ra, vui lòng thử lại!", "error");
@@ -137,7 +144,6 @@ export default function LichSuPhieuNhap() {
                             ) : paginated.length > 0 ? (
                                 paginated.map(p => {
                                     const status = THANHTOAN_STATUS[p.trangthaithanhtoan] || { label: p.trangthaithanhtoan, badge: "bg-gray-50 text-gray-600 border-slate-200" };
-                                    const isConfirming = confirmId === p.idphieunhap;
                                     const isExpanded = expandedId === p.idphieunhap;
                                     const hasDetail = p.listChiTiet && p.listChiTiet.length > 0;
                                     return (
@@ -158,7 +164,7 @@ export default function LichSuPhieuNhap() {
                                                 <td className="p-4 font-semibold text-slate-800">{p.tenNhaCungCap}</td>
                                                 <td className="p-4 font-semibold text-slate-800">{p.tenLoaiCa}</td>
                                                 <td className="p-4 text-slate-600">{p.tenNguoiTaoPhieu || "—"}</td>
-                                                <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(p.tongsoluong || 0).toLocaleString()}</td>
+                                                <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{Number(p.tongsoluong || 0).toLocaleString("vi-VN")}</td>
                                                 <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(p.tongtien)}</td>
                                                 <td className="p-4">
                                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${status.badge}`}>
@@ -167,31 +173,13 @@ export default function LichSuPhieuNhap() {
                                                 </td>
                                                 <td className="p-4 text-center">
                                                     {p.trangthaithanhtoan === "CHUA_THANH_TOAN" ? (
-                                                        isConfirming ? (
-                                                            <div className="flex items-center justify-center gap-2">
-                                                                <button
-                                                                    onClick={() => handleMarkPaid(p.idphieunhap)}
-                                                                    disabled={submitting}
-                                                                    className="px-3 py-1.5 bg-green-600 text-white font-bold rounded-lg text-xs hover:bg-green-700 disabled:opacity-50 transition-colors"
-                                                                >
-                                                                    {submitting ? "..." : "Xác nhận"}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setConfirmId(null)}
-                                                                    disabled={submitting}
-                                                                    className="px-3 py-1.5 border border-slate-200 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-50 transition-colors"
-                                                                >
-                                                                    Hủy
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => setConfirmId(p.idphieunhap)}
-                                                                className="px-3.5 py-1.5 bg-orange-50 text-orange-600 border border-orange-200 font-bold rounded-lg text-xs hover:bg-orange-100 transition-colors"
-                                                            >
-                                                                Thanh toán
-                                                            </button>
-                                                        )
+                                                        <button
+                                                            onClick={() => handleMarkPaid(p.idphieunhap)}
+                                                            disabled={submitting}
+                                                            className="px-3.5 py-1.5 bg-orange-50 text-orange-600 border border-orange-200 font-bold rounded-lg text-xs hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                                                        >
+                                                            {submitting ? "..." : "Thanh toán"}
+                                                        </button>
                                                     ) : (
                                                         <span className="text-xs text-slate-400">—</span>
                                                     )}
@@ -215,7 +203,7 @@ export default function LichSuPhieuNhap() {
                                                                 {p.listChiTiet.map((ct, idx) => (
                                                                     <tr key={idx} className="text-slate-700">
                                                                         <td className="py-1.5 font-semibold">{ct.tenSize}</td>
-                                                                        <td className="py-1.5 text-right font-semibold tabular-nums">{Number(ct.soluongnhap || 0).toLocaleString()}</td>
+                                                                        <td className="py-1.5 text-right font-semibold tabular-nums">{Number(ct.soluongnhap || 0).toLocaleString("vi-VN")}</td>
                                                                         <td className="py-1.5 text-right font-semibold tabular-nums">{formatCurrency(ct.gianhap)}</td>
                                                                         <td className="py-1.5 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
                                                                     </tr>

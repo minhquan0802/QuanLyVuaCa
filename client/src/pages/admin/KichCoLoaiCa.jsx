@@ -56,14 +56,28 @@ export default function KichCoLoaiCa() {
             return;
         }
 
+        if (isCreatingNew) {
+            if (!newSizeName.trim()) { showToast("Vui lòng nhập tên kích thước!", "error"); return; }
+        } else if (!selectedSizeId) {
+            showToast("Vui lòng chọn kích thước có sẵn!", "error");
+            return;
+        }
+
+        const accepted = await confirm({
+            title: isCreatingNew ? "Tạo kích cỡ mới" : "Áp dụng kích cỡ",
+            message: isCreatingNew
+                ? `Tạo kích cỡ “${newSizeName.trim()}” và áp dụng cho loại cá này?`
+                : "Áp dụng kích cỡ đã chọn cùng số kg quy đổi?",
+            confirmText: isCreatingNew ? "Tạo và áp dụng" : "Áp dụng",
+            variant: "primary",
+        });
+        if (!accepted) return;
+
         try {
             let sizeIdToAdd = selectedSizeId;
             if (isCreatingNew) {
-                if (!newSizeName.trim()) { showToast("Vui lòng nhập tên kích thước!", "error"); return; }
                 const { data: sizeData } = await api.post("/Sizecas", { sizeca: newSizeName });
                 sizeIdToAdd = sizeData.result.idsizeca;
-            } else {
-                if (!sizeIdToAdd) { showToast("Vui lòng chọn kích thước có sẵn!", "error"); return; }
             }
 
             // Bước 1: Tạo chitietcaban (size - loại cá)
@@ -91,6 +105,13 @@ export default function KichCoLoaiCa() {
             showToast("Vui lòng nhập số kg hợp lệ (lớn hơn 0)!", "error");
             return;
         }
+        const accepted = await confirm({
+            title: "Cập nhật kg quy đổi",
+            message: `Lưu mức quy đổi mới là ${kgValue} kg?`,
+            confirmText: "Lưu thay đổi",
+            variant: "primary",
+        });
+        if (!accepted) return;
         try {
             await api.put(`/Chitietcabans/${chitietcabanId}/so-kg-tuong-ung`, {
                 sokgtuongung: kgValue
@@ -122,16 +143,23 @@ export default function KichCoLoaiCa() {
 
     return (
         <AdminLayout title={`Quản lý kích thước${selectedFish ? ` — ${selectedFish.tenloaica}` : ""}`}>
-            <div className="max-w-lg mx-auto bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                <div className="p-6 space-y-5">
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-black overflow-hidden">
+                <div className="px-6 py-4 border-b border-black bg-cyan-600">
+                    <h3 className="font-bold text-lg text-white">
+                        {selectedFish?.tenloaica || "Quản lý kích cỡ loại cá"}
+                    </h3>
+                    <p className="text-xs text-cyan-50">Thêm kích cỡ và điều chỉnh khối lượng quy đổi.</p>
+                </div>
+
+                <div className="p-5 space-y-3">
 
                     {/* FORM THÊM SIZE */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/70 space-y-3">
+                    <div className="bg-cyan-50 p-4 rounded-xl border border-black space-y-3">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                                 Tên loại cá
                             </label>
-                            <div className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-cyan-950">
+                            <div className="w-full p-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-cyan-950">
                                 {selectedFish?.tenloaica || "Đang tải..."}
                             </div>
                         </div>
@@ -146,12 +174,12 @@ export default function KichCoLoaiCa() {
                                     value={newSizeName}
                                     onChange={(e) => setNewSizeName(e.target.value)}
                                     placeholder="VD: Size 2-3kg, Lớn..."
-                                    className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-cyan-300 focus:ring-2 focus:ring-cyan-200 bg-white outline-none font-medium"
+                                    className="flex-1 p-2 text-sm rounded-xl border border-cyan-300 focus:ring-2 focus:ring-cyan-200 bg-white outline-none font-medium"
                                     autoFocus
                                 />
                             ) : (
                                 <select
-                                    className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-cyan-500 outline-none bg-white font-medium"
+                                    className="flex-1 p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none bg-white font-medium"
                                     value={selectedSizeId}
                                     onChange={(e) => setSelectedSizeId(e.target.value)}
                                 >
@@ -175,16 +203,9 @@ export default function KichCoLoaiCa() {
                                 value={sokgtuongung}
                                 onChange={(e) => setSokgtuongung(e.target.value)}
                                 placeholder="VD: 0.5 → mỗi con quy đổi = 0.5 kg"
-                                className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 outline-none bg-white"
+                                className="w-full p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 outline-none bg-white"
                             />
                         </div>
-
-                        <button
-                            onClick={handleAddSize}
-                            className="w-full py-2 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 shadow-xs text-sm cursor-pointer"
-                        >
-                            {isCreatingNew ? "Lưu lại" : "Áp dụng"}
-                        </button>
 
                         <div className="text-center">
                             {isCreatingNew ? (
@@ -204,7 +225,7 @@ export default function KichCoLoaiCa() {
                     <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-2.5">Các size đang áp dụng thực tế</label>
                         {fishInventory.length > 0 ? (
-                            <table className="w-full text-sm border border-slate-100 rounded-xl overflow-hidden">
+                            <table className="w-full text-sm border border-black rounded-xl overflow-hidden">
                                 <thead className="bg-slate-50 text-xs text-slate-400 uppercase">
                                     <tr>
                                         <th className="text-left px-3 py-2 font-medium">Size</th>
@@ -260,11 +281,15 @@ export default function KichCoLoaiCa() {
                         )}
                     </div>
 
-                    <div className="flex justify-end pt-4 border-t border-slate-100">
-                        <button onClick={() => navigate("/admin/QuanLyLoaiCa")} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium text-sm cursor-pointer">
-                            ← Quay lại danh sách
-                        </button>
-                    </div>
+                </div>
+
+                <div className="p-4 border-t border-black bg-cyan-600 flex justify-end gap-3">
+                    <button onClick={() => navigate("/admin/QuanLyLoaiCa")} className="px-5 py-2.5 rounded-xl border border-red-700 bg-red-50 text-red-700 font-bold hover:bg-red-100 text-sm cursor-pointer">
+                        Hủy
+                    </button>
+                    <button onClick={handleAddSize} className="px-6 py-2.5 rounded-xl border border-black bg-white text-cyan-800 font-bold hover:bg-cyan-50 shadow-sm text-sm cursor-pointer">
+                        {isCreatingNew ? "Lưu kích cỡ mới" : "Áp dụng kích cỡ"}
+                    </button>
                 </div>
             </div>
         </AdminLayout>
