@@ -135,7 +135,10 @@ class AuthenticationServiceTest {
     @Test
     void logout_khongBlacklistTokenSaiChuKy() {
         AuthenticationResponse response = authenticate();
-        String forgedToken = response.getToken().substring(0, response.getToken().length() - 1) + "x";
+        String[] tokenParts = response.getToken().split("\\.");
+        char replacement = tokenParts[2].charAt(0) == 'A' ? 'B' : 'A';
+        tokenParts[2] = replacement + tokenParts[2].substring(1);
+        String forgedToken = String.join(".", tokenParts);
 
         authenticationService.logout(forgedToken, null);
 
