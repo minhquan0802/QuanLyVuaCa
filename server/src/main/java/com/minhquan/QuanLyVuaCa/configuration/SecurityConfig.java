@@ -23,7 +23,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-public class SecurityConfig {
+public class SecurtyConfig {
     @Value("${frontend.url}")
     private String frontendUrl;
 
