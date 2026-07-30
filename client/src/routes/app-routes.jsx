@@ -75,28 +75,29 @@ export default function AppRoutes() {
             </Route>
 
             <Route element={<ProtectedRoute />}>
-                <Route path='/admin' element={<AdminDashboard />} />
-                <Route path='/admin/QuanLyLoaiCa' element={<QuanLyLoaiCa />} />
-                <Route path='/admin/QuanLyLoaiCa/them' element={<ThemSuaLoaiCa />} />
-                <Route path='/admin/QuanLyLoaiCa/sua/:id' element={<ThemSuaLoaiCa />} />
-                <Route path='/admin/QuanLyLoaiCa/kich-co/:loaicaId' element={<KichCoLoaiCa />} />
-                <Route path='/admin/QuanLyLoaiCa/mo-lai/:id' element={<MoLaiLoaiCa />} />
-                <Route path='/admin/QuanLyTaiKhoan' element={<QuanLyTaiKhoan />} />
-                <Route path='/admin/QuanLyTaiKhoan/them' element={<ThemSuaTaiKhoan />} />
-                <Route path='/admin/QuanLyTaiKhoan/sua/:id' element={<ThemSuaTaiKhoan />} />
                 <Route path='/admin/QuanLyDonHang' element={<QuanLyDonHang />} />
                 <Route path='/admin/QuanLyDonHang/tao-don' element={<TaoDonHang />} />
                 <Route path='/admin/QuanLyDonHang/chi-tiet/:id' element={<ChiTietDonHang />} />
-                <Route path='/admin/QuanLyBangGia' element={<QuanLyBangGia />} />
-                <Route path='/admin/QuanLyBangGia/them' element={<ThemBangGia />} />
                 <Route path='/admin/QuanLyKho' element={<QuanLyKho />} />
                 <Route path='/admin/QuanLyKho/nhap-hang' element={<NhapHang />} />
+                <Route path='/admin/QuanLyCongNo' element={<QuanLyCongNo />} />
+
                 <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+                    <Route path='/admin' element={<AdminDashboard />} />
+                    <Route path='/admin/QuanLyLoaiCa' element={<QuanLyLoaiCa />} />
+                    <Route path='/admin/QuanLyLoaiCa/them' element={<ThemSuaLoaiCa />} />
+                    <Route path='/admin/QuanLyLoaiCa/sua/:id' element={<ThemSuaLoaiCa />} />
+                    <Route path='/admin/QuanLyLoaiCa/kich-co/:loaicaId' element={<KichCoLoaiCa />} />
+                    <Route path='/admin/QuanLyLoaiCa/mo-lai/:id' element={<MoLaiLoaiCa />} />
+                    <Route path='/admin/QuanLyTaiKhoan' element={<QuanLyTaiKhoan />} />
+                    <Route path='/admin/QuanLyTaiKhoan/them' element={<ThemSuaTaiKhoan />} />
+                    <Route path='/admin/QuanLyTaiKhoan/sua/:id' element={<ThemSuaTaiKhoan />} />
+                    <Route path='/admin/QuanLyBangGia' element={<QuanLyBangGia />} />
+                    <Route path='/admin/QuanLyBangGia/them' element={<ThemBangGia />} />
                     <Route path='/admin/QuanLyThanhLy' element={<QuanLyThanhLy />} />
                     <Route path='/admin/QuanLyThanhLy/tao-phieu' element={<TaoPhieuThanhLy />} />
                     <Route path='/admin/QuanLyThanhLy/thanh-ly/:idLo' element={<ThanhLyMotLo />} />
                 </Route>
-                <Route path='/admin/QuanLyCongNo' element={<QuanLyCongNo />} />
             </Route>
         </Routes>
     );
