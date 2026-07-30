@@ -46,6 +46,8 @@ class TaiKhoanServicePasswordTest {
     CongNoService congNoService;
     @Mock
     PwnedPasswordService pwnedPasswordService;
+    @Mock
+    ThongBaoService thongBaoService;
 
     TaiKhoanService taiKhoanService;
     Taikhoan taiKhoan;
@@ -60,7 +62,8 @@ class TaiKhoanServicePasswordTest {
                 chitietGioHangRepository,
                 emailService,
                 congNoService,
-                pwnedPasswordService);
+                pwnedPasswordService,
+                thongBaoService);
         taiKhoan = Taikhoan.builder()
                 .email(EMAIL)
                 .matkhau(ENCODED_PASSWORD)

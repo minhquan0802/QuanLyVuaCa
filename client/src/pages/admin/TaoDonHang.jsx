@@ -7,6 +7,15 @@ import { useConfirm } from "../../context/ConfirmContext";
 
 const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + " VNĐ";
 
+const BANK_ID = import.meta.env.VITE_BANK_ID || "MB";
+const BANK_ACCOUNT = import.meta.env.VITE_BANK_ACCOUNT || "0123456789";
+const BANK_NAME = import.meta.env.VITE_BANK_NAME || "SHOP VUA CA";
+
+const getVietQrUrl = (amount) => {
+    const info = encodeURIComponent("TT DON HANG POS");
+    return `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACCOUNT}-compact2.png?amount=${amount}&addInfo=${info}&accountName=${encodeURIComponent(BANK_NAME)}`;
+};
+
 export default function TaoDonHang() {
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -26,6 +35,11 @@ export default function TaoDonHang() {
 
     const [orderDone, setOrderDone] = useState(false);
     const [completedOrderTotal, setCompletedOrderTotal] = useState(0);
+    // Khách lẻ: chờ nhân viên xác nhận đã nhận tiền trước khi thật sự tạo đơn.
+    // null = chưa tới bước chọn thanh toán, "choose" = đang chọn Tiền mặt/QR, "qr" = đang hiện mã QR.
+    const [paymentStep, setPaymentStep] = useState(null);
+    const [pendingPayload, setPendingPayload] = useState(null);
+    const [pendingTotal, setPendingTotal] = useState(0);
 
     // Kéo toàn bộ dữ liệu cấu hình ban đầu
     useEffect(() => {
@@ -164,6 +178,27 @@ export default function TaoDonHang() {
 
     const newOrderTotal = useMemo(() => newOrder.items.reduce((sum, i) => sum + i.total, 0), [newOrder.items]);
 
+    const submitOrder = async (payload, total) => {
+        try {
+            await api.post("/Donhangs", payload);
+            showToast("Tạo đơn hàng thành công!", "success");
+            setCompletedOrderTotal(total);
+            setPaymentStep(null);
+            setOrderDone(true);
+        } catch (error) {
+            const errorCode = error.response?.data?.code;
+            if (Number(errorCode) === 1045) {
+                // Khách sỉ bị khóa do quá hạn công nợ: mở lại phần chọn khách để
+                // nhân viên đổi sang khách khác mà không phải tải lại trang.
+                setCustomerConfirmed(false);
+                setPaymentStep(null);
+                showToast("Khách hàng đang bị khóa đặt hàng do quá hạn công nợ. Vui lòng chọn khách hàng khác!", "error");
+                return;
+            }
+            showToast(error.response?.data?.message || "Lỗi tạo đơn hàng!", "error");
+        }
+    };
+
     const handleSubmitOrder = async () => {
         if (newOrder.items.length === 0) { showToast("Đơn hàng rỗng!", "error"); return; }
         const isKhachLe = customerType === "LE";
@@ -171,8 +206,8 @@ export default function TaoDonHang() {
 
         const payload = {
             idthongtinkhachhang: isKhachLe ? null : newOrder.idthongtinkhachhang,
-            tenKhachHang: isKhachLe ? newOrder.tenKhachLe : `${selectedSi?.ho} ${selectedSi?.ten}`,
-            sdtKhachHang: isKhachLe ? newOrder.sdtKhachLe : selectedSi?.sodienthoai,
+            tenKhachLe: isKhachLe ? newOrder.tenKhachLe : `${selectedSi?.ho} ${selectedSi?.ten}`,
+            sdtKhachLe: isKhachLe ? newOrder.sdtKhachLe : selectedSi?.sodienthoai,
             // Khách lẻ: trả tiền tại chỗ, giao dịch xong ngay -> GIAO_HANG_THANH_CONG + DA_THANH_TOAN.
             // Khách sỉ: thanh toán sau (chuyển khoản), hàng lên xe khách ngay -> DANG_DONG_HANG.
             trangthaidonhang: isKhachLe ? "GIAO_HANG_THANH_CONG" : "DANG_DONG_HANG",
@@ -184,30 +219,71 @@ export default function TaoDonHang() {
                 tongtiendukien: item.total, tongtienthucte: item.total,
             })),
         };
+
+        if (isKhachLe) {
+            // Khách lẻ: chưa tạo đơn ngay — chờ nhân viên xác nhận đã thật sự nhận được tiền
+            // (Tiền mặt, hoặc quét QR xong) ở bước sau mới gọi API.
+            setPendingPayload(payload);
+            setPendingTotal(newOrderTotal);
+            setPaymentStep("choose");
+            return;
+        }
+
         const accepted = await confirm({
             title: "Tạo đơn hàng",
-            message: `Tạo đơn hàng trị giá ${newOrderTotal.toLocaleString("vi-VN")} VNĐ? Tồn kho và công nợ liên quan sẽ được cập nhật.`,
+            message: `Tạo đơn hàng trị giá ${newOrderTotal.toLocaleString("vi-VN")} VNĐ? Tồn kho và công nợ của khách sẽ được cập nhật.`,
             confirmText: "Tạo đơn hàng",
             variant: "primary",
         });
         if (!accepted) return;
-        try {
-            await api.post("/Donhangs", payload);
-            showToast("Tạo đơn hàng thành công!", "success");
-            setCompletedOrderTotal(newOrderTotal);
-            setOrderDone(true);
-        } catch (error) {
-            const errorCode = error.response?.data?.code;
-            if (Number(errorCode) === 1045) {
-                // Khách sỉ bị khóa do quá hạn công nợ: mở lại phần chọn khách để
-                // nhân viên đổi sang khách khác mà không phải tải lại trang.
-                setCustomerConfirmed(false);
-                showToast("Khách hàng đang bị khóa đặt hàng do quá hạn công nợ. Vui lòng chọn khách hàng khác!", "error");
-                return;
-            }
-            showToast(error.response?.data?.message || "Lỗi tạo đơn hàng!", "error");
-        }
+        await submitOrder(payload, newOrderTotal);
     };
+
+    if (paymentStep === "choose") {
+        return (
+            <AdminLayout title="Xác nhận thanh toán">
+                <div className="max-w-sm mx-auto bg-white rounded-2xl border border-black text-center p-6">
+                    <h3 className="font-bold text-lg text-slate-800">Xác nhận thanh toán</h3>
+                    <p className="text-sm text-slate-600 font-semibold mt-2">Tổng thu: {formatCurrency(pendingTotal)}</p>
+                    <p className="text-xs text-slate-400 mt-2">Đơn hàng chỉ được ghi nhận sau khi xác nhận đã nhận tiền.</p>
+                    <div className="grid grid-cols-2 gap-4 my-6">
+                        <button onClick={() => submitOrder(pendingPayload, pendingTotal)} className="p-4 rounded-xl border border-black bg-cyan-600 text-white font-bold hover:bg-cyan-700 text-sm">Tiền mặt</button>
+                        <button onClick={() => setPaymentStep("qr")} className="p-4 rounded-xl border border-black bg-cyan-600 text-white font-bold hover:bg-cyan-700 text-sm">Quét QR</button>
+                    </div>
+                    <button onClick={() => setPaymentStep(null)} className="text-xs text-slate-400 underline">
+                        Hủy, quay lại chỉnh sửa đơn
+                    </button>
+                </div>
+            </AdminLayout>
+        );
+    }
+
+    if (paymentStep === "qr") {
+        return (
+            <AdminLayout title="Quét mã thanh toán">
+                <div className="max-w-sm mx-auto bg-white rounded-2xl border border-black text-center p-6">
+                    <h3 className="font-bold text-lg text-slate-800">Quét mã để thanh toán</h3>
+                    <p className="text-sm text-slate-600 font-semibold mt-2">Tổng thu: {formatCurrency(pendingTotal)}</p>
+                    <img
+                        src={getVietQrUrl(pendingTotal)}
+                        alt="QR chuyển khoản"
+                        className="mx-auto rounded-xl border border-slate-200 my-4"
+                    />
+                    <p className="text-xs text-slate-400">
+                        Khách quét mã để chuyển khoản {formatCurrency(pendingTotal)}. Chỉ bấm hoàn tất sau khi đã thấy tiền vào tài khoản.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                        <button onClick={() => setPaymentStep("choose")} className="p-4 rounded-xl border border-black bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 text-sm">
+                            Quay lại
+                        </button>
+                        <button onClick={() => submitOrder(pendingPayload, pendingTotal)} className="p-4 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 text-sm">
+                            Đã nhận tiền, hoàn tất
+                        </button>
+                    </div>
+                </div>
+            </AdminLayout>
+        );
+    }
 
     if (orderDone) {
         const isSi = customerType === "SI";
@@ -220,19 +296,12 @@ export default function TaoDonHang() {
                     <p className="text-sm text-slate-600 font-semibold mt-2">
                         {isSi ? "Tổng tiền đơn hàng: " : "Tổng thu: "}{formatCurrency(completedOrderTotal)}
                     </p>
-                    {isSi ? (
-                        <>
-                            <p className="text-xs text-slate-400 mt-2">Đơn đã chuyển sang "Đang đóng hàng" — khách thanh toán sau.</p>
-                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="w-full mt-6 p-4 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700">
-                                Về Quản lý đơn hàng
-                            </button>
-                        </>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-4 my-6">
-                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-black bg-cyan-600 text-white font-bold hover:bg-cyan-700 text-sm">Tiền mặt</button>
-                            <button onClick={() => navigate("/admin/QuanLyDonHang")} className="p-4 rounded-xl border border-black bg-cyan-600 text-white font-bold hover:bg-cyan-700 text-sm">Quét QR</button>
-                        </div>
+                    {isSi && (
+                        <p className="text-xs text-slate-400 mt-2">Đơn đã chuyển sang "Đang đóng hàng" — khách thanh toán sau.</p>
                     )}
+                    <button onClick={() => navigate("/admin/QuanLyDonHang")} className="w-full mt-6 p-4 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700">
+                        Về Quản lý đơn hàng
+                    </button>
                 </div>
             </AdminLayout>
         );
