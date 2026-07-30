@@ -81,7 +81,7 @@ export default function LichSuPhieuNhap() {
     const handleMarkPaid = async (id) => {
         const accepted = await confirm({
             title: "Xác nhận thanh toán phiếu nhập",
-            message: "Ghi nhận phiếu nhập này đã được thanh toán? Trạng thái công nợ nhà cung cấp sẽ thay đổi.",
+            message: "Ghi nhận phiếu nhập này đã được thanh toán? Trạng thái thanh toán phiếu nhập sẽ được cập nhật.",
             confirmText: "Đã thanh toán",
             variant: "primary",
         });
