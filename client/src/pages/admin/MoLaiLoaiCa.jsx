@@ -17,12 +17,14 @@ export default function MoLaiLoaiCa() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [loadError, setLoadError] = useState("");
+    const [hasNoPriceHistory, setHasNoPriceHistory] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
                 setLoadError("");
+                setHasNoPriceHistory(false);
                 const [categoryResponse, historyResponse] = await Promise.all([
                     api.get(`/Loaicas/${id}`),
                     api.get("/Banggias/history"),
@@ -54,7 +56,7 @@ export default function MoLaiLoaiCa() {
                 if (!loadedCategory?.deleted) {
                     setLoadError("Loại cá này đang được mở bán, không cần thực hiện mở lại.");
                 } else if (productPrices.length === 0) {
-                    setLoadError("Không tìm thấy sản phẩm hoặc lịch sử giá của loại cá này.");
+                    setHasNoPriceHistory(true);
                 }
             } catch (error) {
                 setLoadError(error.response?.data?.message || "Không thể tải thông tin loại cá và bảng giá.");
@@ -76,6 +78,28 @@ export default function MoLaiLoaiCa() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
+        if (hasNoPriceHistory) {
+            const accepted = await confirm({
+                title: "Mở lại loại cá",
+                message: `Mở bán lại “${category?.tenloaica || "loại cá này"}”? Loại cá này chưa từng có bảng giá — hãy vào "Thiết lập giá mới" để thêm giá trước khi khách có thể đặt hàng.`,
+                confirmText: "Mở bán lại",
+                variant: "primary",
+            });
+            if (!accepted) return;
+
+            try {
+                setSubmitting(true);
+                await api.patch(`/Loaicas/${id}/khoi-phuc`);
+                showToast("Đã mở lại loại cá! Đừng quên thiết lập giá bán trước khi khách đặt hàng.", "success");
+                navigate("/admin/QuanLyLoaiCa");
+            } catch (error) {
+                showToast(error.response?.data?.message || "Không thể mở lại loại cá!", "error");
+            } finally {
+                setSubmitting(false);
+            }
+            return;
+        }
 
         const invalidPrice = prices.find(price => {
             const retailPrice = Number(price.giabanle);
@@ -165,6 +189,12 @@ export default function MoLaiLoaiCa() {
                                 {loadError}
                             </div>
                         </div>
+                    ) : hasNoPriceHistory ? (
+                        <div className="p-6">
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-700">
+                                Loại cá này chưa từng được thiết lập giá bán. Bạn có thể mở bán lại ngay, sau đó vào trang "Thiết lập giá mới" để thêm giá cho từng kích cỡ.
+                            </div>
+                        </div>
                     ) : (
                         <div className="space-y-3 p-5">
                             {prices.map(price => (
@@ -242,7 +272,7 @@ export default function MoLaiLoaiCa() {
                             disabled={loading || Boolean(loadError) || submitting}
                             className="rounded-xl border border-black bg-white px-6 py-2.5 text-sm font-bold text-cyan-800 shadow-sm transition-all hover:bg-cyan-50 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-400"
                         >
-                            {submitting ? "Đang xử lý..." : "Xác nhận mở lại"}
+                            {submitting ? "Đang xử lý..." : hasNoPriceHistory ? "Mở lại (chưa có giá)" : "Xác nhận mở lại"}
                         </button>
                     </div>
                 </form>
