@@ -79,15 +79,15 @@ Minh Quân phụ trách các nhóm chức năng sau:
 ### Nhóm màn hình khách hàng
 
 ```txt
-client/src/pages/customer/product-detail.jsx
-client/src/pages/customer/home.jsx
-client/src/pages/customer/cart.jsx
-client/src/pages/customer/checkout.jsx
+client/src/pages/customer/ChiTietSanPham.jsx
+client/src/pages/customer/TrangChu.jsx
+client/src/pages/customer/GioHang.jsx
+client/src/pages/customer/ThanhToan.jsx
 client/src/pages/customer/ThongTinDonHang.jsx
 client/src/pages/customer/OrderSuccess.jsx
 client/src/pages/customer/OrderFailed.jsx
 client/src/context/CartContext.jsx
-client/src/components/product-list.jsx
+client/src/components/DanhSachSanPham.jsx
 ```
 
 ### Nhóm màn hình quản trị
@@ -103,7 +103,7 @@ client/src/pages/admin/QuanLyCongNo.jsx
 
 ```txt
 client/src/components/admin/AdminLayout.jsx (phần chuông và danh sách thông báo)
-client/src/components/header.jsx (phần thông báo khách hàng)
+client/src/components/Header.jsx (phần thông báo khách hàng)
 ```
 
 ## 4.4 Các controller/backend phụ trách
@@ -135,8 +135,8 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThongBaoService.java
 ```txt
 server/src/main/java/com/minhquan/QuanLyVuaCa/scheduler/GioHangScheduler.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/scheduler/CongNoQuaHanScheduler.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/util/ChinhSachGiaUtils.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/util/QuyDoiKhoiLuongUtils.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/utils/ChinhSachGiaUtils.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/utils/QuyDoiKhoiLuongUtils.java
 ```
 
 `QuyDoiKhoiLuongUtils` chỉ là lớp tiện ích tính toán. Tên lớp giữ theo nghiệp vụ quy đổi, không đại diện cho bảng `quydoikhoiluong` đã xóa.
@@ -420,8 +420,8 @@ Hồng Quân phụ trách các nhóm chức năng sau:
 ### Nhóm xác thực
 
 ```txt
-client/src/pages/auth/login.jsx
-client/src/pages/auth/register.jsx
+client/src/pages/auth/DangNhap.jsx
+client/src/pages/auth/DangKy.jsx
 client/src/pages/auth/XacThucEmail.jsx
 client/src/pages/auth/QuenMatKhau.jsx
 client/src/pages/auth/DatLaiMatKhau.jsx
@@ -463,7 +463,7 @@ client/src/pages/admin/ThanhLyMotLo.jsx
 client/src/pages/admin/AdminDashboard.jsx
 client/src/components/admin/AdminLayout.jsx (phần khung bố cục; phối hợp với Minh Quân ở phần thông báo)
 client/src/components/admin/AdminSidebar.jsx
-client/src/components/footer.jsx
+client/src/components/Footer.jsx
 ```
 
 `client/src/pages/admin/LichSuPhieuNhap.jsx` hiện tồn tại trong mã nguồn nhưng chưa được khai báo trong `AppRoutes`, vì vậy chưa được tính là một màn hình đang hoạt động. Lịch sử phiếu nhập hiện được hiển thị trong luồng quản lý kho/nhập hàng.
@@ -510,7 +510,7 @@ server/src/main/java/com/minhquan/QuanLyVuaCa/service/ThongKeService.java
 
 ```txt
 server/src/main/java/com/minhquan/QuanLyVuaCa/scheduler/LoHangQuaHanScheduler.java
-server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/SecurityConfig.java
+server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/SecurtyConfig.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/JwtCookieTokenResolver.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/JwtTokenDecoder.java
 server/src/main/java/com/minhquan/QuanLyVuaCa/configuration/AuthRateLimitFilter.java
