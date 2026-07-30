@@ -6,9 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SizecaRepository extends JpaRepository<Sizeca, Integer> {
     // Tìm tất cả size thuộc về một loại cá cụ thể
     boolean existsBySizeca(String sizeca);
+    Optional<Sizeca> findFirstBySizecaIgnoreCase(String sizeca);
 }

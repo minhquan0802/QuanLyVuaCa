@@ -62,6 +62,7 @@ public class ChitietCabanService {
     }
 
     // 2. Tạo mới hoặc khôi phục cấu hình sản phẩm (Ghép Loại + Size)
+    @Transactional
     public ChitietCabanResponse taoMoi(ChitietCabanCreationRequest request) {
         Loaica loaiCa = loaicaRepository.findById(request.getIdloaica())
                 .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
@@ -72,16 +73,34 @@ public class ChitietCabanService {
         // Nếu từng tồn tại (kể cả đã xóa mềm) thì khôi phục thay vì tạo mới
         // (DB có unique constraint nên không thể tạo trùng)
         var existing = chitietcabanRepository.findByIdloaicaAndIdsizeca(loaiCa, sizeCa);
+        if (existing.isEmpty()) {
+            String normalizedSizeName = normalizeSizeName(sizeCa.getSizeca());
+            existing = chitietcabanRepository.findByIdloaicaAndDeletedTrue(loaiCa).stream()
+                    .filter(record -> normalizeSizeName(record.getIdsizeca().getSizeca())
+                            .equals(normalizedSizeName))
+                    .findFirst();
+        }
+
         if (existing.isPresent()) {
             Chitietcaban record = existing.get();
             if (!record.getDeleted()) {
+                // Lần gọi trước có thể đã lưu cấu hình nhưng response bị gián đoạn.
+                // Nếu sản phẩm chưa có giá hiện hành thì cho phép tiếp tục lại bước thiết lập giá.
+                if (banggiaRepository.findByChitietcabanAndNgayketthucIsNull(record).isEmpty()) {
+                    if (request.getSokgtuongung() != null) {
+                        record.setSokgtuongung(request.getSokgtuongung());
+                    }
+                    Chitietcaban savedRecord = chitietcabanRepository.save(record);
+                    return toCreationResponse(savedRecord, request.getIdloaica(), record.getIdsizeca().getId());
+                }
                 throw new AppExceptions(ErrorCode.CHITIET_CABAN_EXISTED);
             }
             record.setDeleted(false);
             if (request.getSokgtuongung() != null) {
                 record.setSokgtuongung(request.getSokgtuongung());
             }
-            return chitietCabanMapper.toResponse(chitietcabanRepository.save(record));
+            Chitietcaban savedRecord = chitietcabanRepository.save(record);
+            return toCreationResponse(savedRecord, request.getIdloaica(), record.getIdsizeca().getId());
         }
 
         Chitietcaban entity = chitietCabanMapper.toEntity(request);
@@ -90,9 +109,26 @@ public class ChitietCabanService {
         entity.setDeleted(false);
         if (entity.getSoluongton() == null) entity.setSoluongton(BigDecimal.ZERO);
 
-        return chitietCabanMapper.toResponse(chitietcabanRepository.save(entity));
+        Chitietcaban savedEntity = chitietcabanRepository.save(entity);
+        return toCreationResponse(savedEntity, request.getIdloaica(), request.getIdsizeca());
     }
 
+    private ChitietCabanResponse toCreationResponse(
+            Chitietcaban entity,
+            Integer idLoaiCa,
+            Integer idSizeCa) {
+        return ChitietCabanResponse.builder()
+                .id(entity.getId())
+                .idLoaiCa(idLoaiCa)
+                .idSizeCa(idSizeCa)
+                .soluongton(entity.getSoluongton())
+                .sokgtuongung(entity.getSokgtuongung())
+                .build();
+    }
+
+    private String normalizeSizeName(String value) {
+        return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+    }
 
     @Transactional
     public void xoa(Integer id) {

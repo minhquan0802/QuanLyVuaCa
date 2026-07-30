@@ -27,6 +27,13 @@ public class SizecaService {
 
     // Thêm Size mới
     public SizecaResponse taoSize(SizecaRequest request) {
+        String normalizedName = request.getSizeca() == null ? "" : request.getSizeca().trim();
+        var existing = sizecaRepository.findFirstBySizecaIgnoreCase(normalizedName);
+        if (existing.isPresent()) {
+            return sizecaMapper.toSizecaResponse(existing.get());
+        }
+
+        request.setSizeca(normalizedName);
         Sizeca sizeca = sizecaMapper.toSizeca(request);
         sizecaRepository.save(sizeca);
         return sizecaMapper.toSizecaResponse(sizeca);

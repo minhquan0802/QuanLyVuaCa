@@ -75,27 +75,49 @@ export default function KichCoLoaiCa() {
 
         try {
             let sizeIdToAdd = selectedSizeId;
+            let sizeNameToAdd = allGlobalSizes.find(
+                size => String(size.idsizeca) === String(selectedSizeId)
+            )?.sizeca || "";
+
             if (isCreatingNew) {
-                const { data: sizeData } = await api.post("/Sizecas", { sizeca: newSizeName });
-                sizeIdToAdd = sizeData.result.idsizeca;
+                sizeNameToAdd = newSizeName.trim();
+                const matchingSize = allGlobalSizes.find(
+                    size => size.sizeca?.trim().toLocaleLowerCase("vi-VN")
+                        === sizeNameToAdd.toLocaleLowerCase("vi-VN")
+                );
+
+                if (matchingSize) {
+                    sizeIdToAdd = matchingSize.idsizeca;
+                } else {
+                    const { data: sizeData } = await api.post("/Sizecas", { sizeca: sizeNameToAdd });
+                    sizeIdToAdd = sizeData.result.idsizeca;
+                    sizeNameToAdd = sizeData.result.sizeca;
+                }
             }
 
-            // Bước 1: Tạo chitietcaban (size - loại cá)
-            await api.post("/Chitietcabans", {
+            // Bước 1: Tạo mới hoặc khôi phục liên kết loại cá - kích cỡ.
+            const { data: productData } = await api.post("/Chitietcabans", {
                 idloaica: Number(loaicaId),
                 idsizeca: sizeIdToAdd,
                 soluongton: 0,
                 sokgtuongung: kgValue
             });
+            const product = productData?.result;
+            if (!product?.id) {
+                throw new Error("API không trả về chi tiết sản phẩm vừa tạo");
+            }
 
-            showToast("Liên kết kích thước và quy đổi thành công!", "success");
-            setIsCreatingNew(false);
-            setNewSizeName("");
-            setSelectedSizeId("");
-            setSokgtuongung("");
-            loadData();
-        } catch {
-            showToast("Không thể thêm kích thước!", "error");
+            showToast("Đã áp dụng kích thước. Vui lòng thiết lập giá bán!", "success");
+            navigate("/admin/QuanLyBangGia/them", {
+                state: {
+                    idchitietcaban: product.id,
+                    returnTo: `/admin/QuanLyLoaiCa/kich-co/${loaicaId}`,
+                    source: "size-setup",
+                    productName: `${selectedFish?.tenloaica || "Loại cá"} - ${sizeNameToAdd || "Kích cỡ"}`,
+                },
+            });
+        } catch (error) {
+            showToast(error.response?.data?.message || error.message || "Không thể thêm kích thước!", "error");
         }
     };
 
