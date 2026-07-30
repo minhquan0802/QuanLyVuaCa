@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import AdminSidebar from "./AdminSidebar";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../config/axios";
-import { useConfirm } from "../../context/ConfirmContext";
 
 // Nhãn hiển thị cho từng loại thông báo (loai lưu dạng mã ngắn trong DB).
 // Loại nào chưa có trong map thì hiện thẳng mã gốc - không cần cập nhật map liên tục.
@@ -13,12 +12,12 @@ const LOAI_LABELS = {
     CONG_NO_BI_KHOA: "Công nợ bị khóa",
     CONG_NO_NGUY_HIEM: "Công nợ nguy hiểm",
     CONG_NO_CANH_BAO: "Công nợ cảnh báo",
+    TAI_KHOAN_CHO_DUYET: "Tài khoản chờ duyệt",
 };
 
 export default function AdminLayout({ children, title = "" }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { confirm } = useConfirm();
     const isManagementPage = location.pathname === "/admin"
         || location.pathname.startsWith("/admin/QuanLy");
 
@@ -55,13 +54,6 @@ export default function AdminLayout({ children, title = "" }) {
 
     const handleClickThongBao = async (thongBao) => {
         if (!thongBao.daxem) {
-            const accepted = await confirm({
-                title: "Mở thông báo",
-                message: "Đánh dấu thông báo này là đã đọc và mở nội dung?",
-                confirmText: "Mở thông báo",
-                variant: "primary",
-            });
-            if (!accepted) return;
             try {
                 await api.put(`/ThongBao/${thongBao.idthongbao}/da-xem`);
                 setThongBaoList(prev => prev.map(tb => tb.idthongbao === thongBao.idthongbao ? { ...tb, daxem: true } : tb));
@@ -73,13 +65,6 @@ export default function AdminLayout({ children, title = "" }) {
     };
 
     const handleDanhDauTatCa = async () => {
-        const accepted = await confirm({
-            title: "Đánh dấu tất cả đã đọc",
-            message: "Đánh dấu toàn bộ thông báo hiện tại là đã đọc?",
-            confirmText: "Đánh dấu đã đọc",
-            variant: "primary",
-        });
-        if (!accepted) return;
         try {
             await api.put("/ThongBao/da-xem-tat-ca");
             setThongBaoList(prev => prev.map(tb => ({ ...tb, daxem: true })));

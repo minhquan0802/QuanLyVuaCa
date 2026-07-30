@@ -54,11 +54,14 @@ public class VnPayService {
         // 2. Với partial payment: tạo bản ghi thanhtoan trước, dùng idthanhtoan làm TxnRef
         //    Với full checkout: dùng orderId làm TxnRef (flow cũ)
         String vnp_TxnRef;
+        String vnp_OrderInfo;
         if (isPartialPayment) {
             var bienBan = thanhtoanService.taoBienBanVnpay(paymentVNPAYRequest.getOrderId(), soTien);
             vnp_TxnRef = "DEBT-" + bienBan.getIdthanhtoan();
+            vnp_OrderInfo = "Thanh toan cong no don hang " + paymentVNPAYRequest.getOrderId();
         } else {
             vnp_TxnRef = paymentVNPAYRequest.getOrderId();
+            vnp_OrderInfo = "Thanh toan don hang " + vnp_TxnRef;
         }
 
         // 3. Tính số tiền (VNPAY yêu cầu nhân 100 và ép kiểu long)
@@ -78,7 +81,7 @@ public class VnPayService {
         }
 
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang: " + vnp_TxnRef);
+        vnp_Params.put("vnp_OrderInfo", vnp_OrderInfo);
         vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale", "vn");
 

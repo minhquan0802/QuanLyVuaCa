@@ -39,6 +39,7 @@ public class TaiKhoanService {
     EmailService emailService;
     CongNoService congNoService;
     PwnedPasswordService pwnedPasswordService;
+    ThongBaoService thongBaoService;
 
     public TaikhoanResponse taoTaiKhoan(TaiKhoanCreationRequest request) {
         if (taiKhoanRepository.existsByEmail(request.getEmail()))
@@ -155,6 +156,11 @@ public class TaiKhoanService {
         taikhoan.setTrangthaitk(TrangThaiTaiKhoan.CHO_DUYET);
         taiKhoanRepository.save(taikhoan);
         emailService.deleteVerifyToken(token);
+
+        String hoTen = taikhoan.getHo() + " " + taikhoan.getTen();
+        thongBaoService.guiChoVaiTro("ADMIN",
+                "Tài khoản mới chờ duyệt: " + hoTen + " (" + taikhoan.getEmail() + ")",
+                "TAI_KHOAN_CHO_DUYET", "/admin/QuanLyTaiKhoan");
 
         return "Xác thực email thành công! Tài khoản đang chờ admin phê duyệt.";
     }
