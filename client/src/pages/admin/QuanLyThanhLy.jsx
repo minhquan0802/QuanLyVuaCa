@@ -617,9 +617,9 @@ export default function QuanLyThanhLy() {
                                         </div>
                                     </th>
                                     <th className="p-4">Người tạo</th>
-                                    <th className="p-4">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <span className="flex-1">Tên loại cá</span>
+                                    <th className="p-4 w-44 min-w-44">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="whitespace-nowrap">Tên loại cá</span>
                                             <ColumnFilter
                                                 label="Tên loại cá"
                                                 options={phieuFishOptions}
@@ -654,10 +654,16 @@ export default function QuanLyThanhLy() {
                                             <tr key={item.idphieuthanhly} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="p-4 text-slate-500">{new Date(item.ngaythanhly).toLocaleString('vi-VN')}</td>
                                                 <td className="p-4 font-semibold text-slate-800">{item.tenNguoiTaoPhieu}</td>
-                                                <td className="p-4 font-semibold text-slate-800">{tenSanPham(item.listChiTiet)}</td>
+                                                <td className="p-4 w-44 max-w-44 font-semibold text-slate-800">
+                                                    <div className="truncate" title={tenSanPham(item.listChiTiet)}>
+                                                        {tenSanPham(item.listChiTiet)}
+                                                    </div>
+                                                </td>
                                                 <td className="p-4">{item.lydothanhly}</td>
                                                 <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{tinhTongSoLuong(item.listChiTiet)}</td>
-                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700">{tinhTongTien(item.listChiTiet).toLocaleString("vi-VN")}</td>
+                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700 whitespace-nowrap">
+                                                    {tinhTongTien(item.listChiTiet).toLocaleString("vi-VN")} VNĐ
+                                                </td>
                                                 <td className="p-4">
                                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${statusConfig.badge}`}>
                                                         {statusConfig.label}
