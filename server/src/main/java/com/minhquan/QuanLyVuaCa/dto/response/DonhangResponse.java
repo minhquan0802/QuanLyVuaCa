@@ -17,8 +17,8 @@ import java.util.List;
 public class DonhangResponse {
     String iddonhang;
     String idthongtinkhachhang;
-    String tenKhachHang; // Thêm trường này
-    String sdtKhachHang; // Thêm trường này
+    String tenKhachHang;
+    String sdtKhachHang;
     LocalDateTime ngaydat;
     TrangThaiDonHang trangthaidonhang;
     TrangThaiThanhToanDonHang trangthaithanhtoan;
