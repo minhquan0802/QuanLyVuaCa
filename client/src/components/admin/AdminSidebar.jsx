@@ -7,6 +7,10 @@ export default function AdminSidebar() {
     const { user, logout } = useAuth();
 
     const isAdmin = user.vaitro === "ADMIN";
+    const displayName = [user.ho, user.ten]
+        .map(part => part?.trim())
+        .filter(Boolean)
+        .join(" ");
 
     const menuItems = [
         { label: "Dashboard",          path: "/admin",                adminOnly: true  },
@@ -56,7 +60,7 @@ export default function AdminSidebar() {
             <div className="p-4 border-t border-cyan-900 bg-cyan-950">
                 <div className="flex items-center gap-3 px-1 mb-4">
                     <div className="overflow-hidden">
-                        <p className="text-sm font-bold text-cyan-100 truncate">{user.ho}{user.ten}</p>
+                        <p className="text-sm font-bold text-cyan-100 truncate">{displayName}</p>
                         <p className="text-[11px] text-cyan-400 truncate">{user.email}</p>
                     </div>
                 </div>
