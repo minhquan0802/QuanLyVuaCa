@@ -77,7 +77,7 @@ public class DonhangService {
             donhang.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.CHUA_THANH_TOAN);
         }
 
-        // Khách lẻ: auto-fill tên nếu FE bỏ trống
+        // Khách lẻ: tự động điền tên nếu FE bỏ trống
         if (request.getIdthongtinkhachhang() == null || request.getIdthongtinkhachhang().isBlank()) {
             if (donhang.getTenKhachLe() == null || donhang.getTenKhachLe().isBlank()) {
                 donhang.setTenKhachLe("Khách vãng lai");
@@ -93,7 +93,7 @@ public class DonhangService {
             }
         }
 
-        // Công nợ Phase 4: chặn TRƯỚC KHI lưu đơn để tránh tính đôi giỏ hàng
+        // Công nợ: chặn trước khi lưu đơn để tránh tính đôi giỏ hàng
         // (nếu check sau save thì đơn mới đã vào DB → tongTienDonDangXuLy đếm nó + gioHang đếm lại = double count)
         if (request.getIdthongtinkhachhang() != null) {
             congNoService.kiemTraDuocDatHang(request.getIdthongtinkhachhang(), laKhachSi);
@@ -116,7 +116,7 @@ public class DonhangService {
                 Chitietcaban chitietcabanTam = null;
                 if (ctdhRequest.getIdchitietcaban() != null) {
                     Integer idChiTiet = Integer.parseInt(ctdhRequest.getIdchitietcaban());
-                    // Lock row này lại để tránh concurrency nếu cần (hoặc chỉ findById)
+
                     chitietcabanTam = chitietcabanRepository.findById(idChiTiet)
                             .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED,
                                     "Không tìm thấy sản phẩm kho ID: " + ctdhRequest.getIdchitietcaban()));
@@ -153,8 +153,8 @@ public class DonhangService {
                 }
 
                 // B4. Tính toán
-                BigDecimal soLuongDat = new BigDecimal(ct.getSoluong());
-                BigDecimal soLuongKgQuyDoi = soLuongDat.multiply(heSoQuyDoi);
+                BigDecimal soLuongKhachDat = new BigDecimal(ct.getSoluong());
+                BigDecimal soLuongKgQuyDoi = soLuongKhachDat.multiply(heSoQuyDoi);
                 BigDecimal thanhTienDuKien = soLuongKgQuyDoi.multiply(donGiaApDung);
 
                 // B5. Set dữ liệu (Logic: Ban đầu Dự kiến == Thực tế)
@@ -171,7 +171,7 @@ public class DonhangService {
 
                 // --- C. TRỪ TỒN KHO NGAY NẾU ĐƠN KHÔNG ĐI QUA PIPELINE CHỜ XÁC NHẬN ---
                 // POS khách lẻ: GIAO_HANG_THANH_CONG; POS khách sỉ: DANG_DONG_HANG.
-                // Cả hai != CHO_XAC_NHAN → trừ kho/lô ngay lúc tạo.
+                // Cả hai != CHO_XAC_NHAN -> trừ kho/lô ngay lúc tạo.
                 // Đơn online CHO_XAC_NHAN: trừ kho khi admin xác nhận qua updateStatus()
                 // hoặc khi VNPAY callback gọi truSoluongTon().
                 if (donHangDaLuu.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
@@ -266,7 +266,6 @@ public class DonhangService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public List<DonhangResponse> layTatCaDonHang() {
 
-        // ---- CACH 1 ----
         // Lấy danh sách entity từ DB
         // Đơn hàng mới nhất sẽ nằm đầu danh sách
         List<Donhang> danhSachEntity = donhangRepository.findAllByOrderByNgaydatDesc();
@@ -299,23 +298,6 @@ public class DonhangService {
             danhSachResponse.add(response);
         }
         return danhSachResponse;
-
-        // ---- CACH 2 ----
-//        return donhangRepository.findAllByOrderByNgaydatDesc().stream()
-//                .map(donhang -> {
-//                    String tenKhach = "Khách lẻ";
-//                    String sdtKhach = "";
-//                    if (donhang.getIdthongtinkhachhang() != null) {
-//                        var khachOpt = taikhoanRepository.findById(donhang.getIdthongtinkhachhang());
-//                        if (khachOpt.isPresent()) {
-//                            var khach = khachOpt.get();
-//                            tenKhach = khach.getHo() + " " + khach.getTen();
-//                            sdtKhach = khach.getSodienthoai();
-//                        }
-//                    }
-//                    return donhangMapper.toDonhangResponse(donhang, tenKhach, sdtKhach);
-//                })
-//                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -810,7 +792,7 @@ public class DonhangService {
             // Lấy số Kg thực tế cũ (nếu đã từng nhập trước đó)
             BigDecimal slThucTeCu = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
 
-            // --- A. CẬP NHẬT KHO (Quan trọng) ---
+            // --- A. CẬP NHẬT KHO ---
             Chitietcaban kho = ctdh.getIdchitietcaban();
 
             // Bước 1: Hoàn lại kho số lượng cũ (nếu có) để tránh trừ trùng

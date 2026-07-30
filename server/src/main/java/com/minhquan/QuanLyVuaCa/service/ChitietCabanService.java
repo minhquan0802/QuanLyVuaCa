@@ -9,6 +9,7 @@ import com.minhquan.QuanLyVuaCa.entity.Sizeca;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
 import com.minhquan.QuanLyVuaCa.mapper.ChitietCabanMapper;
+import com.minhquan.QuanLyVuaCa.repository.BanggiaRepository;
 import com.minhquan.QuanLyVuaCa.repository.ChitietcabanRepository;
 import com.minhquan.QuanLyVuaCa.repository.ChitietphieunhapRepository;
 import com.minhquan.QuanLyVuaCa.repository.LoaicaRepository;
@@ -36,6 +37,7 @@ public class ChitietCabanService {
     LoaicaRepository loaicaRepository;
     SizecaRepository sizecaRepository;
     ChitietCabanMapper chitietCabanMapper;
+    BanggiaRepository banggiaRepository;
 
     // Chỉ trả về các size chưa bị xóa mềm
     @Transactional(readOnly = true)
@@ -92,9 +94,17 @@ public class ChitietCabanService {
     }
 
 
+    @Transactional
     public void xoa(Integer id) {
         Chitietcaban chitietcaban = chitietcabanRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
+
+        banggiaRepository.findByChitietcabanAndNgayketthucIsNull(chitietcaban)
+                .ifPresent(banggia -> {
+                    banggia.setNgayketthuc(LocalDate.now());
+                    banggiaRepository.save(banggia);
+                });
+
         chitietcaban.setDeleted(true);
         chitietcabanRepository.save(chitietcaban);
     }
