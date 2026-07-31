@@ -1,6 +1,5 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
-import com.minhquan.QuanLyVuaCa.dto.request.LoaicaCeationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaoLoaiCaHoanChinhRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
@@ -44,17 +43,6 @@ public class LoaicaController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<LoaicaResponse> themLoaiCa(
-            @Valid @ModelAttribute LoaicaCeationRequest request) {
-        return ApiResponse.<LoaicaResponse>builder()
-                .code(200)
-                .message("OK")
-                .result(loaicaService.taoLoaica(request))
-                .build();
-    }
-
-    @PostMapping(value = "/hoan-chinh", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<LoaicaResponse> themLoaiCaHoanChinh(
             @Valid @RequestPart("request") TaoLoaiCaHoanChinhRequest request,
             @RequestPart(value = "hinhanh", required = false) MultipartFile hinhanh) {
         return ApiResponse.<LoaicaResponse>builder()
