@@ -58,6 +58,8 @@ public enum ErrorCode {
     QUYDOI_NOT_EXISTED(1047, "Sản phẩm chưa cấu hình quy đổi kg", HttpStatus.NOT_FOUND),
     LO_KHONG_KHOP_TON_KHO(1049, "Dữ liệu lô hàng không khớp với tồn kho tổng", HttpStatus.CONFLICT),
     QUYDOI_INVALID(1084, "Số kg quy đổi phải lớn hơn 0", HttpStatus.BAD_REQUEST),
+    CAUHINH_SIZE_INVALID(1089, "Mỗi cấu hình phải chọn một size có sẵn hoặc nhập một size mới", HttpStatus.BAD_REQUEST),
+    CAUHINH_SIZE_TRUNG(1090, "Không thể cấu hình cùng một kích cỡ nhiều lần cho một loại cá", HttpStatus.CONFLICT),
 
     // ===== ĐƠN VỊ TÍNH =====
     DONVITINH_NOT_EXISTED(1053, "Đơn vị tính không tồn tại", HttpStatus.NOT_FOUND),

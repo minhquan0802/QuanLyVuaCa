@@ -127,7 +127,9 @@ public class ChitietCabanService {
     }
 
     private String normalizeSizeName(String value) {
-        return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+        return value == null
+                ? ""
+                : value.replaceAll("\\s+", "").toLowerCase(java.util.Locale.ROOT);
     }
 
     @Transactional

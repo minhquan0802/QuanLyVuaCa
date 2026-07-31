@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,16 +28,23 @@ public class SizecaService {
 
     // Thêm Size mới
     public SizecaResponse taoSize(SizecaRequest request) {
-        String normalizedName = request.getSizeca() == null ? "" : request.getSizeca().trim();
-        var existing = sizecaRepository.findFirstBySizecaIgnoreCase(normalizedName);
+        String displayName = request.getSizeca() == null ? "" : request.getSizeca().trim();
+        String normalizedName = normalizeSizeName(displayName);
+        var existing = sizecaRepository.findFirstByNormalizedName(normalizedName);
         if (existing.isPresent()) {
             return sizecaMapper.toSizecaResponse(existing.get());
         }
 
-        request.setSizeca(normalizedName);
+        request.setSizeca(displayName);
         Sizeca sizeca = sizecaMapper.toSizeca(request);
         sizecaRepository.save(sizeca);
         return sizecaMapper.toSizecaResponse(sizeca);
+    }
+
+    private String normalizeSizeName(String value) {
+        return value == null
+                ? ""
+                : value.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
     }
 
     // Xóa Size
