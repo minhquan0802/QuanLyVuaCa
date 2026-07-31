@@ -46,6 +46,7 @@ public class SecurtyConfig {
             "/Donvitinhs",
             "/tai-khoan/verify-email",
             "/auth/csrf",
+            "/payment/vnpay-callback",
     };
 
     @Autowired

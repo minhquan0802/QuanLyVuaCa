@@ -89,6 +89,8 @@ export default function Checkout() {
                     orderId: newOrderId,
                     bankCode: "NCB",
                     language: "vn",
+                    soTienThanhToan: totalPrice,
+                    laDatHangMoi: true,
                 });
                 if (paymentData.paymentUrl) {
                     orderCompletedRef.current = true;
@@ -152,7 +154,7 @@ export default function Checkout() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2">
                                                 <span className="block font-bold text-blue-900">Thanh toán qua VNPAY</span>
-                                                <span className="px-2 py-0.5 rounded bg-red-100 text-red-600 text-[10px] font-bold">Tại shop</span>
+                                                <span className="px-2 py-0.5 rounded bg-red-100 text-red-600 text-[10px] font-bold">Trả trước</span>
                                             </div>
                                             <span className="text-sm text-slate-500">Quét mã QR, Ví VNPAY, Thẻ ATM/Nội địa</span>
                                         </div>
