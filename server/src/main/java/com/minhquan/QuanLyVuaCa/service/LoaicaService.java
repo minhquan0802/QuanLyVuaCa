@@ -224,7 +224,7 @@ public class LoaicaService {
 
         String urlAnh = null;
         try {
-            Loaica entity = new Loaica();
+            Loaica entity = mapper.toLoaica(request);
             entity.setTenloaica(tenLoaiCa);
             entity.setMieuta(chuanHoaChuoi(request.getMieuta()));
             if (hinhanh != null && !hinhanh.isEmpty()) {
