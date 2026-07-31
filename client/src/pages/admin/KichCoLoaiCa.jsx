@@ -5,6 +5,9 @@ import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
 
+const normalizeSizeName = (value) =>
+    (value || "").replace(/\s+/g, "").toLocaleLowerCase("vi-VN");
+
 export default function KichCoLoaiCa() {
     const { loaicaId } = useParams();
     const navigate = useNavigate();
@@ -82,8 +85,7 @@ export default function KichCoLoaiCa() {
             if (isCreatingNew) {
                 sizeNameToAdd = newSizeName.trim();
                 const matchingSize = allGlobalSizes.find(
-                    size => size.sizeca?.trim().toLocaleLowerCase("vi-VN")
-                        === sizeNameToAdd.toLocaleLowerCase("vi-VN")
+                    size => normalizeSizeName(size.sizeca) === normalizeSizeName(sizeNameToAdd)
                 );
 
                 if (matchingSize) {
