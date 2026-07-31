@@ -61,6 +61,15 @@ public class ChitietCabanService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<ChitietCabanResponse> layTheoLoaiCa(Integer idLoaiCa) {
+        Loaica loaiCa = loaicaRepository.findById(idLoaiCa)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
+        return chitietcabanRepository.findByIdloaica(loaiCa).stream()
+                .map(chitietCabanMapper::toResponse)
+                .toList();
+    }
+
     // 2. Tạo mới hoặc khôi phục cấu hình sản phẩm (Ghép Loại + Size)
     @Transactional
     public ChitietCabanResponse taoMoi(ChitietCabanCreationRequest request) {

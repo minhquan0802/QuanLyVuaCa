@@ -6,6 +6,7 @@ import com.minhquan.QuanLyVuaCa.dto.request.BanggiaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.CauHinhKichThuocVaGiaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietCabanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.MoLaiLoaiCaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.SizecaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaoLoaiCaHoanChinhRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ChitietCabanResponse;
@@ -138,14 +139,31 @@ public class LoaicaService {
     }
 
     @Transactional
-    public void khoiPhucLoaica(Integer id) {
+    public LoaicaResponse khoiPhucLoaica(Integer id, MoLaiLoaiCaRequest request) {
         Loaica loaica = loaicaRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.LOAICA_NOT_EXISTED));
+        if (!Boolean.TRUE.equals(loaica.getDeleted())) {
+            throw new AppExceptions(ErrorCode.LOAICA_ALREADY_ACTIVE);
+        }
+
+        List<CauHinhKichThuocVaGiaRequest> cauHinhs = request.getCauhinhkichthuoc();
+        if (cauHinhs == null || cauHinhs.isEmpty()) {
+            throw new AppExceptions(ErrorCode.CAUHINH_SIZE_EMPTY);
+        }
+
         List<Chitietcaban> danhSachKho = chitietcabanRepository.findByIdloaica(loaica);
-        danhSachKho.forEach(chitiet -> chitiet.setDeleted(false));
+        List<Banggia> bangGiaConHan =
+                banggiaRepository.findByChitietcabanInAndNgayketthucIsNull(danhSachKho);
+        bangGiaConHan.forEach(bangGia -> bangGia.setNgayketthuc(LocalDate.now()));
+        banggiaRepository.saveAll(bangGiaConHan);
+
+        danhSachKho.forEach(chitiet -> chitiet.setDeleted(true));
         chitietcabanRepository.saveAll(danhSachKho);
+
+        cauHinhKichThuocVaGia(id, cauHinhs);
+
         loaica.setDeleted(false);
-        loaicaRepository.save(loaica);
+        return mapper.toLoaicaResponse(loaicaRepository.save(loaica));
     }
 
     private String chuanHoaChuoi(String value) {
@@ -235,33 +253,12 @@ public class LoaicaService {
 
             LoaicaResponse loaiCa =
                     mapper.toLoaicaResponse(loaicaRepository.saveAndFlush(entity));
-            Set<Integer> sizeDaCauHinh = new HashSet<>();
             List<CauHinhKichThuocVaGiaRequest> cauHinhs =
                     request.getCauhinhkichthuoc() == null
                             ? List.of()
                             : request.getCauhinhkichthuoc();
 
-            for (CauHinhKichThuocVaGiaRequest cauHinh : cauHinhs) {
-                Integer idSize = resolveSizeId(cauHinh);
-                if (!sizeDaCauHinh.add(idSize)) {
-                    throw new AppExceptions(ErrorCode.CAUHINH_SIZE_TRUNG);
-                }
-
-                ChitietCabanResponse chiTiet = chitietCabanService.taoMoi(
-                        ChitietCabanCreationRequest.builder()
-                                .idloaica(loaiCa.getId())
-                                .idsizeca(idSize)
-                                .soluongton(BigDecimal.ZERO)
-                                .sokgtuongung(cauHinh.getSokgtuongung())
-                                .build());
-
-                banggiaService.taoMoi(
-                        BanggiaRequest.builder()
-                                .idchitietcaban(chiTiet.getId())
-                                .giabanle(cauHinh.getGiabanle())
-                                .giabansi(cauHinh.getGiabansi())
-                                .build());
-            }
+            cauHinhKichThuocVaGia(loaiCa.getId(), cauHinhs);
 
             return loaiCa;
         } catch (RuntimeException exception) {
@@ -289,6 +286,33 @@ public class LoaicaService {
                                 .sizeca(cauHinh.getTensizemoi())
                                 .build())
                 .getIdsizeca();
+    }
+
+    private void cauHinhKichThuocVaGia(
+            Integer idLoaiCa,
+            List<CauHinhKichThuocVaGiaRequest> cauHinhs) {
+        Set<Integer> sizeDaCauHinh = new HashSet<>();
+        for (CauHinhKichThuocVaGiaRequest cauHinh : cauHinhs) {
+            Integer idSize = resolveSizeId(cauHinh);
+            if (!sizeDaCauHinh.add(idSize)) {
+                throw new AppExceptions(ErrorCode.CAUHINH_SIZE_TRUNG);
+            }
+
+            ChitietCabanResponse chiTiet = chitietCabanService.taoMoi(
+                    ChitietCabanCreationRequest.builder()
+                            .idloaica(idLoaiCa)
+                            .idsizeca(idSize)
+                            .soluongton(BigDecimal.ZERO)
+                            .sokgtuongung(cauHinh.getSokgtuongung())
+                            .build());
+
+            banggiaService.taoMoi(
+                    BanggiaRequest.builder()
+                            .idchitietcaban(chiTiet.getId())
+                            .giabanle(cauHinh.getGiabanle())
+                            .giabansi(cauHinh.getGiabansi())
+                            .build());
+        }
     }
 
 }
