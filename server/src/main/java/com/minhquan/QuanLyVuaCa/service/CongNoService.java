@@ -284,6 +284,9 @@ public class CongNoService {
             thongBaoService.guiChoVaiTro("ADMIN",
                     "Khách " + tenKhach + " đã vượt 100% hạn mức tín dụng " + chiTiet,
                     "CONG_NO_NGUY_HIEM", "/admin/QuanLyCongNo");
+            thongBaoService.guiChoTaiKhoan(khach.getIdtaikhoan(),
+                    "Bạn đã vượt hạn mức tín dụng " + chiTiet + ". Vui lòng thanh toán bớt công nợ để tiếp tục đặt hàng.",
+                    "CONG_NO_VUOT_HAN_MUC", "/my-orders");
         } else if (phanTramCu.compareTo(BigDecimal.valueOf(phanTramCanhBao)) < 0
                 && phanTramMoi.compareTo(BigDecimal.valueOf(phanTramCanhBao)) >= 0) {
             thongBaoService.guiChoVaiTro("ADMIN",
@@ -312,9 +315,7 @@ public class CongNoService {
         lichSu.setNgaytao(Instant.now());
         lichsucongnoRepository.save(lichSu);
     }
-
-    // ===== Phase 5: dashboard admin =====
-
+    
     public List<CongNoKhachResponse> layDanhSachKhachCoCongNo() {
         return taiKhoanRepository.findByVaitroAndHanmuctindungIsNotNull("CUSTOMER").stream()
                 .map(khach -> CongNoKhachResponse.builder()
@@ -361,6 +362,9 @@ public class CongNoService {
             khach.setNgayvuothanmuc(null);
         }
         taiKhoanRepository.save(khach);
+
+        ghiSoCai(khach, LoaiThayDoiCongNo.DIEU_CHINH, BigDecimal.ZERO, congNoHienTai, null, null,
+                "Đổi hạn mức tín dụng: " + hanMucCu + " → " + hanMucMoi, layTaiKhoanHienTai());
     }
 
     @Transactional

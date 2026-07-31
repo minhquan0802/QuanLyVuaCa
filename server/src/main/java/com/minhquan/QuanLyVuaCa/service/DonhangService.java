@@ -479,7 +479,8 @@ public class DonhangService {
         if (!canhBaoGiaoThieu.isEmpty() && donHangDaLuu.getIdthongtinkhachhang() != null) {
             String noidung = "Đơn hàng của bạn không đủ hàng để giao đủ số lượng đã đặt: "
                     + String.join("; ", canhBaoGiaoThieu) + ". Chúng tôi đã điều chỉnh lại số lượng và tiền thực tế.";
-            thongBaoService.guiChoTaiKhoan(donHangDaLuu.getIdthongtinkhachhang(), noidung, "GIAO_THIEU_HANG", "/my-orders");
+            thongBaoService.guiChoTaiKhoan(donHangDaLuu.getIdthongtinkhachhang(), noidung, "GIAO_THIEU_HANG",
+                    "/my-orders?orderId=" + donHangDaLuu.getIddonhang());
         }
 
         if (!canhBaoGiaoThieu.isEmpty()) {
