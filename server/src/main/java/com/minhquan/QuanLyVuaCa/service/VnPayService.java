@@ -1,13 +1,9 @@
 package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.request.PaymentVNPAYRequest;
-import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import com.minhquan.QuanLyVuaCa.exception.AppExceptions;
 import com.minhquan.QuanLyVuaCa.exception.ErrorCode;
-import com.minhquan.QuanLyVuaCa.repository.DonhangRepository;
 import com.minhquan.QuanLyVuaCa.utils.VnPayUtils;
-import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
-import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +27,6 @@ public class VnPayService {
     Environment env;
     VnPayUtils utils;
     DonhangService donhangService;
-    DonhangRepository donhangRepository;
     ThanhtoanService thanhtoanService;
 
     // Tạo URL thanh toán
@@ -39,9 +34,9 @@ public class VnPayService {
 
         // 1. Xác định số tiền: dùng custom amount nếu có, ngược lại dùng tổng đơn hàng
         BigDecimal soTien;
-        boolean isPartialPayment = paymentVNPAYRequest.getSoTienThanhToan() != null;
+        boolean TTMotLan = paymentVNPAYRequest.getSoTienThanhToan() != null;
 
-        if (isPartialPayment) {
+        if (TTMotLan) {
             soTien = paymentVNPAYRequest.getSoTienThanhToan();
         } else {
             soTien = donhangService.tinhTongTienDonHang(paymentVNPAYRequest.getOrderId());
@@ -51,18 +46,17 @@ public class VnPayService {
             throw new AppExceptions(ErrorCode.SOTIEN_THANH_TOAN_KHONG_HOP_LE);
         }
 
-        // 2. Với partial payment: tạo bản ghi thanhtoan trước, dùng idthanhtoan làm TxnRef
-        //    Với full checkout: dùng orderId làm TxnRef (flow cũ)
-        String vnp_TxnRef;
-        String vnp_OrderInfo;
-        if (isPartialPayment) {
-            var bienBan = thanhtoanService.taoBienBanVnpay(paymentVNPAYRequest.getOrderId(), soTien);
-            vnp_TxnRef = "DEBT-" + bienBan.getIdthanhtoan();
-            vnp_OrderInfo = "Thanh toan cong no don hang " + paymentVNPAYRequest.getOrderId();
-        } else {
-            vnp_TxnRef = paymentVNPAYRequest.getOrderId();
-            vnp_OrderInfo = "Thanh toan don hang " + vnp_TxnRef;
-        }
+        // 2. Luôn tạo trước 1 bản ghi thanhtoan "chờ xác nhận", dùng idthanhtoan làm TxnRef.
+        //    Tiền tố phân biệt ngữ cảnh nhưng dùng chung 1 cơ chế xác nhận (taoBienBanVnpay/xacNhanThanhToan):
+        //    - CHECKOUT-: thanh toán ngay lúc đặt đơn mới ở trang checkout. Đơn vẫn đi qua luồng giao hàng
+        //      bình thường (có cân thực tế) — khoản này chỉ nạp trước vào công nợ, không tự chốt đơn.
+        //    - DEBT-: trả bớt công nợ cho 1 đơn cũ đã có sẵn.
+        boolean laDatHangMoi = Boolean.TRUE.equals(paymentVNPAYRequest.getLaDatHangMoi());
+        var bienBan = thanhtoanService.taoBienBanVnpay(paymentVNPAYRequest.getOrderId(), soTien);
+        String vnp_TxnRef = (laDatHangMoi ? "CHECKOUT-" : "DEBT-") + bienBan.getIdthanhtoan();
+        String vnp_OrderInfo = laDatHangMoi
+                ? "Thanh toan don hang " + paymentVNPAYRequest.getOrderId()
+                : "Thanh toan cong no don hang " + paymentVNPAYRequest.getOrderId();
 
         // 3. Tính số tiền (VNPAY yêu cầu nhân 100 và ép kiểu long)
         long amount = soTien.multiply(BigDecimal.valueOf(100)).longValue();
@@ -128,50 +122,21 @@ public class VnPayService {
                 if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
 
                     String txnRef = request.getParameter("vnp_TxnRef");
+                    String idThanhtoan = layIdThanhtoanTuTxnRef(txnRef);
 
-                    if (txnRef.startsWith("DEBT-")) {
-                        // --- PARTIAL PAYMENT FLOW ---
-                        String idThanhtoan = txnRef.substring(5);
+                    if (idThanhtoan != null) {
                         try {
                             thanhtoanService.xacNhanThanhToan(idThanhtoan);
                         } catch (Exception e) {
                             System.err.println("LỖI XÁC NHẬN THANH TOÁN: " + e.getMessage());
                         }
                         return 1;
-                    } else {
-                        // --- FULL CHECKOUT FLOW (flow cũ) ---
-                        String orderId = txnRef;
-                        Donhang donhang = donhangRepository.findById(orderId).orElse(null);
-
-                        if (donhang != null) {
-                            // Callback có thể được VNPay gửi lại. Nếu đơn đã được ghi nhận thanh toán
-                            // thì không cập nhật và đặc biệt không trừ kho thêm lần nữa.
-                            if (donhang.getTrangthaithanhtoan() == TrangThaiThanhToanDonHang.DA_THANH_TOAN) {
-                                return 1;
-                            }
-
-                            TrangThaiDonHang trangThaiCu = donhang.getTrangthaidonhang();
-                            donhang.setTrangthaidonhang(TrangThaiDonHang.GIAO_HANG_THANH_CONG);
-                            donhang.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
-                            donhangRepository.save(donhang);
-
-                            // Đơn online CHO_XAC_NHAN chưa trừ kho. Các trạng thái khác đã rời
-                            // CHO_XAC_NHAN qua luồng quản lý đơn và đã trừ kho trước đó.
-                            if (trangThaiCu == TrangThaiDonHang.CHO_XAC_NHAN) {
-                                try {
-                                    donhangService.truSoluongTon(orderId);
-                                } catch (Exception e) {
-                                    System.err.println("LỖI TRỪ KHO (VNPAY): " + e.getMessage());
-                                }
-                            }
-                            return 1;
-                        }
                     }
                 } else {
-                    // VNPAY trả về thất bại/hủy → xóa record pending nếu là partial payment
-                    String failedTxnRef = request.getParameter("vnp_TxnRef");
-                    if (failedTxnRef != null && failedTxnRef.startsWith("DEBT-")) {
-                        thanhtoanService.huyBienBanVnpay(failedTxnRef.substring(5));
+                    // VNPAY trả về thất bại/hủy → xóa record pending
+                    String idThanhtoanThatBai = layIdThanhtoanTuTxnRef(request.getParameter("vnp_TxnRef"));
+                    if (idThanhtoanThatBai != null) {
+                        thanhtoanService.huyBienBanVnpay(idThanhtoanThatBai);
                     }
                     return 0;
                 }
@@ -183,5 +148,13 @@ public class VnPayService {
             return 0; // Lỗi hệ thống
         }
         return 0;
+    }
+
+    // txnRef dạng "CHECKOUT-{idThanhtoan}" hoặc "DEBT-{idThanhtoan}" -> trả về idThanhtoan, null nếu không khớp
+    private String layIdThanhtoanTuTxnRef(String txnRef) {
+        if (txnRef == null) return null;
+        if (txnRef.startsWith("CHECKOUT-")) return txnRef.substring("CHECKOUT-".length());
+        if (txnRef.startsWith("DEBT-")) return txnRef.substring("DEBT-".length());
+        return null;
     }
 }

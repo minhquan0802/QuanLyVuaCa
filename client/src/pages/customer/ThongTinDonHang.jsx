@@ -486,9 +486,6 @@ export default function ThongTinDonHang() {
                                                         Thanh toán
                                                     </button>
                                                 )}
-                                                <button className="px-5 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
-                                                    Mua lại
-                                                </button>
                                                 <button
                                                     onClick={() => handleViewDetail(order)}
                                                     className="px-5 py-2 rounded border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"

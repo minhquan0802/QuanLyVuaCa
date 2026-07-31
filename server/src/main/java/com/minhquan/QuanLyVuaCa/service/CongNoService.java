@@ -134,8 +134,11 @@ public class CongNoService {
         ghiSoCai(khach, LoaiThayDoiCongNo.TANG, tongTienDon, congNoMoi,
                 donhang.getIddonhang(), NguonGocCongNo.DON_HANG, null, null);
 
-        // Nếu khách có số dư trả trước (congNoCu âm), tạo Thanhtoan record khấu trừ tự động
-        if (congNoCu.compareTo(BigDecimal.ZERO) < 0) {
+        // Nếu khách có số dư trả trước (congNoCu âm), tạo Thanhtoan record khấu trừ tự động.
+        // Bỏ qua nếu đơn này đã tự thanh toán đủ từ trước (vd VNPAY trả ngay lúc checkout) — tránh tạo
+        // thêm 1 khoản Thanhtoan "ảo" thứ 2 cho cùng 1 đơn, gây lịch sử thanh toán bị nhân đôi.
+        if (donhang.getTrangthaithanhtoan() != TrangThaiThanhToanDonHang.DA_THANH_TOAN
+                && congNoCu.compareTo(BigDecimal.ZERO) < 0) {
             BigDecimal khauTru = congNoCu.negate().min(tongTienDon);
             Thanhtoan t = new Thanhtoan();
             t.setIddonhang(donhang);
