@@ -22,7 +22,9 @@ export default function ThemSuaLoaiCa() {
 
     // Chỉ dùng khi CREATE
     const [allGlobalSizes, setAllGlobalSizes] = useState([]);
-    const [sizeRows, setSizeRows] = useState([{ sizeId: "", newSizeName: "", kg: "" }]);
+    const [sizeRows, setSizeRows] = useState([
+        { sizeId: "", newSizeName: "", kg: "", giaBanLe: "", giaBanSi: "" }
+    ]);
 
     useEffect(() => {
         if (isEditing) {
@@ -53,7 +55,10 @@ export default function ThemSuaLoaiCa() {
     };
 
     const addSizeRow = () => {
-        setSizeRows(prev => [...prev, { sizeId: "", newSizeName: "", kg: "" }]);
+        setSizeRows(prev => [
+            ...prev,
+            { sizeId: "", newSizeName: "", kg: "", giaBanLe: "", giaBanSi: "" }
+        ]);
     };
 
     const removeSizeRow = (index) => {
@@ -66,6 +71,60 @@ export default function ThemSuaLoaiCa() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        let cauHinhKichThuoc = [];
+        if (!isEditing) {
+            const rowsDaNhap = sizeRows.filter(row =>
+                row.sizeId
+                || row.newSizeName.trim()
+                || row.kg
+                || row.giaBanLe
+                || row.giaBanSi
+            );
+            if (rowsDaNhap.length === 0) {
+                showToast("Vui lòng cấu hình ít nhất một kích cỡ và bảng giá!", "error");
+                return;
+            }
+
+            for (const row of rowsDaNhap) {
+                const hasSize = row.sizeId === NEW_SIZE_SENTINEL
+                    ? row.newSizeName.trim()
+                    : row.sizeId;
+                const kg = Number(row.kg);
+                const giaBanLe = Number(row.giaBanLe);
+                const giaBanSi = Number(row.giaBanSi);
+
+                if (!hasSize) {
+                    showToast("Vui lòng chọn hoặc nhập đầy đủ tên kích cỡ!", "error");
+                    return;
+                }
+                if (!Number.isFinite(kg) || kg <= 0) {
+                    showToast("Số kg quy đổi phải lớn hơn 0!", "error");
+                    return;
+                }
+                if (!Number.isFinite(giaBanLe) || giaBanLe <= 1000) {
+                    showToast("Giá bán lẻ phải lớn hơn 1.000 VNĐ!", "error");
+                    return;
+                }
+                if (!Number.isFinite(giaBanSi) || giaBanSi <= 1000) {
+                    showToast("Giá bán sỉ phải lớn hơn 1.000 VNĐ!", "error");
+                    return;
+                }
+                if (giaBanSi > giaBanLe) {
+                    showToast("Giá bán sỉ không được lớn hơn giá bán lẻ!", "error");
+                    return;
+                }
+
+                cauHinhKichThuoc.push({
+                    idsizeca: row.sizeId === NEW_SIZE_SENTINEL ? null : Number(row.sizeId),
+                    tensizemoi: row.sizeId === NEW_SIZE_SENTINEL ? row.newSizeName.trim() : null,
+                    sokgtuongung: kg,
+                    giabanle: giaBanLe,
+                    giabansi: giaBanSi
+                });
+            }
+        }
+
         const accepted = await confirm({
             title: isEditing ? "Cập nhật loại cá" : "Thêm loại cá mới",
             message: isEditing
@@ -77,43 +136,32 @@ export default function ThemSuaLoaiCa() {
         if (!accepted) return;
         setIsSaving(true);
         try {
-            const formData = new FormData();
-            formData.append("tenloaica", currentCategory.tenloaica);
-            formData.append("mieuta", currentCategory.mieuta || "");
-            if (currentCategory.hinhanhFile) formData.append("hinhanh", currentCategory.hinhanhFile);
-
             if (isEditing) {
+                const formData = new FormData();
+                formData.append("tenloaica", currentCategory.tenloaica);
+                formData.append("mieuta", currentCategory.mieuta || "");
+                if (currentCategory.hinhanhFile) formData.append("hinhanh", currentCategory.hinhanhFile);
                 await api.put(`/Loaicas/${id}`, formData);
                 showToast("Cập nhật thông tin thành công!", "success");
                 navigate("/admin/QuanLyLoaiCa");
                 return;
             }
 
-            // Tạo loại cá trước
-            const { data: loaicaData } = await api.post("/Loaicas", formData);
-            const newLoaicaId = loaicaData.result?.id;
-
-            // Xử lý các size row hợp lệ (có size và kg > 0)
-            const validRows = sizeRows.filter(row => {
-                const hasSize = row.sizeId === NEW_SIZE_SENTINEL ? row.newSizeName.trim() : row.sizeId;
-                return hasSize && row.kg && parseFloat(row.kg) > 0;
-            });
-
-            for (const row of validRows) {
-                let sizeIdToUse = row.sizeId;
-                if (row.sizeId === NEW_SIZE_SENTINEL) {
-                    const { data: sizeData } = await api.post("/Sizecas", { sizeca: row.newSizeName.trim() });
-                    sizeIdToUse = sizeData.result.idsizeca;
-                }
-                await api.post("/Chitietcabans", {
-                    idloaica: newLoaicaId,
-                    idsizeca: sizeIdToUse,
-                    soluongton: 0,
-                    sokgtuongung: parseFloat(row.kg)
-                });
+            const formData = new FormData();
+            formData.append(
+                "request",
+                new Blob([JSON.stringify({
+                    tenloaica: currentCategory.tenloaica,
+                    mieuta: currentCategory.mieuta || "",
+                    cauhinhkichthuoc: cauHinhKichThuoc
+                })], { type: "application/json" })
+            );
+            if (currentCategory.hinhanhFile) {
+                formData.append("hinhanh", currentCategory.hinhanhFile);
             }
+            await api.post("/Loaicas/hoan-chinh", formData);
 
-            showToast("Thêm mới loại cá thành công!", "success");
+            showToast("Đã thêm loại cá, kích cỡ và bảng giá thành công!", "success");
             navigate("/admin/QuanLyLoaiCa");
         } catch (error) {
             showToast(`Lỗi: ${error.response?.data?.message || "Thao tác thất bại"}`, "error");
@@ -194,72 +242,116 @@ export default function ThemSuaLoaiCa() {
                     {!isEditing && (
                         <div className="pt-3 border-t border-slate-200">
                             <div className="flex items-center justify-between mb-3">
-                                <label className="text-xs font-bold text-slate-500 uppercase">Kích cỡ &amp; Quy đổi kg</label>
-                                <span className="text-xs text-slate-400 italic">Không bắt buộc, có thể thêm sau</span>
+                                <label className="text-xs font-bold text-slate-500 uppercase">
+                                    Kích cỡ, quy đổi kg &amp; bảng giá
+                                </label>
+                                <span className="text-xs text-slate-400 italic">
+                                    Cần ít nhất một kích cỡ
+                                </span>
                             </div>
 
                             <div className="space-y-2">
                                 {sizeRows.map((row, index) => (
-                                    <div key={index} className="flex gap-2 items-center rounded-xl border border-slate-200 bg-slate-50 p-2">
-                                        {/* Size: dropdown hoặc input tạo mới */}
-                                        {row.sizeId === NEW_SIZE_SENTINEL ? (
-                                            <input
-                                                type="text"
-                                                value={row.newSizeName}
-                                                onChange={(e) => updateSizeRow(index, 'newSizeName', e.target.value)}
-                                                placeholder="Tên size mới..."
-                                                className="flex-1 p-2 text-sm rounded-xl border border-cyan-300 focus:border-cyan-500 outline-none bg-white"
-                                                autoFocus
-                                            />
-                                        ) : (
-                                            <select
-                                                value={row.sizeId}
-                                                onChange={(e) => updateSizeRow(index, 'sizeId', e.target.value)}
-                                                className="flex-1 p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none bg-white"
-                                            >
-                                                <option value="">-- Chọn size --</option>
-                                                {allGlobalSizes.map(s => (
-                                                    <option key={s.idsizeca} value={s.idsizeca}>{s.sizeca}</option>
-                                                ))}
-                                                <option value={NEW_SIZE_SENTINEL}>+ Tạo size mới...</option>
-                                            </select>
-                                        )}
+                                    <div key={index} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <div className="flex gap-2 items-center">
+                                            {row.sizeId === NEW_SIZE_SENTINEL ? (
+                                                <input
+                                                    type="text"
+                                                    value={row.newSizeName}
+                                                    onChange={(e) => updateSizeRow(index, "newSizeName", e.target.value)}
+                                                    placeholder="Tên size mới..."
+                                                    className="flex-1 p-2 text-sm rounded-xl border border-cyan-300 focus:border-cyan-500 outline-none bg-white"
+                                                    autoFocus
+                                                />
+                                            ) : (
+                                                <select
+                                                    value={row.sizeId}
+                                                    onChange={(e) => updateSizeRow(index, "sizeId", e.target.value)}
+                                                    className="flex-1 p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none bg-white"
+                                                >
+                                                    <option value="">-- Chọn size --</option>
+                                                    {allGlobalSizes.map(s => (
+                                                        <option key={s.idsizeca} value={s.idsizeca}>{s.sizeca}</option>
+                                                    ))}
+                                                    <option value={NEW_SIZE_SENTINEL}>+ Tạo size mới...</option>
+                                                </select>
+                                            )}
 
-                                        {/* Kg quy đổi */}
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0.01"
-                                            value={row.kg}
-                                            onChange={(e) => updateSizeRow(index, 'kg', e.target.value)}
-                                            placeholder="kg/con"
-                                            className="w-24 p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none text-center bg-white"
-                                        />
+                                            {row.sizeId === NEW_SIZE_SENTINEL && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        updateSizeRow(index, "sizeId", "");
+                                                        updateSizeRow(index, "newSizeName", "");
+                                                    }}
+                                                    title="Quay về danh sách"
+                                                    className="text-xs text-slate-400 hover:text-cyan-600 px-1"
+                                                >
+                                                    ←
+                                                </button>
+                                            )}
 
-                                        {/* Quay về dropdown nếu đang nhập tên mới */}
-                                        {row.sizeId === NEW_SIZE_SENTINEL && (
-                                            <button
-                                                type="button"
-                                                onClick={() => updateSizeRow(index, 'sizeId', '')}
-                                                title="Quay về danh sách"
-                                                className="text-xs text-slate-400 hover:text-cyan-600 px-1"
-                                            >
-                                                ←
-                                            </button>
-                                        )}
+                                            {sizeRows.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeSizeRow(index)}
+                                                    title="Xóa dòng kích cỡ"
+                                                    className="size-7 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-3.5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </div>
 
-                                        {/* Xóa row */}
-                                        {sizeRows.length > 1 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => removeSizeRow(index)}
-                                                className="size-7 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-3.5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        )}
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <label className="block">
+                                                <span className="block text-[11px] font-bold text-slate-500 mb-1">
+                                                    Kg/con
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0.01"
+                                                    value={row.kg}
+                                                    onChange={(e) => updateSizeRow(index, "kg", e.target.value)}
+                                                    placeholder="0,00"
+                                                    className="w-full p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none bg-white"
+                                                />
+                                            </label>
+
+                                            <label className="block">
+                                                <span className="block text-[11px] font-bold text-slate-500 mb-1">
+                                                    Giá bán lẻ (VNĐ)
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    step="1"
+                                                    min="1001"
+                                                    value={row.giaBanLe}
+                                                    onChange={(e) => updateSizeRow(index, "giaBanLe", e.target.value)}
+                                                    placeholder="65.000"
+                                                    className="w-full p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none bg-white"
+                                                />
+                                            </label>
+
+                                            <label className="block">
+                                                <span className="block text-[11px] font-bold text-slate-500 mb-1">
+                                                    Giá bán sỉ (VNĐ)
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    step="1"
+                                                    min="1001"
+                                                    value={row.giaBanSi}
+                                                    onChange={(e) => updateSizeRow(index, "giaBanSi", e.target.value)}
+                                                    placeholder="60.000"
+                                                    className="w-full p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 outline-none bg-white"
+                                                />
+                                            </label>
+                                        </div>
+
                                     </div>
                                 ))}
                             </div>

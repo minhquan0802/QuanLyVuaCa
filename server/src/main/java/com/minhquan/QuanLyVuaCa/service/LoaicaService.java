@@ -231,4 +231,8 @@ public class LoaicaService {
             log.error("Không thể xóa ảnh Cloudinary cũ: {}", exception.getMessage());
         }
     }
+
+    public void xoaAnhDaTaiLen(String urlAnh) {
+        xoaFile(urlAnh);
+    }
 }
