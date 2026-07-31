@@ -23,6 +23,7 @@ public interface ChitietcabanRepository extends JpaRepository<Chitietcaban, Inte
     List<Chitietcaban> findByIdloaicaAndDeletedTrue(Loaica idloaica);
 
     List<Chitietcaban> findAllByDeletedFalse();
+    @EntityGraph(attributePaths = {"idloaica", "idsizeca"})
     List<Chitietcaban> findByIdloaica(Loaica idloaica);
     boolean existsByIdloaicaAndSoluongtonGreaterThan(Loaica idloaica, java.math.BigDecimal soluongton);
 

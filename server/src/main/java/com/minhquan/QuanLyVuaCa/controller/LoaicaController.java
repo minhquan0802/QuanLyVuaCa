@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.MoLaiLoaiCaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaoLoaiCaHoanChinhRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.LoaicaResponse;
@@ -86,12 +87,13 @@ public class LoaicaController {
 
     @PatchMapping("/{id}/khoi-phuc")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<String> khoiPhucLoaica(@PathVariable("id") Integer id) {
-        loaicaService.khoiPhucLoaica(id);
-        return ApiResponse.<String>builder()
+    public ApiResponse<LoaicaResponse> khoiPhucLoaica(
+            @PathVariable("id") Integer id,
+            @RequestBody @Valid MoLaiLoaiCaRequest request) {
+        return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("OK")
-                .result("Đã mở lại loại cá; vui lòng thiết lập bảng giá mới")
+                .result(loaicaService.khoiPhucLoaica(id, request))
                 .build();
     }
 }

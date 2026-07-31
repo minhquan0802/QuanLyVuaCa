@@ -29,6 +29,15 @@ public class ChitietCabanController {
                 .build();
     }
 
+    @GetMapping("/loai-ca/{idLoaiCa}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<ChitietCabanResponse>> layTheoLoaiCa(
+            @PathVariable Integer idLoaiCa) {
+        return ApiResponse.<List<ChitietCabanResponse>>builder()
+                .result(chitietCabanService.layTheoLoaiCa(idLoaiCa))
+                .build();
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ChitietCabanResponse> taoMoi(@RequestBody @Validated ChitietCabanCreationRequest request) {
