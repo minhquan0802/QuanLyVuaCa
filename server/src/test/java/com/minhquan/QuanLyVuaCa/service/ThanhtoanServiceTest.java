@@ -115,10 +115,11 @@ class ThanhtoanServiceTest {
 
         service.xacNhanThanhToan("tt-1");
 
-        verify(congNoService, never()).xuLyThanhToanXacNhan(any());
+        verify(congNoService, never()).xuLyThanhToanXacNhan(any(), anyBoolean());
         verify(thanhtoanRepository, never()).save(any());
     }
 
+    // Gọi từ VNPay callback (tự động) -> không ghi người thực hiện, giữ "Hệ thống".
     @Test
     void xacNhanGiaoDichDangCho_chuyenTrangThaiVaXuLyCongNoMotLan() {
         Thanhtoan dangCho = thanhToan("tt-1", "500", TrangThaiThanhToan.CHO_XAC_NHAN);
@@ -132,8 +133,23 @@ class ThanhtoanServiceTest {
 
         assertEquals(TrangThaiThanhToan.DA_THANH_TOAN, dangCho.getTrangthai());
         verify(thanhtoanRepository).save(dangCho);
-        verify(congNoService).xuLyThanhToanXacNhan(dangCho);
+        verify(congNoService).xuLyThanhToanXacNhan(dangCho, false);
         verify(donhangRepository, never()).save(any());
+    }
+
+    // Gọi từ admin/staff bấm "Xác nhận thanh toán" -> phải ghi đúng người thực hiện.
+    @Test
+    void xacNhanThanhToanThuCong_xuLyCongNoVoiNguoiThucHien() {
+        Thanhtoan dangCho = thanhToan("tt-1", "500", TrangThaiThanhToan.CHO_XAC_NHAN);
+        when(thanhtoanRepository.findById("tt-1")).thenReturn(Optional.of(dangCho));
+        when(donhangService.tinhTongTienDonHang("dh-1")).thenReturn(new BigDecimal("1000"));
+        when(thanhtoanRepository.findByIddonhangAndTrangthai(
+                donhang, TrangThaiThanhToan.DA_THANH_TOAN))
+                .thenReturn(List.of(dangCho));
+
+        service.xacNhanThanhToanThuCong("tt-1");
+
+        verify(congNoService).xuLyThanhToanXacNhan(dangCho, true);
     }
 
     @Test
@@ -150,7 +166,7 @@ class ThanhtoanServiceTest {
         assertEquals(0, new BigDecimal("600").compareTo(captor.getValue().getSotien()));
         assertEquals("TIEN_MAT", captor.getValue().getPhuongthuc());
         assertEquals(TrangThaiThanhToan.DA_THANH_TOAN, captor.getValue().getTrangthai());
-        verify(congNoService).xuLyThanhToanXacNhan(captor.getValue());
+        verify(congNoService).xuLyThanhToanXacNhan(captor.getValue(), true);
         assertEquals(TrangThaiThanhToanDonHang.DA_THANH_TOAN, donhang.getTrangthaithanhtoan());
     }
 }

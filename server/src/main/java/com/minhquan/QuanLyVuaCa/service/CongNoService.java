@@ -156,9 +156,11 @@ public class CongNoService {
         }
     }
 
-    // Thanh toán được xác nhận -> giảm nợ
+    // Thanh toán được xác nhận -> giảm nợ. laXacNhanThuCong=true khi admin/staff chủ động bấm xác
+    // nhận (chuyển khoản/tiền mặt tại quầy) -> ghi đúng người thực hiện; false khi tự động qua VNPAY
+    // callback (không có phiên đăng nhập đáng tin cậy) -> giữ "Hệ thống" như trước.
     @Transactional
-    public void xuLyThanhToanXacNhan(Thanhtoan thanhtoan) {
+    public void xuLyThanhToanXacNhan(Thanhtoan thanhtoan, boolean laXacNhanThuCong) {
         String idKhach = thanhtoan.getIddonhang().getIdthongtinkhachhang();
         if (idKhach == null) return;
 
@@ -172,8 +174,9 @@ public class CongNoService {
         }
         taiKhoanRepository.save(khach);
 
+        Taikhoan nguoiThucHien = laXacNhanThuCong ? layTaiKhoanHienTai() : null;
         ghiSoCai(khach, LoaiThayDoiCongNo.GIAM, thanhtoan.getSotien(), congNoMoi,
-                thanhtoan.getIdthanhtoan(), NguonGocCongNo.THANH_TOAN, null, null);
+                thanhtoan.getIdthanhtoan(), NguonGocCongNo.THANH_TOAN, null, nguoiThucHien);
 
         // Nếu trả thừa (số dư âm), quét ngược các đơn cũ đã giao nhưng chưa thanh toán
         if (congNoMoi.compareTo(BigDecimal.ZERO) < 0) {
@@ -315,7 +318,6 @@ public class CongNoService {
         lichSu.setNgaytao(Instant.now());
         lichsucongnoRepository.save(lichSu);
     }
-    
     public List<CongNoKhachResponse> layDanhSachKhachCoCongNo() {
         return taiKhoanRepository.findByVaitroAndHanmuctindungIsNotNull("CUSTOMER").stream()
                 .map(khach -> CongNoKhachResponse.builder()

@@ -129,7 +129,7 @@ public class ThanhtoanService {
             t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
             t.setNgaythanhtoan(LocalDateTime.now());
             thanhtoanRepository.save(t);
-            congNoService.xuLyThanhToanXacNhan(t);
+            congNoService.xuLyThanhToanXacNhan(t, true);
         }
 
         dh.setTrangthaithanhtoan(TrangThaiThanhToanDonHang.DA_THANH_TOAN);
@@ -145,9 +145,20 @@ public class ThanhtoanService {
         });
     }
 
-    // Gọi từ VNPay callback hoặc admin xác nhận chuyển khoản
+    // Gọi từ VNPay callback: tự động, không có phiên đăng nhập đáng tin cậy -> ghi "Hệ thống".
     @Transactional
     public void xacNhanThanhToan(String idThanhtoan) {
+        xacNhanThanhToanNoiBo(idThanhtoan, false);
+    }
+
+    // Gọi từ admin/staff chủ động bấm "Xác nhận thanh toán" cho khoản chuyển khoản đang chờ ->
+    // ghi đúng người thực hiện vào sổ cái công nợ.
+    @Transactional
+    public void xacNhanThanhToanThuCong(String idThanhtoan) {
+        xacNhanThanhToanNoiBo(idThanhtoan, true);
+    }
+
+    private void xacNhanThanhToanNoiBo(String idThanhtoan, boolean laXacNhanThuCong) {
         Thanhtoan t = thanhtoanRepository.findById(idThanhtoan)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.THANHTOAN_NOT_EXISTED, "Không tìm thấy bản ghi thanh toán: " + idThanhtoan));
 
@@ -160,7 +171,7 @@ public class ThanhtoanService {
         t.setTrangthai(TrangThaiThanhToan.DA_THANH_TOAN);
         thanhtoanRepository.save(t);
 
-        congNoService.xuLyThanhToanXacNhan(t);
+        congNoService.xuLyThanhToanXacNhan(t, laXacNhanThuCong);
 
         // Kiểm tra đã trả đủ chưa → cập nhật trạng thái đơn hàng
         String idDonhang = t.getIddonhang().getIddonhang();
