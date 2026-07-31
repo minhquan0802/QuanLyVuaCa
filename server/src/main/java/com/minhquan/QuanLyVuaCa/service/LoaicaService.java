@@ -2,8 +2,14 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.minhquan.QuanLyVuaCa.dto.request.BanggiaRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.CauHinhKichThuocVaGiaRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.ChitietCabanCreationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaCeationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.SizecaRequest;
+import com.minhquan.QuanLyVuaCa.dto.request.TaoLoaiCaHoanChinhRequest;
+import com.minhquan.QuanLyVuaCa.dto.response.ChitietCabanResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.LoaicaResponse;
 import com.minhquan.QuanLyVuaCa.entity.Banggia;
 import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
@@ -27,6 +33,7 @@ import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +50,9 @@ public class LoaicaService {
     ChitietcabanRepository chitietcabanRepository;
     BanggiaRepository banggiaRepository;
     Cloudinary cloudinary;
+    SizecaService sizecaService;
+    ChitietCabanService chitietCabanService;
+    BanggiaService banggiaService;
 
     @Transactional(readOnly = true)
     public List<LoaicaResponse> layLoaiCa() {
@@ -230,6 +240,72 @@ public class LoaicaService {
         } catch (Exception exception) {
             log.error("Không thể xóa ảnh Cloudinary cũ: {}", exception.getMessage());
         }
+    }
+
+    @Transactional
+    public LoaicaResponse taoLoaiCaHoanChinh(
+            TaoLoaiCaHoanChinhRequest request,
+            MultipartFile hinhanh) {
+        LoaicaResponse loaiCa = taoLoaica(
+                LoaicaCeationRequest.builder()
+                        .tenloaica(request.getTenloaica())
+                        .mieuta(request.getMieuta())
+                        .hinhanh(hinhanh)
+                        .build());
+
+        try {
+            Set<Integer> sizeDaCauHinh = new HashSet<>();
+            List<CauHinhKichThuocVaGiaRequest> cauHinhs =
+                    request.getCauhinhkichthuoc() == null
+                            ? List.of()
+                            : request.getCauhinhkichthuoc();
+
+            for (CauHinhKichThuocVaGiaRequest cauHinh : cauHinhs) {
+                Integer idSize = resolveSizeId(cauHinh);
+                if (!sizeDaCauHinh.add(idSize)) {
+                    throw new AppExceptions(ErrorCode.CAUHINH_SIZE_TRUNG);
+                }
+
+                ChitietCabanResponse chiTiet = chitietCabanService.taoMoi(
+                        ChitietCabanCreationRequest.builder()
+                                .idloaica(loaiCa.getId())
+                                .idsizeca(idSize)
+                                .soluongton(BigDecimal.ZERO)
+                                .sokgtuongung(cauHinh.getSokgtuongung())
+                                .build());
+
+                banggiaService.taoMoi(
+                        BanggiaRequest.builder()
+                                .idchitietcaban(chiTiet.getId())
+                                .giabanle(cauHinh.getGiabanle())
+                                .giabansi(cauHinh.getGiabansi())
+                                .build());
+            }
+
+            return loaiCa;
+        } catch (RuntimeException exception) {
+            xoaAnhDaTaiLen(loaiCa.getHinhanhurl());
+            throw exception;
+        }
+    }
+
+    private Integer resolveSizeId(CauHinhKichThuocVaGiaRequest cauHinh) {
+        boolean coSizeSan = cauHinh.getIdsizeca() != null;
+        boolean coSizeMoi = cauHinh.getTensizemoi() != null
+                && !cauHinh.getTensizemoi().isBlank();
+        if (coSizeSan == coSizeMoi) {
+            throw new AppExceptions(ErrorCode.CAUHINH_SIZE_INVALID);
+        }
+
+        if (coSizeSan) {
+            return cauHinh.getIdsizeca();
+        }
+
+        return sizecaService.taoSize(
+                        SizecaRequest.builder()
+                                .sizeca(cauHinh.getTensizemoi())
+                                .build())
+                .getIdsizeca();
     }
 
     public void xoaAnhDaTaiLen(String urlAnh) {
