@@ -159,7 +159,7 @@ export default function ThemSuaLoaiCa() {
             if (currentCategory.hinhanhFile) {
                 formData.append("hinhanh", currentCategory.hinhanhFile);
             }
-            await api.post("/Loaicas/hoan-chinh", formData);
+            await api.post("/Loaicas", formData);
 
             showToast("Đã thêm loại cá, kích cỡ và bảng giá thành công!", "success");
             navigate("/admin/QuanLyLoaiCa");

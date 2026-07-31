@@ -5,7 +5,6 @@ import com.cloudinary.utils.ObjectUtils;
 import com.minhquan.QuanLyVuaCa.dto.request.BanggiaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.CauHinhKichThuocVaGiaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.ChitietCabanCreationRequest;
-import com.minhquan.QuanLyVuaCa.dto.request.LoaicaCeationRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.LoaicaUpdateRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.SizecaRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.TaoLoaiCaHoanChinhRequest;
@@ -149,34 +148,6 @@ public class LoaicaService {
         loaicaRepository.save(loaica);
     }
 
-    public LoaicaResponse taoLoaica(LoaicaCeationRequest request) {
-        String tenLoaiCa = request.getTenloaica().trim();
-        if (loaicaRepository.existsByTenloaicaIgnoreCase(tenLoaiCa)) {
-            throw new AppExceptions(ErrorCode.DATA_EXISTED);
-        }
-
-        Loaica loaica = new Loaica();
-        loaica.setTenloaica(tenLoaiCa);
-        loaica.setMieuta(chuanHoaChuoi(request.getMieuta()));
-
-        MultipartFile file = request.getHinhanh();
-        String urlAnh = null;
-        if (file != null && !file.isEmpty()) {
-            kiemTraAnh(file);
-            urlAnh = saveImage(file, taoTenFileAnh(tenLoaiCa, file));
-            loaica.setHinhanhurl(urlAnh);
-        }
-
-        try {
-            return mapper.toLoaicaResponse(loaicaRepository.saveAndFlush(loaica));
-        } catch (RuntimeException exception) {
-            if (urlAnh != null) {
-                xoaFile(urlAnh);
-            }
-            throw exception;
-        }
-    }
-
     private String chuanHoaChuoi(String value) {
         return value == null ? null : value.trim();
     }
@@ -246,14 +217,24 @@ public class LoaicaService {
     public LoaicaResponse taoLoaiCaHoanChinh(
             TaoLoaiCaHoanChinhRequest request,
             MultipartFile hinhanh) {
-        LoaicaResponse loaiCa = taoLoaica(
-                LoaicaCeationRequest.builder()
-                        .tenloaica(request.getTenloaica())
-                        .mieuta(request.getMieuta())
-                        .hinhanh(hinhanh)
-                        .build());
+        String tenLoaiCa = request.getTenloaica().trim();
+        if (loaicaRepository.existsByTenloaicaIgnoreCase(tenLoaiCa)) {
+            throw new AppExceptions(ErrorCode.DATA_EXISTED);
+        }
 
+        String urlAnh = null;
         try {
+            Loaica entity = new Loaica();
+            entity.setTenloaica(tenLoaiCa);
+            entity.setMieuta(chuanHoaChuoi(request.getMieuta()));
+            if (hinhanh != null && !hinhanh.isEmpty()) {
+                kiemTraAnh(hinhanh);
+                urlAnh = saveImage(hinhanh, taoTenFileAnh(tenLoaiCa, hinhanh));
+                entity.setHinhanhurl(urlAnh);
+            }
+
+            LoaicaResponse loaiCa =
+                    mapper.toLoaicaResponse(loaicaRepository.saveAndFlush(entity));
             Set<Integer> sizeDaCauHinh = new HashSet<>();
             List<CauHinhKichThuocVaGiaRequest> cauHinhs =
                     request.getCauhinhkichthuoc() == null
@@ -284,7 +265,9 @@ public class LoaicaService {
 
             return loaiCa;
         } catch (RuntimeException exception) {
-            xoaAnhDaTaiLen(loaiCa.getHinhanhurl());
+            if (urlAnh != null) {
+                xoaFile(urlAnh);
+            }
             throw exception;
         }
     }
@@ -308,7 +291,4 @@ public class LoaicaService {
                 .getIdsizeca();
     }
 
-    public void xoaAnhDaTaiLen(String urlAnh) {
-        xoaFile(urlAnh);
-    }
 }
