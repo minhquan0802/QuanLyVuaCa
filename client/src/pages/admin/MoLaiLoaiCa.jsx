@@ -5,9 +5,13 @@ import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
 
+const NEW_SIZE_SENTINEL = "__NEW__";
+
 const taoDongSizeMoi = () => ({
     rowKey: `new-${Date.now()}-${Math.random()}`,
     idsizeca: null,
+    // "" = chưa chọn, NEW_SIZE_SENTINEL = tự nhập tên size mới, còn lại = idsizeca có sẵn
+    sizeId: "",
     tensizemoi: "",
     tenSize: "",
     sokgtuongung: "",
@@ -28,6 +32,13 @@ export default function MoLaiLoaiCa() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [loadError, setLoadError] = useState("");
+    const [allGlobalSizes, setAllGlobalSizes] = useState([]);
+
+    useEffect(() => {
+        api.get("/Sizecas")
+            .then(({ data }) => setAllGlobalSizes(data.result || []))
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -91,6 +102,16 @@ export default function MoLaiLoaiCa() {
         setSizeRows(previous => previous.filter(row => row.rowKey !== rowKey));
     };
 
+    const updateSizeSelection = (rowKey, value) => {
+        setSizeRows(previous => previous.map(row => {
+            if (row.rowKey !== rowKey) return row;
+            if (value === NEW_SIZE_SENTINEL) {
+                return { ...row, sizeId: NEW_SIZE_SENTINEL, idsizeca: null, tensizemoi: "" };
+            }
+            return { ...row, sizeId: value, idsizeca: value || null, tensizemoi: null };
+        }));
+    };
+
     const addNewSizeRow = () => {
         setSizeRows(previous => [...previous, taoDongSizeMoi()]);
     };
@@ -105,8 +126,19 @@ export default function MoLaiLoaiCa() {
         const configurations = [];
 
         for (const row of sizeRows) {
+            const chonSizeCoSan = row.isNew && row.sizeId && row.sizeId !== NEW_SIZE_SENTINEL;
+
+            if (row.isNew && !row.sizeId) {
+                showToast("Vui lòng chọn hoặc tạo mới một kích cỡ!", "error");
+                return null;
+            }
+
             const sizeName = (
-                row.isNew ? row.tensizemoi : row.tenSize || ""
+                row.isNew
+                    ? (chonSizeCoSan
+                        ? (allGlobalSizes.find(s => String(s.idsizeca) === String(row.sizeId))?.sizeca || "")
+                        : row.tensizemoi)
+                    : row.tenSize || ""
             ).trim();
             const normalizedName = sizeName.replace(/\s+/g, "").toLocaleLowerCase("vi");
             const kg = Number(row.sokgtuongung);
@@ -141,8 +173,8 @@ export default function MoLaiLoaiCa() {
             }
 
             configurations.push({
-                idsizeca: row.isNew ? null : Number(row.idsizeca),
-                tensizemoi: row.isNew ? sizeName : null,
+                idsizeca: chonSizeCoSan ? Number(row.sizeId) : (row.isNew ? null : Number(row.idsizeca)),
+                tensizemoi: (row.isNew && !chonSizeCoSan) ? sizeName : null,
                 sokgtuongung: kg,
                 giabanle: retailPrice,
                 giabansi: wholesalePrice,
@@ -236,19 +268,45 @@ export default function MoLaiLoaiCa() {
                                             Kích cỡ
                                         </span>
                                         {row.isNew ? (
-                                            <input
-                                                type="text"
-                                                required
-                                                maxLength={20}
-                                                placeholder="Ví dụ: 2 - 3kg"
-                                                value={row.tensizemoi}
-                                                onChange={event => updateRow(
-                                                    row.rowKey,
-                                                    "tensizemoi",
-                                                    event.target.value
-                                                )}
-                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm font-semibold outline-none transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                                            />
+                                            row.sizeId === NEW_SIZE_SENTINEL ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        maxLength={20}
+                                                        placeholder="Ví dụ: 2 - 3kg"
+                                                        value={row.tensizemoi}
+                                                        onChange={event => updateRow(
+                                                            row.rowKey,
+                                                            "tensizemoi",
+                                                            event.target.value
+                                                        )}
+                                                        autoFocus
+                                                        className="w-full rounded-xl border border-cyan-300 bg-white p-2.5 text-sm font-semibold outline-none transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateSizeSelection(row.rowKey, "")}
+                                                        title="Quay về danh sách"
+                                                        className="shrink-0 px-1 text-xs font-bold text-slate-400 hover:text-cyan-600"
+                                                    >
+                                                        ←
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <select
+                                                    required
+                                                    value={row.sizeId}
+                                                    onChange={event => updateSizeSelection(row.rowKey, event.target.value)}
+                                                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm font-semibold outline-none transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                                >
+                                                    <option value="">-- Chọn size --</option>
+                                                    {allGlobalSizes.map(s => (
+                                                        <option key={s.idsizeca} value={s.idsizeca}>{s.sizeca}</option>
+                                                    ))}
+                                                    <option value={NEW_SIZE_SENTINEL}>+ Tạo size mới...</option>
+                                                </select>
+                                            )
                                         ) : (
                                             <div className="rounded-xl border border-slate-200 bg-white p-2.5 text-sm font-bold text-slate-700">
                                                 Size {row.tenSize}
