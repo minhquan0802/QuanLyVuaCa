@@ -32,7 +32,6 @@ public class GioHangService {
     ChitietGioHangRepository chitietGioHangRepository;
     TaiKhoanRepository taikhoanRepository;
     ChitietcabanRepository chitietcabanRepository;
-    ChitietphieunhapRepository chitietphieunhapRepository;
     DonvitinhRepository donvitinhRepository;
     BanggiaRepository banggiaRepository;
 
@@ -136,8 +135,9 @@ public class GioHangService {
         int tongSoLuong = mucHienCo
                 .map(muc -> muc.getSoluong() + request.getSoluong())
                 .orElse(request.getSoluong());
-        kiemTraTonKho(sanpham, donvitinh, tongSoLuong);
 
+        // Không chặn theo tồn kho ở giỏ hàng: nghiệp vụ cho phép đặt dù kho thiếu, số lượng
+        // thực giao sẽ được điều chỉnh lại đúng theo tồn kho khi admin cân thực tế lúc xử lý đơn.
         mucHienCo.ifPresentOrElse(
                 muc -> muc.setSoluong(tongSoLuong),
                 () -> {
@@ -164,7 +164,6 @@ public class GioHangService {
         if (request.getSoluong() == 0) {
             chitietGioHangRepository.delete(muc);
         } else {
-            kiemTraTonKho(muc.getIdchitietcaban(), muc.getIddonvitinh(), request.getSoluong());
             muc.setSoluong(request.getSoluong());
         }
 
@@ -197,18 +196,4 @@ public class GioHangService {
                 .ifPresent(gioHang -> chitietGioHangRepository.deleteByIdgiohang(gioHang.getIdgiohang()));
     }
 
-    private void kiemTraTonKho(Chitietcaban sanpham, Donvitinh donvitinh, int soluong) {
-        BigDecimal heSoQuyDoi = QuyDoiKhoiLuongUtils.xacDinhHeSo(donvitinh, sanpham);
-        BigDecimal khoiLuongCan = heSoQuyDoi.multiply(BigDecimal.valueOf(soluong));
-        BigDecimal tongTonLo = chitietphieunhapRepository.tongTonConLaiTheoSanPham(sanpham);
-        BigDecimal tonTong = sanpham.getSoluongton() != null ? sanpham.getSoluongton() : BigDecimal.ZERO;
-        BigDecimal tonCoTheBan = (tongTonLo != null ? tongTonLo : BigDecimal.ZERO).min(tonTong);
-
-        if (tonCoTheBan.compareTo(khoiLuongCan) < 0) {
-            throw new AppExceptions(
-                    ErrorCode.INVENTORY_NOT_ENOUGH,
-                    "Sản phẩm " + sanpham.getIdloaica().getTenloaica()
-                            + " chỉ còn " + tonCoTheBan + " kg");
-        }
-    }
 }

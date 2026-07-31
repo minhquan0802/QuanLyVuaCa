@@ -8,10 +8,19 @@
  *   $env:ADMIN_PASSWORD="123456789"; 
  *   node "D:\SynologyDrive\Dev\Project_on_school\Nam_4_HK2\Do_an_tot_nghiep\source_code\QuanLyVuaCa\scripts\seed-dashboard-demo.mjs"
  * Tuỳ chọn thêm:
- *   $env:KHACHSI_EMAIL="email tài khoản khách sỉ có sẵn"   (để tạo đơn công nợ)
+ *   $env:KHACHSI_EMAIL="nguyenhongquan20042005@gmail.com"   (để tạo đơn công nợ)
  *   $env:API_BASE="http://localhost:8080/quan-ly-vua-ca"    (mặc định, đổi nếu khác)
  *
  * Toàn bộ dữ liệu tạo ra đều có ghi chú "[SEED-DEMO]" để dễ nhận diện/tra soát sau này.
+ *
+ * Ngoài số liệu cho Dashboard, script còn tạo thêm dữ liệu đa dạng trạng thái để demo trực tiếp
+ * các luồng nghiệp vụ khác (không cần thao tác tay trước buổi bảo vệ):
+ *   - Nhập hàng: 1 phiếu nhập cho MỖI loại cá đang có giá bán (không chỉ vài loại đầu tiên).
+ *   - Đơn khách sỉ đi đúng luồng thật qua PUT /status: "Đang vận chuyển", "Đã giao + đã thanh toán đủ",
+ *     "Đã giao + còn nợ kèm 1 khoản chuyển khoản đang chờ admin xác nhận".
+ *   - Nếu khách sỉ (KHACHSI_EMAIL) đã được admin thiết lập hạn mức tín dụng từ trước, script sẽ cố
+ *     đẩy công nợ của khách đó áp sát/vượt hạn mức để demo tính năng cảnh báo + chặn đặt hàng.
+ *     Nếu khách chưa có hạn mức, bước này tự bỏ qua (không lỗi).
  */
 
 const BASE = process.env.API_BASE || "http://localhost:8080/quan-ly-vua-ca";
@@ -153,9 +162,14 @@ async function loadContext() {
     return { products, supplier, kgUnit, khachSi };
 }
 
-// --- 1. NHẬP HÀNG: vài phiếu nhập hôm nay để có tồn kho + chi phí nhập ---
+// Gọi PUT /Donhangs/{id}/status — dùng chung cho các bước đẩy đơn khách sỉ qua từng trạng thái thật.
+async function capNhatTrangThaiDon(idDonhang, trangthaidonhang) {
+    return call("PUT", `/Donhangs/${idDonhang}/status`, { trangthaidonhang });
+}
+
+// --- 1. NHẬP HÀNG: 1 phiếu nhập cho MỖI loại cá đang có giá bán, để không loại cá nào bị bỏ sót ---
 async function seedPhieuNhap(ctx) {
-    const chosen = ctx.products.slice(0, Math.min(10, ctx.products.length));
+    const chosen = ctx.products;
     const byLoaiCa = new Map();
     for (const p of chosen) {
         if (!byLoaiCa.has(p.idLoaiCa)) byLoaiCa.set(p.idLoaiCa, []);
@@ -288,6 +302,161 @@ async function seedDonHangKhachSi(ctx, stockAdded) {
     console.log(`Đã tạo ${created} đơn khách sỉ (công nợ).`);
 }
 
+// --- 3b. ĐA DẠNG TRẠNG THÁI + THANH TOÁN ĐƠN KHÁCH SỈ: đi đúng luồng thật qua PUT /status ---
+// Khác với seedDonHangKhachSi() ở trên (tạo thẳng "Đang đóng hàng", công nợ chưa tăng vì đơn chưa
+// giao xong), các đơn ở đây khởi tạo "Chờ xác nhận" rồi đi qua đúng API cập nhật trạng thái thật:
+// trừ kho đúng lúc rời "Chờ xác nhận", tăng công nợ đúng lúc "Giao thành công", ghi lịch sử công nợ,
+// gửi thông báo — để demo được đầy đủ các trạng thái và luồng thanh toán/công nợ liên quan.
+async function seedDaDangTrangThaiKhachSi(ctx, stockAdded) {
+    if (!ctx.khachSi) return;
+
+    const layConSanPham = () => ctx.products.filter(p => {
+        const available = Number(p.soluongton || 0) + (stockAdded.get(p.id) || 0);
+        return available >= 1;
+    });
+
+    async function taoDonKhachSi(soNgayTruoc, ghichu) {
+        const inStock = layConSanPham();
+        if (inStock.length === 0) return null;
+        const product = inStock[randInt(0, inStock.length - 1)];
+        const available = Number(product.soluongton || 0) + (stockAdded.get(product.id) || 0);
+        const soluong = Math.min(randInt(2, 5), Math.max(1, Math.floor(available)));
+        if (soluong < 1) return null;
+
+        const resp = await call("POST", "/Donhangs", {
+            idthongtinkhachhang: ctx.khachSi.idtaikhoan,
+            ngaydat: daysAgoLocalIso(soNgayTruoc),
+            ghichu,
+            chiTietDonHang: [{
+                idchitietcaban: String(product.id),
+                iddonvitinh: String(ctx.kgUnit.id),
+                soluong,
+            }],
+        });
+        stockAdded.set(product.id, (stockAdded.get(product.id) || 0) - soluong);
+        return resp.result.iddonhang;
+    }
+
+    // (a) 1 đơn dừng ở "Đang vận chuyển" — demo tab "Đang giao" + nút khách tự xác nhận nhận hàng.
+    try {
+        const id = await taoDonKhachSi(3, "[SEED-DEMO] Đơn khách sỉ đang vận chuyển");
+        if (id) {
+            await capNhatTrangThaiDon(id, "DANG_DONG_HANG");
+            await capNhatTrangThaiDon(id, "DANG_VAN_CHUYEN");
+            console.log("Đã tạo 1 đơn khách sỉ ở trạng thái 'Đang vận chuyển'.");
+        }
+    } catch (err) {
+        console.warn(`Bỏ qua đơn khách sỉ 'đang vận chuyển' do lỗi (có thể do hạn mức công nợ): ${err.message}`);
+    }
+
+    // (b) 1 đơn giao thành công + thanh toán đủ ngay — demo lịch sử công nợ có cả tăng lẫn giảm.
+    try {
+        const id = await taoDonKhachSi(2, "[SEED-DEMO] Đơn khách sỉ đã giao, đã thanh toán đủ");
+        if (id) {
+            await capNhatTrangThaiDon(id, "GIAO_HANG_THANH_CONG");
+            await call("PUT", `/Thanhtoan/${id}/thanh-toan-thu-cong`);
+            console.log("Đã tạo 1 đơn khách sỉ 'đã giao' và ghi nhận thanh toán đủ.");
+        }
+    } catch (err) {
+        console.warn(`Bỏ qua đơn khách sỉ 'đã thanh toán đủ' do lỗi (có thể do hạn mức công nợ): ${err.message}`);
+    }
+
+    // (c) 1 đơn giao thành công nhưng còn nợ, kèm 1 khoản chuyển khoản "chờ xác nhận" một phần —
+    // demo trang Quản lý công nợ (còn dư nợ) và màn hình admin xác nhận thanh toán thủ công.
+    try {
+        const id = await taoDonKhachSi(1, "[SEED-DEMO] Đơn khách sỉ đã giao, còn nợ");
+        if (id) {
+            await capNhatTrangThaiDon(id, "GIAO_HANG_THANH_CONG");
+            const tinhTrang = await call("GET", `/Thanhtoan/${id}/tinh-trang`);
+            const conNo = Number(tinhTrang.result?.conNo || 0);
+            if (conNo > 0) {
+                const soTienTra = Math.max(1000, Math.round(conNo * 0.4));
+                await call("POST", "/Thanhtoan/chuyen-khoan", {
+                    iddonhang: id,
+                    sotien: soTienTra,
+                    ghichu: "[SEED-DEMO] Khách chuyển khoản một phần, chờ admin xác nhận",
+                });
+            }
+            console.log("Đã tạo 1 đơn khách sỉ còn nợ, kèm 1 khoản chuyển khoản đang chờ xác nhận.");
+        }
+    } catch (err) {
+        console.warn(`Bỏ qua đơn khách sỉ 'còn nợ' do lỗi (có thể do hạn mức công nợ): ${err.message}`);
+    }
+}
+
+// --- 4b. ĐẨY CÔNG NỢ KHÁCH SỈ ÁP SÁT/VƯỢT HẠN MỨC TÍN DỤNG (best-effort) ---
+// Mục đích: có sẵn 1 khách sỉ đang ở trạng thái cảnh báo/vượt hạn mức để demo trực tiếp tính năng
+// "chặn đặt hàng khi vượt hạn mức" mà không cần thao tác tay lúc bảo vệ. Chỉ chạy khi khách sỉ đã
+// được admin thiết lập hạn mức tín dụng từ trước (qua trang Quản lý công nợ); nếu chưa, bỏ qua.
+async function seedApSatHanMucCongNo(ctx, stockAdded) {
+    if (!ctx.khachSi) return;
+
+    let danhSachCongNo;
+    try {
+        danhSachCongNo = await call("GET", "/CongNo");
+    } catch (err) {
+        console.warn(`Không lấy được danh sách công nợ, bỏ qua bước đẩy hạn mức: ${err.message}`);
+        return;
+    }
+
+    const khach = (danhSachCongNo.result || [])
+        .find(k => String(k.idtaikhoan) === String(ctx.khachSi.idtaikhoan));
+    if (!khach || khach.hanmuctindung == null) {
+        console.warn("Khách sỉ chưa được thiết lập hạn mức tín dụng — bỏ qua bước đẩy công nợ áp sát hạn mức.");
+        return;
+    }
+
+    const hanMuc = Number(khach.hanmuctindung);
+    const congNoHienTai = Number(khach.congnohientai || 0);
+    const conLai = hanMuc - congNoHienTai;
+
+    if (conLai <= 0) {
+        console.log("Khách sỉ đã vượt hạn mức tín dụng sẵn — phù hợp để demo cảnh báo/chặn đặt hàng, không cần đẩy thêm.");
+        return;
+    }
+
+    const inStock = ctx.products.filter(p => {
+        const available = Number(p.soluongton || 0) + (stockAdded.get(p.id) || 0);
+        return available >= 1;
+    });
+    if (inStock.length === 0) {
+        console.warn("Không còn sản phẩm tồn kho — bỏ qua bước đẩy công nợ áp sát hạn mức.");
+        return;
+    }
+
+    // Chọn sản phẩm có giá sỉ cao nhất trong số còn tồn để cần ít kg hơn mà vẫn đạt số tiền mong muốn.
+    const product = inStock.reduce((best, p) =>
+        Number(p.price.giaBanSi) > Number(best.price.giaBanSi) ? p : best, inStock[0]);
+    const available = Number(product.soluongton || 0) + (stockAdded.get(product.id) || 0);
+    const donGia = Number(product.price.giaBanSi);
+    const soTienMuonDat = Math.round(conLai * 1.15); // cố tình vượt ~15% để chắc chắn kích hoạt cảnh báo/chặn
+    const soluong = Math.min(Math.max(1, Math.ceil(soTienMuonDat / donGia)), Math.floor(available));
+
+    if (soluong < 1) {
+        console.warn("Không đủ tồn kho để đẩy công nợ áp sát hạn mức — bỏ qua.");
+        return;
+    }
+
+    try {
+        const resp = await call("POST", "/Donhangs", {
+            idthongtinkhachhang: ctx.khachSi.idtaikhoan,
+            ngaydat: daysAgoLocalIso(0),
+            ghichu: "[SEED-DEMO] Đơn khách sỉ đẩy công nợ áp sát/vượt hạn mức tín dụng",
+            chiTietDonHang: [{
+                idchitietcaban: String(product.id),
+                iddonvitinh: String(ctx.kgUnit.id),
+                soluong,
+            }],
+        });
+        stockAdded.set(product.id, (stockAdded.get(product.id) || 0) - soluong);
+        const idDonhang = resp.result.iddonhang;
+        await capNhatTrangThaiDon(idDonhang, "GIAO_HANG_THANH_CONG");
+        console.log(`Đã tạo và giao thành công 1 đơn khách sỉ trị giá ~${soluong * donGia} để đẩy công nợ áp sát/vượt hạn mức (còn lại trước khi đẩy: ${conLai}).`);
+    } catch (err) {
+        console.warn(`Không đẩy được công nợ áp sát hạn mức (có thể do cơ chế chặn hạn mức đã kích hoạt sớm hơn dự kiến — vẫn tốt để demo): ${err.message}`);
+    }
+}
+
 // --- 4. 1 phiếu thanh lý mẫu (best-effort, không bắt buộc) ---
 async function seedPhieuThanhLy(ctx) {
     try {
@@ -318,6 +487,8 @@ async function main() {
     const stockAdded = await seedPhieuNhap(ctx);
     await seedDonHangKhachLe(ctx, stockAdded);
     await seedDonHangKhachSi(ctx, stockAdded);
+    await seedDaDangTrangThaiKhachSi(ctx, stockAdded);
+    await seedApSatHanMucCongNo(ctx, stockAdded);
     await seedPhieuThanhLy(ctx);
     console.log("\nXong. Vào lại trang Dashboard (admin) để kiểm tra số liệu.");
 }

@@ -31,7 +31,6 @@ class GioHangServiceTest {
     @Mock ChitietGioHangRepository chitietGioHangRepository;
     @Mock TaiKhoanRepository taikhoanRepository;
     @Mock ChitietcabanRepository chitietcabanRepository;
-    @Mock ChitietphieunhapRepository chitietphieunhapRepository;
     @Mock DonvitinhRepository donvitinhRepository;
     @Mock BanggiaRepository banggiaRepository;
 
@@ -44,8 +43,7 @@ class GioHangServiceTest {
     @BeforeEach
     void setUp() {
         gioHangService = new GioHangService(gioHangRepository, chitietGioHangRepository,
-                taikhoanRepository, chitietcabanRepository, chitietphieunhapRepository,
-                donvitinhRepository, banggiaRepository);
+                taikhoanRepository, chitietcabanRepository, donvitinhRepository, banggiaRepository);
 
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("khach@vuaca.vn", null, List.of()));
@@ -76,8 +74,6 @@ class GioHangServiceTest {
         donViTinh.setHesokg(BigDecimal.ZERO);
 
         lenient().when(taikhoanRepository.findByEmail("khach@vuaca.vn")).thenReturn(Optional.of(user));
-        lenient().when(chitietphieunhapRepository.tongTonConLaiTheoSanPham(any()))
-                .thenReturn(new BigDecimal("20"));
     }
 
     @AfterEach
@@ -124,8 +120,10 @@ class GioHangServiceTest {
         verify(chitietGioHangRepository, never()).save(any());
     }
 
+    // Nghiệp vụ: cho phép đặt vượt tồn kho hiện có, số lượng thực giao sẽ được điều chỉnh lại
+    // đúng theo tồn kho khi admin cân thực tế lúc xử lý đơn (xem DonhangService.capNhatTrangThai).
     @Test
-    void themSanPhamKhiChiConLoQuaHan_vanDuocThem() {
+    void themSanPhamVuotTonKho_vanDuocThem() {
         when(gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai("kh-1", TrangThaiGioHang.DANG_HOAT_DONG))
                 .thenReturn(Optional.of(gioHang));
         when(chitietcabanRepository.findById(1)).thenReturn(Optional.of(sanPham));
@@ -133,11 +131,11 @@ class GioHangServiceTest {
         when(chitietGioHangRepository.findItem("gh-1", 1, 1)).thenReturn(Optional.empty());
         when(chitietGioHangRepository.findByIdgiohang_Idgiohang("gh-1")).thenReturn(List.of());
 
+        // sanPham chỉ còn tồn 20, nhưng đặt hẳn 1000 vẫn phải được chấp nhận.
         assertDoesNotThrow(() ->
-                gioHangService.themSanPham(new ThemVaoGioHangRequest(1, 1, 1)));
+                gioHangService.themSanPham(new ThemVaoGioHangRequest(1, 1, 1000)));
 
         verify(chitietGioHangRepository).save(any(ChitietGioHang.class));
-        verify(chitietphieunhapRepository).tongTonConLaiTheoSanPham(sanPham);
     }
 
     @Test
