@@ -67,8 +67,8 @@ public class PaymentController {
         if (status == 1) {
             String redirectUrl;
             if (isCongNoRepay) {
-                // Trả bớt công nợ cho đơn cũ → về trang theo dõi đơn hàng
-                redirectUrl = baseUrl + "/my-orders";
+                // Trả bớt công nợ cho đơn cũ → về trang theo dõi đơn hàng, kèm cờ để FE báo thành công
+                redirectUrl = baseUrl + "/my-orders?thanhToanCongNo=success";
             } else if (isCheckoutPrepay) {
                 // Thanh toán ngay lúc đặt đơn mới → về trang order-success.
                 // txnRef giờ mang idThanhtoan chứ không phải idDonhang nữa, cần tra lại đơn tương ứng.

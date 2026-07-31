@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/ToastContext";
 
 const BANK_ID = import.meta.env.VITE_BANK_ID || "MB";
 const BANK_ACCOUNT = import.meta.env.VITE_BANK_ACCOUNT || "0123456789";
@@ -30,6 +31,7 @@ export default function ThongTinDonHang() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const { confirm, showAlert } = useConfirm();
+    const { showToast } = useToast();
     const isWholesale = user?.vaitro === "CUSTOMER";
 
     // --- STATE DỮ LIỆU CHÍNH ---
@@ -108,6 +110,14 @@ export default function ThongTinDonHang() {
         if (target) handleViewDetail(target);
         setSearchParams({}, { replace: true });
     }, [orders, searchParams]);
+
+    // Báo thành công khi VNPAY trả công nợ xong redirect về đây kèm ?thanhToanCongNo=success
+    // (khác với thanh toán lúc checkout, trường hợp này không có trang order-success riêng).
+    useEffect(() => {
+        if (searchParams.get("thanhToanCongNo") !== "success") return;
+        showToast("Thanh toán công nợ thành công!", "success");
+        setSearchParams({}, { replace: true });
+    }, [searchParams]);
 
     const handleConfirmReceived = async (orderId) => {
         const accepted = await confirm({
