@@ -178,6 +178,14 @@ public class ThanhtoanService {
         }
     }
 
+    // Dùng để dựng lại URL redirect sau khi VNPAY callback (txnRef chỉ mang idThanhtoan, không mang idDonhang)
+    @Transactional(readOnly = true)
+    public String layIdDonhangTuThanhtoan(String idThanhtoan) {
+        return thanhtoanRepository.findById(idThanhtoan)
+                .map(t -> t.getIddonhang().getIddonhang())
+                .orElse(null);
+    }
+
     private void kiemTraSoTienHopLe(BigDecimal soTien) {
         if (soTien == null || soTien.compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppExceptions(ErrorCode.SOTIEN_THANH_TOAN_KHONG_HOP_LE);

@@ -1,6 +1,7 @@
 package com.minhquan.QuanLyVuaCa.controller;
 
 import com.minhquan.QuanLyVuaCa.dto.request.PaymentVNPAYRequest;
+import com.minhquan.QuanLyVuaCa.service.ThanhtoanService;
 import com.minhquan.QuanLyVuaCa.service.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class PaymentController {
 
     private final VnPayService vnPayService;
+    private final ThanhtoanService thanhtoanService;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -54,7 +56,8 @@ public class PaymentController {
         String totalPrice = request.getParameter("vnp_Amount");
         String transactionTime = request.getParameter("vnp_PayDate");
 
-        boolean isPartialPayment = txnRef != null && txnRef.startsWith("DEBT-");
+        boolean isCongNoRepay = txnRef != null && txnRef.startsWith("DEBT-");
+        boolean isCheckoutPrepay = txnRef != null && txnRef.startsWith("CHECKOUT-");
 
         // Bỏ dấu "/" ở cuối frontend.url (nếu có) để không bị dính "//" khi ghép path phía dưới,
         // dù biến môi trường FRONTEND_URL được điền có "/" cuối hay không.
@@ -63,15 +66,21 @@ public class PaymentController {
         // 2. Điều hướng về Frontend dựa trên kết quả
         if (status == 1) {
             String redirectUrl;
-            if (isPartialPayment) {
-                // Thanh toán từng phần → về trang theo dõi đơn hàng
+            if (isCongNoRepay) {
+                // Trả bớt công nợ cho đơn cũ → về trang theo dõi đơn hàng
                 redirectUrl = baseUrl + "/my-orders";
-            } else {
-                // Thanh toán khi checkout → về trang order-success
+            } else if (isCheckoutPrepay) {
+                // Thanh toán ngay lúc đặt đơn mới → về trang order-success.
+                // txnRef giờ mang idThanhtoan chứ không phải idDonhang nữa, cần tra lại đơn tương ứng.
+                String idThanhtoan = txnRef.substring("CHECKOUT-".length());
+                String orderId = thanhtoanService.layIdDonhangTuThanhtoan(idThanhtoan);
                 redirectUrl = String.format(
                         "%s/order-success?orderId=%s&totalPrice=%s&time=%s",
-                        baseUrl, txnRef, totalPrice, transactionTime
+                        baseUrl, orderId, totalPrice, transactionTime
                 );
+            } else {
+                redirectUrl = baseUrl + "/order-failed?error=" +
+                        URLEncoder.encode("Giao dịch không hợp lệ", StandardCharsets.UTF_8);
             }
             response.sendRedirect(redirectUrl);
         } else {

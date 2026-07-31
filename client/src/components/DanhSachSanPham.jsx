@@ -4,11 +4,14 @@ import api from "../config/axios";
 import { useAuth } from "../context/AuthContext";
 
 // [1] Nhận prop searchTerm truyền từ Home.js
+const SO_SAN_PHAM_MOI_TRANG = 12;
+
 export default function ProductList({ searchTerm }) {
     const [productList, setProductList] = useState([]);
     const [priceList, setPriceList] = useState([]);
     const [stockList, setStockList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [trangHienTai, setTrangHienTai] = useState(1);
     const { user } = useAuth();
 
     const navigate = useNavigate();
@@ -87,11 +90,23 @@ export default function ProductList({ searchTerm }) {
         return name.includes(searchTerm.toLowerCase());
     });
 
+    // Tìm kiếm đổi kết quả -> quay về trang 1, tránh đứng ở trang trống
+    useEffect(() => {
+        setTrangHienTai(1);
+    }, [searchTerm]);
+
+    const tongSoTrang = Math.max(1, Math.ceil(filteredList.length / SO_SAN_PHAM_MOI_TRANG));
+    const trangDangXem = Math.min(trangHienTai, tongSoTrang);
+    const danhSachTrangNay = filteredList.slice(
+        (trangDangXem - 1) * SO_SAN_PHAM_MOI_TRANG,
+        trangDangXem * SO_SAN_PHAM_MOI_TRANG
+    );
+
     return (
         <>
-            {/* [3] Sử dụng filteredList thay vì productList để render */}
-            {filteredList.length > 0 ? (
-                filteredList.map((product) => {
+            {/* [3] Sử dụng danhSachTrangNay (đã lọc + cắt theo trang) thay vì productList để render */}
+            {danhSachTrangNay.length > 0 ? (
+                danhSachTrangNay.map((product) => {
                     const item = product.result || product;
                     const imageUrl = getImageUrl(item.hinhanhurl);
                     const priceInfo = getDisplayPrice(item.id);
@@ -177,6 +192,40 @@ export default function ProductList({ searchTerm }) {
                     <span className="material-symbols-outlined text-4xl mb-2">set_meal</span>
                     {/* Hiển thị thông báo khác nhau tùy thuộc việc đang tải hay tìm không thấy */}
                     <p>{loading ? "Đang tải dữ liệu..." : "Không tìm thấy sản phẩm nào."}</p>
+                </div>
+            )}
+
+            {tongSoTrang > 1 && (
+                <div className="col-span-full flex items-center justify-center gap-2 mt-4">
+                    <button
+                        onClick={() => setTrangHienTai(p => Math.max(1, p - 1))}
+                        disabled={trangDangXem === 1}
+                        className="size-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-lg">chevron_left</span>
+                    </button>
+
+                    {Array.from({ length: tongSoTrang }, (_, i) => i + 1).map(soTrang => (
+                        <button
+                            key={soTrang}
+                            onClick={() => setTrangHienTai(soTrang)}
+                            className={`size-9 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+                                soTrang === trangDangXem
+                                    ? "bg-blue-600 text-white"
+                                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                            }`}
+                        >
+                            {soTrang}
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={() => setTrangHienTai(p => Math.min(tongSoTrang, p + 1))}
+                        disabled={trangDangXem === tongSoTrang}
+                        className="size-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-lg">chevron_right</span>
+                    </button>
                 </div>
             )}
         </>

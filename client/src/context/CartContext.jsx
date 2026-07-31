@@ -48,13 +48,6 @@ export function CartProvider({ children }) {
 
     // Cập nhật số lượng (soluong = 0 → xóa)
     const updateQuantity = async (idchitietgiohang, soluong) => {
-        const accepted = await confirm({
-            title: "Cập nhật giỏ hàng",
-            message: `Đổi số lượng sản phẩm trong giỏ thành ${soluong}?`,
-            confirmText: "Cập nhật",
-            variant: "primary",
-        });
-        if (!accepted) return;
         try {
             const { data } = await api.put(`/gio-hang/items/${idchitietgiohang}`, { soluong });
             setGioHang(data.result);
