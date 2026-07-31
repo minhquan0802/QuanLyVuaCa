@@ -41,7 +41,7 @@ public class ThanhtoanController {
     @PutMapping("/{idthanhtoan}/xac-nhan")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<String> xacNhanThanhToan(@PathVariable String idthanhtoan) {
-        thanhtoanService.xacNhanThanhToan(idthanhtoan);
+        thanhtoanService.xacNhanThanhToanThuCong(idthanhtoan);
         return ApiResponse.<String>builder()
                 .code(200)
                 .result("Đã xác nhận thanh toán")

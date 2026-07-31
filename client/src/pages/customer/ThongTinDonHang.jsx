@@ -1,7 +1,7 @@
 ﻿;
 ;
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -27,6 +27,7 @@ const PAYMENT_FILTERS = [
 
 export default function ThongTinDonHang() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const { confirm, showAlert } = useConfirm();
     const isWholesale = user?.vaitro === "CUSTOMER";
@@ -98,6 +99,15 @@ export default function ThongTinDonHang() {
             setLoadingDetails(false);
         }
     };
+
+    // Mở sẵn modal chi tiết khi được điều hướng từ thông báo kèm ?orderId=...
+    useEffect(() => {
+        const orderId = searchParams.get("orderId");
+        if (!orderId || orders.length === 0) return;
+        const target = orders.find(o => o.iddonhang === orderId);
+        if (target) handleViewDetail(target);
+        setSearchParams({}, { replace: true });
+    }, [orders, searchParams]);
 
     const handleConfirmReceived = async (orderId) => {
         const accepted = await confirm({

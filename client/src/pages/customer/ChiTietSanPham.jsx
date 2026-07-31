@@ -101,19 +101,13 @@ export default function ProductDetail() {
 
     const totalWeight = weightPerUnit > 0 ? weightPerUnit * quantity : 0;
     const totalPrice = currentPricePerKg * totalWeight;
-    const maxQuantity = weightPerUnit > 0 ? Math.floor(currentStock / weightPerUnit) : 0;
-    const canAddToCart = selectedOption
-        && currentPricePerKg > 0
-        && maxQuantity > 0
-        && totalWeight <= currentStock;
+    // Không giới hạn số lượng theo tồn kho: nghiệp vụ cho phép đặt dù kho thiếu, số lượng thực giao
+    // sẽ được điều chỉnh lại đúng theo tồn kho khi admin cân thực tế lúc xử lý đơn. "Còn X kg" chỉ
+    // mang tính thông tin tham khảo cho khách, không dùng để chặn thao tác.
+    const canAddToCart = selectedOption && currentPricePerKg > 0;
 
     const handleAddToCart = async () => {
         if (!selectedOption) { showToast("Vui lòng chọn kích thước cá!", "error"); return; }
-        if (maxQuantity <= 0) { showToast("Sản phẩm này đã hết hàng!", "error"); return; }
-        if (totalWeight > currentStock) {
-            showToast(`Chỉ còn ${currentStock} kg cá!`, "error");
-            return;
-        }
 
         const idchitietcaban = selectedOption.idChitietcaban || selectedOption.chitietcaban?.id;
         if (!idchitietcaban) { showToast("Lỗi dữ liệu sản phẩm!", "error"); return; }
@@ -284,15 +278,14 @@ export default function ProductDetail() {
                                     )}
 
                                     {/* Số lượng */}
-                                    <div className={`flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm w-fit ${maxQuantity <= 0 ? "opacity-50 pointer-events-none" : ""}`}>
+                                    <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm w-fit">
                                         <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="size-9 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors">
                                             <span className="material-symbols-outlined text-xs">remove</span>
                                         </button>
                                         <input type="text" value={quantity} readOnly className="w-10 text-center bg-transparent border-none text-blue-900 font-bold focus:ring-0 text-sm" />
                                         <button
-                                            onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
-                                            disabled={quantity >= maxQuantity}
-                                            className="size-9 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            onClick={() => setQuantity(quantity + 1)}
+                                            className="size-9 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors"
                                         >
                                             <span className="material-symbols-outlined text-xs">add</span>
                                         </button>
@@ -323,11 +316,9 @@ export default function ProductDetail() {
                                         {adding ? (
                                             <div className="size-5 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin"></div>
                                         ) : (
-                                            <span className="material-symbols-outlined text-[20px]">
-                                                {maxQuantity <= 0 ? "remove_shopping_cart" : "add_shopping_cart"}
-                                            </span>
+                                            <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span>
                                         )}
-                                        {adding ? "Đang thêm..." : maxQuantity <= 0 ? "Hết hàng" : selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size"}
+                                        {adding ? "Đang thêm..." : selectedOption ? "Thêm vào giỏ hàng" : "Vui lòng chọn size"}
                                     </button>
                                 ) : (
                                     <Link to="/login" className="w-full h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-base bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all">

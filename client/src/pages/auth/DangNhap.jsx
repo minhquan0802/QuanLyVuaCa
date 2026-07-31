@@ -143,10 +143,6 @@ export default function Login() {
                             </div>
                         </div>
 
-                        <div className="text-[11px] text-slate-400 text-center cursor-pointer hover:text-cyan-600 mt-1" onClick={() => { setEmail('admin@gmail.com'); setPassword('123456789') }}>
-                            (Click điền nhanh: admin@gmail.com / 123456789)
-                        </div>
-
                         <div className="flex justify-end -mt-2">
                             <Link to="/quen-mat-khau" className="text-sm font-medium text-cyan-600 hover:text-cyan-800 transition-colors">
                                 Quên mật khẩu?

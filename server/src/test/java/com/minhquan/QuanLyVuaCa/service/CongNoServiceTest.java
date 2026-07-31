@@ -112,7 +112,7 @@ class CongNoServiceTest {
 
             when(taiKhoanRepository.timTheoIdDeKhoa(khach.getIdtaikhoan())).thenReturn(Optional.of(khach));
 
-            congNoService.xuLyThanhToanXacNhan(thanhToan);
+            congNoService.xuLyThanhToanXacNhan(thanhToan, false);
 
             assertEquals(BigDecimal.valueOf(11_000_000), khach.getCongnohientai());
             assertEquals(ngayVuotCu, khach.getNgayvuothanmuc(), "vẫn còn vượt hạn mức -> chưa được mở khóa");
@@ -122,6 +122,29 @@ class CongNoServiceTest {
             assertEquals(LoaiThayDoiCongNo.GIAM, captor.getValue().getLoaithaydoi());
             assertEquals(BigDecimal.valueOf(1_000_000), captor.getValue().getSotien());
             assertEquals(BigDecimal.valueOf(11_000_000), captor.getValue().getSodusaukhithaydoi());
+        }
+
+        // Admin/staff chủ động xác nhận chuyển khoản/thanh toán thủ công -> phải ghi đúng người thực
+        // hiện, khác với thanh toán VNPAY tự động (giữ "Hệ thống", xem test phía trên).
+        @Test
+        void xacNhanThuCong_ghiDungNguoiThucHienVaoSoCai() {
+            dangNhapAdmin("admin@vuaca.vn");
+            Taikhoan admin = Taikhoan.builder().idtaikhoan("admin-1").ho("Admin").ten("Boss")
+                    .email("admin@vuaca.vn").build();
+            Taikhoan khach = khachSi(BigDecimal.valueOf(10_000_000), BigDecimal.valueOf(5_000_000), null);
+            Donhang donhang = donHang("dh-1", khach.getIdtaikhoan(), TrangThaiDonHang.GIAO_HANG_THANH_CONG);
+            Thanhtoan thanhToan = new Thanhtoan();
+            thanhToan.setIddonhang(donhang);
+            thanhToan.setSotien(BigDecimal.valueOf(1_000_000));
+
+            when(taiKhoanRepository.timTheoIdDeKhoa(khach.getIdtaikhoan())).thenReturn(Optional.of(khach));
+            when(taiKhoanRepository.findByEmail("admin@vuaca.vn")).thenReturn(Optional.of(admin));
+
+            congNoService.xuLyThanhToanXacNhan(thanhToan, true);
+
+            ArgumentCaptor<Lichsucongno> captor = ArgumentCaptor.forClass(Lichsucongno.class);
+            verify(lichsucongnoRepository).save(captor.capture());
+            assertEquals(admin, captor.getValue().getNguoithuchien());
         }
 
         @Test
@@ -134,7 +157,7 @@ class CongNoServiceTest {
 
             when(taiKhoanRepository.timTheoIdDeKhoa(khach.getIdtaikhoan())).thenReturn(Optional.of(khach));
 
-            congNoService.xuLyThanhToanXacNhan(thanhToan);
+            congNoService.xuLyThanhToanXacNhan(thanhToan, false);
 
             assertEquals(BigDecimal.valueOf(9_500_000), khach.getCongnohientai());
             assertNull(khach.getNgayvuothanmuc());
@@ -150,7 +173,7 @@ class CongNoServiceTest {
 
             when(taiKhoanRepository.timTheoIdDeKhoa(khach.getIdtaikhoan())).thenReturn(Optional.of(khach));
 
-            assertDoesNotThrow(() -> congNoService.xuLyThanhToanXacNhan(thanhToan));
+            assertDoesNotThrow(() -> congNoService.xuLyThanhToanXacNhan(thanhToan, false));
 
             assertEquals(BigDecimal.valueOf(-1_500_000), khach.getCongnohientai(),
                     "số âm = số dư trả trước, không phải lỗi");
@@ -163,7 +186,7 @@ class CongNoServiceTest {
             thanhToan.setIddonhang(donhang);
             thanhToan.setSotien(BigDecimal.valueOf(500_000));
 
-            congNoService.xuLyThanhToanXacNhan(thanhToan);
+            congNoService.xuLyThanhToanXacNhan(thanhToan, false);
 
             verifyNoInteractions(taiKhoanRepository, lichsucongnoRepository);
         }
@@ -178,7 +201,7 @@ class CongNoServiceTest {
 
             when(taiKhoanRepository.timTheoIdDeKhoa(khach.getIdtaikhoan())).thenReturn(Optional.of(khach));
 
-            congNoService.xuLyThanhToanXacNhan(thanhToan);
+            congNoService.xuLyThanhToanXacNhan(thanhToan, false);
 
             verify(lichsucongnoRepository, never()).save(any());
         }
@@ -385,17 +408,25 @@ class CongNoServiceTest {
 
         @Test
         void capNhatHanMucGiuaKy_haHanMucXuongDuoiNoHienTai_setNgayVuotHanMuc() {
+            dangNhapAdmin("admin@vuaca.vn");
+            Taikhoan admin = Taikhoan.builder().idtaikhoan("admin-1").ho("Admin").ten("Boss")
+                    .email("admin@vuaca.vn").build();
             Taikhoan khach = khachSi(BigDecimal.valueOf(10_000_000), BigDecimal.valueOf(9_000_000), null);
 
             when(taiKhoanRepository.timTheoIdDeKhoa(khach.getIdtaikhoan())).thenReturn(Optional.of(khach));
+            when(taiKhoanRepository.findByEmail("admin@vuaca.vn")).thenReturn(Optional.of(admin));
             when(lichsucongnoRepository.existsByIdtaikhoan(khach)).thenReturn(true);
 
             congNoService.capNhatHanMuc(khach.getIdtaikhoan(), BigDecimal.valueOf(8_000_000));
 
             assertEquals(BigDecimal.valueOf(8_000_000), khach.getHanmuctindung());
             assertNotNull(khach.getNgayvuothanmuc());
-            // Đổi hạn mức giữa kỳ không tự ghi sổ cái vì không làm thay đổi congnohientai
-            verify(lichsucongnoRepository, never()).save(any());
+            // Đổi hạn mức giữa kỳ vẫn ghi sổ cái (sotien = 0, vì không phải biến động tiền) để có
+            // audit trail ai đổi hạn mức, đổi từ đâu tới đâu.
+            ArgumentCaptor<Lichsucongno> captor = ArgumentCaptor.forClass(Lichsucongno.class);
+            verify(lichsucongnoRepository).save(captor.capture());
+            assertEquals(admin, captor.getValue().getNguoithuchien());
+            assertEquals(0, BigDecimal.ZERO.compareTo(captor.getValue().getSotien()));
         }
     }
 
@@ -421,7 +452,7 @@ class CongNoServiceTest {
             Thanhtoan tt1 = new Thanhtoan();
             tt1.setIddonhang(donA);
             tt1.setSotien(BigDecimal.valueOf(3_000_000));
-            congNoService.xuLyThanhToanXacNhan(tt1);
+            congNoService.xuLyThanhToanXacNhan(tt1, false);
 
             // 3. Đơn B giao thành công: +6,000,000
             Donhang donB = donHang("dh-B", khach.getIdtaikhoan(), TrangThaiDonHang.GIAO_HANG_THANH_CONG);
@@ -436,7 +467,7 @@ class CongNoServiceTest {
             Thanhtoan tt2 = new Thanhtoan();
             tt2.setIddonhang(donB);
             tt2.setSotien(soDuTruocKhiTraCuoi.add(BigDecimal.valueOf(200_000)));
-            congNoService.xuLyThanhToanXacNhan(tt2);
+            congNoService.xuLyThanhToanXacNhan(tt2, false);
 
             ArgumentCaptor<Lichsucongno> captor = ArgumentCaptor.forClass(Lichsucongno.class);
             verify(lichsucongnoRepository, times(5)).save(captor.capture());
