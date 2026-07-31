@@ -6,7 +6,6 @@ import com.minhquan.QuanLyVuaCa.dto.request.TaoLoaiCaHoanChinhRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.LoaicaResponse;
 import com.minhquan.QuanLyVuaCa.service.LoaicaService;
-import com.minhquan.QuanLyVuaCa.service.TaoLoaiCaHoanChinhService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -22,7 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LoaicaController {
     private final LoaicaService loaicaService;
-    private final TaoLoaiCaHoanChinhService taoLoaiCaHoanChinhService;
 
     @GetMapping
     public ApiResponse<List<LoaicaResponse>> danhSachLoaiCa() {
@@ -62,7 +60,7 @@ public class LoaicaController {
         return ApiResponse.<LoaicaResponse>builder()
                 .code(200)
                 .message("Thêm loại cá, kích cỡ và bảng giá thành công")
-                .result(taoLoaiCaHoanChinhService.taoMoi(request, hinhanh))
+                .result(loaicaService.taoLoaiCaHoanChinh(request, hinhanh))
                 .build();
     }
 
