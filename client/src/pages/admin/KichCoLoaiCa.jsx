@@ -158,8 +158,11 @@ export default function KichCoLoaiCa() {
             await api.delete(`/Chitietcabans/${chitietId}`);
             setFishInventory(prev => prev.filter(s => s.id !== chitietId));
             showToast("Đã gỡ bỏ kích thước thành công!", "success");
-        } catch {
-            showToast("Gỡ bỏ kích thước thất bại!", "error");
+        } catch (error) {
+            showToast(
+                error.response?.data?.message || "Gỡ bỏ kích thước thất bại!",
+                "error"
+            );
         }
     };
 
