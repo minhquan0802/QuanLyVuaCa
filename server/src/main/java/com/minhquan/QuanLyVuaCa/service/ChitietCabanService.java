@@ -135,6 +135,13 @@ public class ChitietCabanService {
         Chitietcaban chitietcaban = chitietcabanRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.CHITIET_CABAN_NOT_EXISTED));
 
+        BigDecimal soLuongTon = chitietcaban.getSoluongton() == null
+                ? BigDecimal.ZERO
+                : chitietcaban.getSoluongton();
+        if (soLuongTon.compareTo(BigDecimal.ZERO) > 0) {
+            throw new AppExceptions(ErrorCode.CHITIET_CABAN_CON_TON_KHO);
+        }
+
         banggiaRepository.findByChitietcabanAndNgayketthucIsNull(chitietcaban)
                 .ifPresent(banggia -> {
                     banggia.setNgayketthuc(LocalDate.now());

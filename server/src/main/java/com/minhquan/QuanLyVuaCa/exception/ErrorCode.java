@@ -52,6 +52,7 @@ public enum ErrorCode {
     SIZECA_NOT_EXISTED(1020, "Size cá không tồn tại", HttpStatus.NOT_FOUND),
     CHITIET_CABAN_EXISTED(1021, "Sản phẩm (Loại + Size) này đã tồn tại trong kho", HttpStatus.CONFLICT),
     CHITIET_CABAN_NOT_EXISTED(1022, "Sản phẩm không tồn tại", HttpStatus.NOT_FOUND),
+    CHITIET_CABAN_CON_TON_KHO(1088, "Kích cỡ vẫn còn tồn kho, không thể xóa", HttpStatus.CONFLICT),
     INVENTORY_NOT_ENOUGH(1027, "Số lượng tồn kho không đủ để thực hiện giao dịch", HttpStatus.CONFLICT),
     THIEU_ID_CHITIET_CABAN(1046, "Thiếu ID chi tiết cá bán (sản phẩm kho)", HttpStatus.BAD_REQUEST),
     QUYDOI_NOT_EXISTED(1047, "Sản phẩm chưa cấu hình quy đổi kg", HttpStatus.NOT_FOUND),
