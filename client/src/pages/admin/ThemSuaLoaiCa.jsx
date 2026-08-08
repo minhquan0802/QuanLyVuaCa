@@ -72,6 +72,16 @@ export default function ThemSuaLoaiCa() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        const tenLoaiCa = currentCategory.tenloaica.trim();
+        if (!tenLoaiCa) {
+            showToast("Vui lòng nhập tên loại cá!", "error");
+            return;
+        }
+        if (tenLoaiCa.length > 60) {
+            showToast("Tên loại cá không được vượt quá 60 ký tự!", "error");
+            return;
+        }
+
         let cauHinhKichThuoc = [];
         if (!isEditing) {
             const rowsDaNhap = sizeRows.filter(row =>
@@ -128,8 +138,8 @@ export default function ThemSuaLoaiCa() {
         const accepted = await confirm({
             title: isEditing ? "Cập nhật loại cá" : "Thêm loại cá mới",
             message: isEditing
-                ? `Lưu các thay đổi của “${currentCategory.tenloaica}”?`
-                : `Tạo loại cá “${currentCategory.tenloaica}” cùng các kích cỡ đã khai báo?`,
+                ? `Lưu các thay đổi của “${tenLoaiCa}”?`
+                : `Tạo loại cá “${tenLoaiCa}” cùng các kích cỡ đã khai báo?`,
             confirmText: isEditing ? "Lưu thay đổi" : "Thêm loại cá",
             variant: "primary",
         });
@@ -138,7 +148,7 @@ export default function ThemSuaLoaiCa() {
         try {
             if (isEditing) {
                 const formData = new FormData();
-                formData.append("tenloaica", currentCategory.tenloaica);
+                formData.append("tenloaica", tenLoaiCa);
                 formData.append("mieuta", currentCategory.mieuta || "");
                 if (currentCategory.hinhanhFile) formData.append("hinhanh", currentCategory.hinhanhFile);
                 await api.put(`/Loaicas/${id}`, formData);
@@ -151,7 +161,7 @@ export default function ThemSuaLoaiCa() {
             formData.append(
                 "request",
                 new Blob([JSON.stringify({
-                    tenloaica: currentCategory.tenloaica,
+                    tenloaica: tenLoaiCa,
                     mieuta: currentCategory.mieuta || "",
                     cauhinhkichthuoc: cauHinhKichThuoc
                 })], { type: "application/json" })
@@ -192,6 +202,7 @@ export default function ThemSuaLoaiCa() {
                         <input
                             type="text"
                             required
+                            maxLength={60}
                             value={currentCategory.tenloaica}
                             onChange={(e) => setCurrentCategory({ ...currentCategory, tenloaica: e.target.value })}
                             className="w-full p-2 text-sm rounded-xl border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all bg-slate-50"
