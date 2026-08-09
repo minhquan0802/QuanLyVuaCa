@@ -321,7 +321,7 @@ test.describe('Quản lý đơn hàng - Cân và đóng hàng', () => {
   test('32. Không cho lưu cân nặng âm', async ({ page }) => {
     await weightInputs(page).first().fill('-1');
     await page.getByRole('button', { name: 'Xác nhận & Lưu Kg thực tế' }).click();
-    await expect(page.getByText('Cân nặng thực tế phải lớn hơn 0!')).toBeVisible();
+    await expect(page.getByText('Cân nặng thực tế không được là số âm!')).toBeVisible();
   });
 
   test('33. Không cho lưu dữ liệu cân nặng không phải số', async ({ page }) => {
@@ -330,13 +330,14 @@ test.describe('Quản lý đơn hàng - Cân và đóng hàng', () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await page.getByRole('button', { name: 'Xác nhận & Lưu Kg thực tế' }).click();
-    await expect(page.getByText('Cân nặng thực tế phải lớn hơn 0!')).toBeVisible();
+    await expect(page.getByText('Cân nặng thực tế không được là số âm!')).toBeVisible();
   });
 
-  test('34. Không cho lưu cân nặng bằng 0', async ({ page }) => {
+  test('34. Cho phép lưu cân nặng bằng 0 (hết hàng đột xuất, các dòng khác vẫn giao)', async ({ page }) => {
+    await page.route(`**/Donhangs/${ORDER_ID}/cap-nhat-can-nang`, (route) => fulfillJson(route, { result: true }));
     await weightInputs(page).first().fill('0');
     await page.getByRole('button', { name: 'Xác nhận & Lưu Kg thực tế' }).click();
-    await expect(page.getByText('Cân nặng thực tế phải lớn hơn 0!')).toBeVisible();
+    await expect(page.getByText('Đã cập nhật cân nặng thực tế!')).toBeVisible();
   });
 
   test('35. Tính lại đúng tổng tiền toàn bộ đơn', async ({ page }) => {

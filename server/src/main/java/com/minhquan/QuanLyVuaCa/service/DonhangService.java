@@ -427,13 +427,34 @@ public class DonhangService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
 
         TrangThaiDonHang trangThaiCu = donhang.getTrangthaidonhang();
+        boolean batDauGiaoVanChuyen = trangThaiMoi == TrangThaiDonHang.DANG_VAN_CHUYEN
+                && trangThaiCu != TrangThaiDonHang.DANG_VAN_CHUYEN;
 
-        if (trangThaiMoi == TrangThaiDonHang.DANG_VAN_CHUYEN && trangThaiCu != TrangThaiDonHang.DANG_VAN_CHUYEN) {
+        if (batDauGiaoVanChuyen) {
             chanGiaoDonRong(id);
         }
 
         donhang.setTrangthaidonhang(trangThaiMoi);
         Donhang donHangDaLuu = donhangRepository.save(donhang);
+
+        // Bàn giao cho đơn vị vận chuyển nhưng có mặt hàng cân được 0kg (hết hàng đột xuất lúc
+        // đóng gói, xem capNhatThucTeDonHang) -> báo cho khách biết đúng mặt hàng nào không giao
+        // được, các mặt hàng khác trong đơn vẫn giao bình thường.
+        if (batDauGiaoVanChuyen && donHangDaLuu.getIdthongtinkhachhang() != null) {
+            List<String> hetHang = chitietdonhangRepository.findByIddonhang(donHangDaLuu).stream()
+                    .filter(ctdh -> ctdh.getKhoiluongthucte() == null
+                            || ctdh.getKhoiluongthucte().compareTo(BigDecimal.ZERO) == 0)
+                    .map(ctdh -> ctdh.getIdchitietcaban().getIdloaica().getTenloaica()
+                            + " (" + ctdh.getIdchitietcaban().getIdsizeca().getSizeca() + ")")
+                    .toList();
+
+            if (!hetHang.isEmpty()) {
+                String noidung = "Đơn hàng của bạn hết hàng cho sản phẩm: " + String.join("; ", hetHang)
+                        + ". Các sản phẩm còn lại vẫn được giao bình thường.";
+                thongBaoService.guiChoTaiKhoan(donHangDaLuu.getIdthongtinkhachhang(), noidung, "GIAO_THIEU_HANG",
+                        "/my-orders?orderId=" + donHangDaLuu.getIddonhang());
+            }
+        }
 
         // Đơn rời CHO_XAC_NHAN qua đường admin xác nhận (COD/thanh toán sau) -> trừ kho/lô lúc này
         // (đơn VNPAY không đi qua đây để rời CHO_XAC_NHAN — callback thanh toán tự trừ trực tiếp
@@ -787,8 +808,12 @@ public class DonhangService {
 
             if (!ctdh.getIddonhang().getIddonhang().equals(idDonhang)) continue;
 
-            // Lấy số Kg mới từ Request
+            // Lấy số Kg mới từ Request. Cho phép = 0 (hết hàng đột xuất, không giao được dòng
+            // này), nhưng không cho phép âm vì sẽ làm sai lệch tồn kho ở bước trừ/hoàn bên dưới.
             BigDecimal slThucTeMoi = request.getSoluongkgthucte();
+            if (slThucTeMoi == null || slThucTeMoi.compareTo(BigDecimal.ZERO) < 0) {
+                throw new AppExceptions(ErrorCode.KHOI_LUONG_THUC_TE_INVALID);
+            }
 
             // Lấy số Kg thực tế cũ (nếu đã từng nhập trước đó)
             BigDecimal slThucTeCu = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;

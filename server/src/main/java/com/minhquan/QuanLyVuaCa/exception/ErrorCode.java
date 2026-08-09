@@ -86,6 +86,7 @@ public enum ErrorCode {
     DONHANG_NOT_EXISTED(1024, "Đơn hàng không tồn tại", HttpStatus.NOT_FOUND),
     CHITIET_DONHANG_NOT_EXISTED(1025, "Chi tiết đơn hàng không tồn tại", HttpStatus.NOT_FOUND),
     ORDER_STATUS_INVALID(1026, "Trạng thái đơn hàng không hợp lệ để thực hiện hành động này", HttpStatus.BAD_REQUEST),
+    KHOI_LUONG_THUC_TE_INVALID(1093, "Khối lượng thực tế không được là số âm", HttpStatus.BAD_REQUEST),
 
     // ===== NHÀ CUNG CẤP =====
     NHACUNGCAP_NOT_EXISTED(1055, "Nhà cung cấp không tồn tại", HttpStatus.NOT_FOUND),
