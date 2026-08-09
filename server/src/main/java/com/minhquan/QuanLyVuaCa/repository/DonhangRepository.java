@@ -21,6 +21,8 @@ public interface DonhangRepository extends JpaRepository<Donhang, String> {
     List<Donhang> findAllByOrderByNgaydatDesc();
     Page<Donhang> findByNgaydatBetween(
             LocalDateTime tuNgay, LocalDateTime denNgay, Pageable pageable);
+    List<Donhang> findByNgaydatBetweenOrderByNgaydatDesc(
+            LocalDateTime tuNgay, LocalDateTime denNgay);
 
     // 3. Tìm đơn đã giao nhưng chưa thanh toán đủ (để áp dụng số dư), cũ nhất trước
     List<Donhang> findByIdthongtinkhachhangAndTrangthaidonhangAndTrangthaithanhtoanOrderByNgaydatAsc(

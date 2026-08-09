@@ -19,6 +19,7 @@ import java.util.List;
 @Repository
 public interface ChitietdonhangRepository extends JpaRepository<Chitietdonhang, String> {
     List<Chitietdonhang> findByIddonhang(Donhang donhang);
+    List<Chitietdonhang> findByIddonhangIn(List<Donhang> donhangs);
     boolean existsByIdchitietcaban(Chitietcaban idchitietcaban);
     boolean existsByIddonvitinh(Donvitinh iddonvitinh);
 

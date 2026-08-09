@@ -32,6 +32,8 @@ class ThongKeServiceTest {
     @Mock ChitietdonhangRepository chitietdonhangRepository;
     @Mock ChitietphieuthanhlyRepository chitietphieuthanhlyRepository;
     @Mock DonhangRepository donhangRepository;
+    @Mock TaiKhoanRepository taiKhoanRepository;
+    @Mock PhieuthanhlyService phieuthanhlyService;
 
     ThongKeService service;
 
@@ -39,7 +41,8 @@ class ThongKeServiceTest {
     void setUp() {
         service = new ThongKeService(loaicaRepository, chitietcabanRepository,
                 chitietphieunhapRepository, chitietdonhangRepository,
-                chitietphieuthanhlyRepository, donhangRepository);
+                chitietphieuthanhlyRepository, donhangRepository,
+                taiKhoanRepository, phieuthanhlyService);
     }
 
     @Test
