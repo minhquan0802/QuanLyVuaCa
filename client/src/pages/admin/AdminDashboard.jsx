@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import api from "../../config/axios";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
     DollarSign, CheckCircle2, ShoppingCart,
-    AlertCircle, TableProperties, BarChart2, Table
+    AlertCircle, TableProperties, BarChart2, Table, Download
 } from "lucide-react";
 
 const ORDER_STATUS = {
@@ -21,6 +22,7 @@ const ORDER_STATUS = {
 
 export default function SalesDashboard() {
     const { user } = useAuth() || {};
+    const { showToast } = useToast();
     const navigate = useNavigate();
     const [timeRange, setTimeRange] = useState("TODAY");
     const [customFrom, setCustomFrom] = useState(() => {
@@ -32,6 +34,7 @@ export default function SalesDashboard() {
         return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     });
     const [viewMode, setViewMode] = useState("TABLE"); // "TABLE" hoặc "CHART"
+    const [exportingExcel, setExportingExcel] = useState(false);
 
     // --- CHỈ SỐ TÀI CHÍNH & BÁN HÀNG ---
     const [stats, setStats] = useState({
@@ -82,6 +85,46 @@ export default function SalesDashboard() {
         .sort((a, b) => b.ban - a.ban); // Ưu tiên xếp theo loại cá bán chạy nhất
 
     const formatCurrency = (value) => `${new Intl.NumberFormat('vi-VN').format(value || 0)} VNĐ`;
+
+    const handleExportExcel = async () => {
+        if (timeRange === "CUSTOM" && (!customFrom || !customTo || customFrom > customTo)) {
+            showToast("Khoảng thời gian xuất báo cáo không hợp lệ.", "error");
+            return;
+        }
+
+        const params = timeRange === "CUSTOM"
+            ? { range: timeRange, from: customFrom, to: customTo }
+            : { range: timeRange };
+
+        setExportingExcel(true);
+        try {
+            const response = await api.get("/Thongke/xuat-excel", {
+                params,
+                responseType: "blob",
+            });
+            const disposition = response.headers["content-disposition"] || "";
+            const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+            const plainName = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+            const fileName = encodedName
+                ? decodeURIComponent(encodedName)
+                : plainName || `BaoCaoDashboard_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            const url = URL.createObjectURL(new Blob([response.data], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            }));
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            showToast("Đã xuất báo cáo Dashboard thành công.", "success");
+        } catch {
+            showToast("Không thể xuất báo cáo Excel. Vui lòng thử lại.", "error");
+        } finally {
+            setExportingExcel(false);
+        }
+    };
 
     const getRangeBounds = () => {
         const now = new Date();
@@ -238,6 +281,15 @@ export default function SalesDashboard() {
             <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-8">
                 <h2 className="text-2xl font-bold text-slate-800">Tổng kết kinh doanh</h2>
                 <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleExportExcel}
+                        disabled={exportingExcel || (timeRange === "CUSTOM" && (!customFrom || !customTo || customFrom > customTo))}
+                        className="inline-flex items-center gap-2 rounded-xl border border-emerald-700 bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <Download size={18} />
+                        {exportingExcel ? "Đang xuất..." : "Xuất Excel"}
+                    </button>
                     <select
                         value={timeRange}
                         onChange={(e) => setTimeRange(e.target.value)}

@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -50,6 +54,21 @@ public class ThongKeController {
                 .message("Lấy dữ liệu luân chuyển hàng hóa thành công")
                 .result(thongKeService.tinhLuanChuyenHangHoa(range, from, to))
                 .build();
+    }
+
+    @GetMapping("/xuat-excel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> xuatExcel(
+            @RequestParam(defaultValue = "THIS_MONTH") String range,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        ThongKeService.TepBaoCaoExcel tep = thongKeService.xuatBaoCao(range, from, to);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(tep.tenTep()).build());
+        headers.setContentLength(tep.noiDung().length);
+        return ResponseEntity.ok().headers(headers).body(tep.noiDung());
     }
 
 }
