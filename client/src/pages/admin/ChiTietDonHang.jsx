@@ -63,10 +63,10 @@ export default function ChiTietDonHang() {
     const handleSaveRealWeight = async () => {
         const hasInvalidWeight = viewDetails.some(item => {
             const weight = Number(item.editWeight);
-            return !Number.isFinite(weight) || weight <= 0;
+            return !Number.isFinite(weight) || weight < 0;
         });
         if (hasInvalidWeight) {
-            showToast("Cân nặng thực tế phải lớn hơn 0!", "error");
+            showToast("Cân nặng thực tế không được là số âm!", "error");
             return;
         }
         const payload = viewDetails.map(item => ({
