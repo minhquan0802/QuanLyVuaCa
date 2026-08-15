@@ -174,6 +174,10 @@ public class ThongKeService {
 
     public record KhoangThoiGian(LocalDateTime tuNgay, LocalDateTime denNgay) {}
 
+    // Dòng (0-based) chứa tiêu đề cột dùng chung cho các sheet Excel bên dưới
+    // (riêng sheet "Tổng quan" có bố cục khác nên dùng biến cục bộ riêng).
+    private static final int DONG_TIEU_DE = 5;
+
     @Transactional(readOnly = true)
     public TepBaoCaoExcel xuatBaoCao(String range, LocalDate from, LocalDate to) {
         KhoangThoiGian khoang = xacDinhKhoangThoiGian(range, from, to);
@@ -204,22 +208,23 @@ public class ThongKeService {
                                    ThongKeTongQuanResponse data, KhoangThoiGian khoang,
                                    LocalDateTime thoiDiemXuat) {
         Sheet sheet = workbook.createSheet("Tổng quan");
+        int dongTieuDe = 7; // sheet này có thêm dòng "Người xuất" nên tiêu đề cột nằm thấp hơn các sheet khác
         taoTieuDeExcel(sheet, styles, "BÁO CÁO TỔNG QUAN DASHBOARD", 2);
         ghiThongTinExcel(sheet, styles, 2, "Từ ngày", khoang.tuNgay().toLocalDate(), styles.date());
         ghiThongTinExcel(sheet, styles, 3, "Đến ngày", khoang.denNgay().toLocalDate(), styles.date());
         ghiThongTinExcel(sheet, styles, 4, "Thời điểm xuất", thoiDiemXuat, styles.dateTime());
         ghiThongTinExcel(sheet, styles, 5, "Người xuất", layNguoiXuat(), styles.text());
-        ghiHeaderExcel(sheet.createRow(7), styles, "Chỉ số", "Giá trị", "Ghi chú");
+        ghiHeaderExcel(sheet.createRow(dongTieuDe), styles, "Chỉ số", "Giá trị", "Ghi chú");
 
-        BigDecimal chuaThanhToan = nz(data.getChiPhiNhapHang()).subtract(nz(data.getChiPhiNhapDaThanhToan()));
+        BigDecimal chuaThanhToan = soHoacKhong(data.getChiPhiNhapHang()).subtract(soHoacKhong(data.getChiPhiNhapDaThanhToan()));
         List<List<Object>> rows = List.of(
-                List.of("Doanh thu đơn hàng", nz(data.getTongDoanhThu()), "Chỉ tính đơn giao thành công"),
-                List.of("Thu từ bán thanh lý", nz(data.getThuTuBanThanhLy()), "Không bao gồm tiêu hủy"),
-                List.of("Chi phí nhập hàng", nz(data.getChiPhiNhapHang()), "Giá trị phiếu nhập phát sinh trong kỳ"),
-                List.of("Chi phí nhập đã thanh toán", nz(data.getChiPhiNhapDaThanhToan()), "Phần đã xác nhận thanh toán"),
+                List.of("Doanh thu đơn hàng", soHoacKhong(data.getTongDoanhThu()), "Chỉ tính đơn giao thành công"),
+                List.of("Thu từ bán thanh lý", soHoacKhong(data.getThuTuBanThanhLy()), "Không bao gồm tiêu hủy"),
+                List.of("Chi phí nhập hàng", soHoacKhong(data.getChiPhiNhapHang()), "Giá trị phiếu nhập phát sinh trong kỳ"),
+                List.of("Chi phí nhập đã thanh toán", soHoacKhong(data.getChiPhiNhapDaThanhToan()), "Phần đã xác nhận thanh toán"),
                 List.of("Chi phí nhập chưa thanh toán", chuaThanhToan, "Chi phí nhập trừ phần đã thanh toán")
         );
-        int rowIndex = 8;
+        int rowIndex = dongTieuDe + 1;
         for (List<Object> values : rows) {
             Row row = sheet.createRow(rowIndex++);
             ghiOExcel(row, 0, values.get(0), styles.text());
@@ -234,7 +239,8 @@ public class ThongKeService {
         ghiOExcel(lots, 0, "Số lô quá hạn còn hàng", styles.text());
         ghiOExcel(lots, 1, data.getSoLoQuaHan(), styles.integer());
         ghiOExcel(lots, 2, "Số dư hiện tại, không phụ thuộc kỳ lọc", styles.text());
-        hoanTatSheet(sheet, 7, rowIndex, new int[]{34, 24, 52});
+        int[] doRongCotTongQuan = {34, 24, 52};
+        hoanTatSheet(sheet, dongTieuDe, rowIndex, doRongCotTongQuan);
     }
 
     private void taoSheetLuanChuyen(Workbook workbook, DinhDangExcel styles,
@@ -246,21 +252,26 @@ public class ThongKeService {
                 "%s đến %s".formatted(khoang.tuNgay().toLocalDate(), khoang.denNgay().toLocalDate()), styles.text());
         ghiThongTinExcel(sheet, styles, 3, "Ghi chú",
                 "Phát sinh theo kỳ; tồn kho là số hiện tại lúc xuất " + thoiDiemXuat, styles.text());
-        ghiHeaderExcel(sheet.createRow(5), styles, "Loại cá", "Nhập (kg)", "Bán (kg)",
+        ghiHeaderExcel(sheet.createRow(DONG_TIEU_DE), styles, "Loại cá", "Nhập (kg)", "Bán (kg)",
                 "Bán thanh lý (kg)", "Tiêu hủy (kg)", "Tồn hiện tại (kg)",
                 "Tỷ lệ bán", "Tỷ lệ thanh lý", "Tỷ lệ hao hụt");
-        int rowIndex = 6;
+        int rowIndex = DONG_TIEU_DE + 1;
         for (LuanChuyenHangHoaResponse item : data) {
             Row row = sheet.createRow(rowIndex++);
-            BigDecimal nhap = nz(item.getNhap());
-            Object[] values = {item.getName(), nhap, item.getBan(), item.getBanThanhLy(), item.getTieuHuy(),
-                    item.getTonKho(), tyLe(item.getBan(), nhap), tyLe(item.getBanThanhLy(), nhap),
-                    tyLe(item.getTieuHuy(), nhap)};
-            for (int i = 0; i < values.length; i++) {
-                ghiOExcel(row, i, values[i], i == 0 ? styles.text() : i >= 6 ? styles.percent() : styles.decimal());
-            }
+            BigDecimal nhap = soHoacKhong(item.getNhap());
+            ghiOExcel(row, 0, item.getName(), styles.text());
+            ghiOExcel(row, 1, nhap, styles.decimal());
+            ghiOExcel(row, 2, item.getBan(), styles.decimal());
+            ghiOExcel(row, 3, item.getBanThanhLy(), styles.decimal());
+            ghiOExcel(row, 4, item.getTieuHuy(), styles.decimal());
+            ghiOExcel(row, 5, item.getTonKho(), styles.decimal());
+            ghiOExcel(row, 6, tyLe(item.getBan(), nhap), styles.percent());
+            ghiOExcel(row, 7, tyLe(item.getBanThanhLy(), nhap), styles.percent());
+            ghiOExcel(row, 8, tyLe(item.getTieuHuy(), nhap), styles.percent());
         }
-        hoanTatSheet(sheet, 5, Math.max(5, rowIndex - 1), new int[]{28, 20, 20, 22, 20, 22, 18, 20, 20});
+        int dongDuLieuCuoi = Math.max(DONG_TIEU_DE, rowIndex - 1);
+        int[] doRongCotLuanChuyen = {28, 20, 20, 22, 20, 22, 18, 20, 20};
+        hoanTatSheet(sheet, DONG_TIEU_DE, dongDuLieuCuoi, doRongCotLuanChuyen);
     }
 
     private void taoSheetDonHang(Workbook workbook, DinhDangExcel styles,
@@ -271,7 +282,7 @@ public class ThongKeService {
         ghiThongTinExcel(sheet, styles, 2, "Khoảng báo cáo",
                 "%s đến %s".formatted(khoang.tuNgay().toLocalDate(), khoang.denNgay().toLocalDate()), styles.text());
         ghiThongTinExcel(sheet, styles, 3, "Thời điểm xuất", thoiDiemXuat, styles.dateTime());
-        ghiHeaderExcel(sheet.createRow(5), styles, "Mã đơn", "Ngày đặt", "Khách hàng", "Số điện thoại",
+        ghiHeaderExcel(sheet.createRow(DONG_TIEU_DE), styles, "Mã đơn", "Ngày đặt", "Khách hàng", "Số điện thoại",
                 "Loại khách", "Loại cá", "Kích cỡ", "Đơn vị", "Số lượng", "Khối lượng (kg)",
                 "Đơn giá/kg", "Thành tiền", "Tổng tiền đơn", "Trạng thái đơn", "Thanh toán");
 
@@ -281,7 +292,7 @@ public class ThongKeService {
         Map<String, List<Chitietdonhang>> details = donHangs.isEmpty() ? Map.of()
                 : chitietdonhangRepository.findByIddonhangIn(donHangs).stream()
                 .collect(Collectors.groupingBy(item -> item.getIddonhang().getIddonhang()));
-        int rowIndex = 6;
+        int rowIndex = DONG_TIEU_DE + 1;
         for (Donhang order : donHangs) {
             List<Chitietdonhang> items = details.getOrDefault(order.getIddonhang(), List.of());
             if (items.isEmpty()) items = Collections.singletonList(null);
@@ -290,8 +301,9 @@ public class ThongKeService {
                         customers.get(order.getIdthongtinkhachhang()));
             }
         }
-        hoanTatSheet(sheet, 5, Math.max(5, rowIndex - 1),
-                new int[]{38, 20, 26, 17, 15, 24, 20, 15, 12, 18, 18, 20, 20, 24, 20});
+        int dongDuLieuCuoi = Math.max(DONG_TIEU_DE, rowIndex - 1);
+        int[] doRongCotDonHang = {38, 20, 26, 17, 15, 24, 20, 15, 12, 18, 18, 20, 20, 24, 20};
+        hoanTatSheet(sheet, DONG_TIEU_DE, dongDuLieuCuoi, doRongCotDonHang);
     }
 
     private int ghiDongDonHangExcel(Sheet sheet, DinhDangExcel styles, int rowIndex,
@@ -299,21 +311,22 @@ public class ThongKeService {
         Row row = sheet.createRow(rowIndex);
         String tenKhach = customer == null ? giaTriHoac(order.getTenKhachLe(), "Khách vãng lai")
                 : noiChuoi(customer.getHo(), customer.getTen());
-        Object[] common = {order.getIddonhang(), order.getNgaydat(), tenKhach,
-                customer == null ? order.getSdtKhachLe() : customer.getSodienthoai(),
-                customer == null ? "Khách lẻ" : "Khách sỉ"};
-        for (int i = 0; i < common.length; i++)
-            ghiOExcel(row, i, common[i], i == 1 ? styles.dateTime() : styles.text());
+        ghiOExcel(row, 0, order.getIddonhang(), styles.text());
+        ghiOExcel(row, 1, order.getNgaydat(), styles.dateTime());
+        ghiOExcel(row, 2, tenKhach, styles.text());
+        ghiOExcel(row, 3, customer == null ? order.getSdtKhachLe() : customer.getSodienthoai(), styles.text());
+        ghiOExcel(row, 4, customer == null ? "Khách lẻ" : "Khách sỉ", styles.text());
         if (item != null) {
             BigDecimal kg = item.getKhoiluongthucte() != null ? item.getKhoiluongthucte() : item.getKhoiluongdukien();
             BigDecimal amount = item.getTongtienthucte() != null ? item.getTongtienthucte() : item.getTongtiendukien();
-            BigDecimal price = nz(kg).signum() > 0 ? nz(amount).divide(kg, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-            Object[] values = {item.getIdchitietcaban().getIdloaica().getTenloaica(),
-                    item.getIdchitietcaban().getIdsizeca().getSizeca(), item.getIddonvitinh().getTendvt(),
-                    item.getSoluong(), kg, price, amount};
-            CellStyle[] cellStyles = {styles.text(), styles.text(), styles.text(), styles.integer(),
-                    styles.decimal(), styles.currency(), styles.currency()};
-            for (int i = 0; i < values.length; i++) ghiOExcel(row, i + 5, values[i], cellStyles[i]);
+            BigDecimal price = soHoacKhong(kg).signum() > 0 ? soHoacKhong(amount).divide(kg, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+            ghiOExcel(row, 5, item.getIdchitietcaban().getIdloaica().getTenloaica(), styles.text());
+            ghiOExcel(row, 6, item.getIdchitietcaban().getIdsizeca().getSizeca(), styles.text());
+            ghiOExcel(row, 7, item.getIddonvitinh().getTendvt(), styles.text());
+            ghiOExcel(row, 8, item.getSoluong(), styles.integer());
+            ghiOExcel(row, 9, kg, styles.decimal());
+            ghiOExcel(row, 10, price, styles.currency());
+            ghiOExcel(row, 11, amount, styles.currency());
         }
         ghiOExcel(row, 12, order.getTongtien(), styles.currency());
         ghiOExcel(row, 13, nhanTrangThaiDonHang(order.getTrangthaidonhang()), styles.text());
@@ -328,64 +341,109 @@ public class ThongKeService {
         ghiThongTinExcel(sheet, styles, 2, "Thời điểm xuất", thoiDiemXuat, styles.dateTime());
         ghiThongTinExcel(sheet, styles, 3, "Điều kiện",
                 "Còn hàng và ngày nhập cũ hơn " + LoHangQuaHanScheduler.SO_NGAY_QUA_HAN + " ngày", styles.text());
-        ghiHeaderExcel(sheet.createRow(5), styles, "Mã lô", "Loại cá", "Kích cỡ", "Ngày nhập",
+        ghiHeaderExcel(sheet.createRow(DONG_TIEU_DE), styles, "Mã lô", "Loại cá", "Kích cỡ", "Ngày nhập",
                 "Số ngày lưu kho", "Số lượng nhập (kg)", "Còn lại (kg)", "Giá nhập", "Giá trị còn lại",
                 "Giá bán lẻ hiện tại", "Giá bán sỉ hiện tại", "Ngày xử lý dự kiến", "Tình trạng");
-        int rowIndex = 6;
+        int rowIndex = DONG_TIEU_DE + 1;
         for (LoHangResponse item : data) {
             Row row = sheet.createRow(rowIndex++);
-            Object[] values = {item.getIdchitietphieunhap(), item.getTenLoaiCa(), item.getTenSize(), item.getNgaynhap(),
-                    item.getNgaynhap() == null ? 0 : ChronoUnit.DAYS.between(item.getNgaynhap(), thoiDiemXuat.toLocalDate()),
-                    item.getSoluongnhap(), item.getSoluongconlai(), item.getGianhap(),
-                    nz(item.getSoluongconlai()).multiply(nz(item.getGianhap())), item.getGiabanleHienTai(),
-                    item.getGiabansiHienTai(), item.getNgaynhap() == null ? null
-                    : item.getNgaynhap().plusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN), "Quá hạn"};
-            for (int i = 0; i < values.length; i++) {
-                CellStyle style = i <= 2 ? styles.text() : (i == 3 || i == 11) ? styles.date()
-                        : (i == 4) ? styles.integer() : (i == 5 || i == 6) ? styles.decimal()
-                        : (i >= 7 && i <= 10) ? styles.currency() : styles.warning();
-                ghiOExcel(row, i, values[i], style);
-            }
+            long soNgayLuuKho = item.getNgaynhap() == null ? 0
+                    : ChronoUnit.DAYS.between(item.getNgaynhap(), thoiDiemXuat.toLocalDate());
+            BigDecimal giaTriConLai = soHoacKhong(item.getSoluongconlai()).multiply(soHoacKhong(item.getGianhap()));
+            LocalDate ngayXuLyDuKien = item.getNgaynhap() == null ? null
+                    : item.getNgaynhap().plusDays(LoHangQuaHanScheduler.SO_NGAY_QUA_HAN);
+
+            ghiOExcel(row, 0, item.getIdchitietphieunhap(), styles.text());
+            ghiOExcel(row, 1, item.getTenLoaiCa(), styles.text());
+            ghiOExcel(row, 2, item.getTenSize(), styles.text());
+            ghiOExcel(row, 3, item.getNgaynhap(), styles.date());
+            ghiOExcel(row, 4, soNgayLuuKho, styles.integer());
+            ghiOExcel(row, 5, item.getSoluongnhap(), styles.decimal());
+            ghiOExcel(row, 6, item.getSoluongconlai(), styles.decimal());
+            ghiOExcel(row, 7, item.getGianhap(), styles.currency());
+            ghiOExcel(row, 8, giaTriConLai, styles.currency());
+            ghiOExcel(row, 9, item.getGiabanleHienTai(), styles.currency());
+            ghiOExcel(row, 10, item.getGiabansiHienTai(), styles.currency());
+            ghiOExcel(row, 11, ngayXuLyDuKien, styles.date());
+            ghiOExcel(row, 12, "Quá hạn", styles.warning());
         }
-        hoanTatSheet(sheet, 5, Math.max(5, rowIndex - 1),
-                new int[]{38, 24, 20, 15, 18, 21, 18, 18, 20, 22, 22, 21, 15});
+        int dongDuLieuCuoi = Math.max(DONG_TIEU_DE, rowIndex - 1);
+        int[] doRongCotLoQuaHan = {38, 24, 20, 15, 18, 21, 18, 18, 20, 22, 22, 21, 15};
+        hoanTatSheet(sheet, DONG_TIEU_DE, dongDuLieuCuoi, doRongCotLoQuaHan);
     }
 
     private DinhDangExcel taoDinhDangExcel(Workbook workbook) {
         DataFormat format = workbook.createDataFormat();
-        Font titleFont = workbook.createFont(); titleFont.setBold(true); titleFont.setFontHeightInPoints((short) 16);
+
+        // Tiêu đề lớn đầu mỗi sheet: chữ trắng đậm cỡ 16, nền xanh mòng két, căn giữa.
+        Font titleFont = workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short) 16);
         titleFont.setColor(IndexedColors.WHITE.getIndex());
-        CellStyle title = workbook.createCellStyle(); title.setFont(titleFont);
-        title.setFillForegroundColor(IndexedColors.TEAL.getIndex()); title.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        CellStyle title = workbook.createCellStyle();
+        title.setFont(titleFont);
+        title.setFillForegroundColor(IndexedColors.TEAL.getIndex());
+        title.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         title.setAlignment(HorizontalAlignment.CENTER);
-        Font bold = workbook.createFont(); bold.setBold(true);
-        CellStyle label = workbook.createCellStyle(); label.setFont(bold);
-        label.setFillForegroundColor(IndexedColors.LIGHT_TURQUOISE.getIndex()); label.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        Font headerFont = workbook.createFont(); headerFont.setBold(true); headerFont.setColor(IndexedColors.WHITE.getIndex());
-        CellStyle header = workbook.createCellStyle(); header.setFont(headerFont);
-        header.setFillForegroundColor(IndexedColors.DARK_TEAL.getIndex()); header.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        header.setAlignment(HorizontalAlignment.CENTER); header.setWrapText(true); datVienExcel(header);
-        CellStyle text = workbook.createCellStyle(); datVienExcel(text);
+
+        // Nhãn thông tin phụ (Từ ngày, Người xuất...): chữ đậm, nền xanh nhạt.
+        Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        CellStyle label = workbook.createCellStyle();
+        label.setFont(boldFont);
+        label.setFillForegroundColor(IndexedColors.LIGHT_TURQUOISE.getIndex());
+        label.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // Tiêu đề cột của bảng dữ liệu: chữ trắng đậm, nền xanh đậm, tự xuống dòng.
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setColor(IndexedColors.WHITE.getIndex());
+        CellStyle header = workbook.createCellStyle();
+        header.setFont(headerFont);
+        header.setFillForegroundColor(IndexedColors.DARK_TEAL.getIndex());
+        header.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        header.setAlignment(HorizontalAlignment.CENTER);
+        header.setWrapText(true);
+        datVienExcel(header);
+
+        // Ô văn bản thường: chỉ có viền mỏng, dùng làm "nền" cho các style số bên dưới.
+        CellStyle text = workbook.createCellStyle();
+        datVienExcel(text);
+
+        // Các style số/ngày: kế thừa viền từ "text", chỉ khác định dạng hiển thị (data format).
         CellStyle integer = taoStyleSo(workbook, text, format, "#,##0");
         CellStyle decimal = taoStyleSo(workbook, text, format, "#,##0.00");
         CellStyle currency = taoStyleSo(workbook, text, format, "#,##0 \"VNĐ\"");
         CellStyle percent = taoStyleSo(workbook, text, format, "0.00%");
         CellStyle date = taoStyleSo(workbook, text, format, "dd/mm/yyyy");
         CellStyle dateTime = taoStyleSo(workbook, text, format, "dd/mm/yyyy hh:mm");
-        CellStyle warning = workbook.createCellStyle(); warning.cloneStyleFrom(text);
-        warning.setFillForegroundColor(IndexedColors.ROSE.getIndex()); warning.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // Cảnh báo (dùng cho cột "Tình trạng" của lô hàng quá hạn): giống "text" nhưng nền hồng.
+        CellStyle warning = workbook.createCellStyle();
+        warning.cloneStyleFrom(text);
+        warning.setFillForegroundColor(IndexedColors.ROSE.getIndex());
+        warning.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
         return new DinhDangExcel(title, label, header, text, integer, decimal, currency, percent, date, dateTime, warning);
     }
 
+    // Tạo 1 style số mới bằng cách nhân bản style "base" (đã có viền/nền sẵn)
+    // rồi chỉ đổi thêm định dạng hiển thị số/ngày theo "pattern".
     private CellStyle taoStyleSo(Workbook workbook, CellStyle base, DataFormat format, String pattern) {
-        CellStyle style = workbook.createCellStyle(); style.cloneStyleFrom(base); style.setDataFormat(format.getFormat(pattern));
+        CellStyle style = workbook.createCellStyle();
+        style.cloneStyleFrom(base);
+        style.setDataFormat(format.getFormat(pattern));
         return style;
     }
 
     private void taoTieuDeExcel(Sheet sheet, DinhDangExcel styles, String value, int lastColumn) {
-        Row row = sheet.createRow(0); row.setHeightInPoints(28);
+        Row row = sheet.createRow(0);
+        row.setHeightInPoints(28);
+        // Excel yêu cầu mọi ô trong 1 vùng gộp phải cùng style thì viền/nền mới hiển thị đều,
+        // nên phải tô style cho hết các ô từ 0..lastColumn dù chỉ ô đầu tiên có chữ.
         for (int i = 0; i <= lastColumn; i++) {
-            Cell cell = row.createCell(i); cell.setCellStyle(styles.title());
+            Cell cell = row.createCell(i);
+            cell.setCellStyle(styles.title());
             if (i == 0) cell.setCellValue(value);
         }
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, lastColumn));
@@ -394,14 +452,19 @@ public class ThongKeService {
     private void ghiThongTinExcel(Sheet sheet, DinhDangExcel styles, int rowIndex,
                                   String label, Object value, CellStyle style) {
         Row row = sheet.createRow(rowIndex);
-        ghiOExcel(row, 0, label, styles.label()); ghiOExcel(row, 1, value, style);
+        ghiOExcel(row, 0, label, styles.label());
+        ghiOExcel(row, 1, value, style);
     }
 
     private void ghiHeaderExcel(Row row, DinhDangExcel styles, String... headers) {
         row.setHeightInPoints(32);
-        for (int i = 0; i < headers.length; i++) ghiOExcel(row, i, headers[i], styles.header());
+        for (int i = 0; i < headers.length; i++) {
+            ghiOExcel(row, i, headers[i], styles.header());
+        }
     }
 
+    // Tự chọn cách ghi giá trị theo đúng kiểu dữ liệu Java của "value",
+    // để các hàm taoSheetXxx không phải if/else lặp lại kiểu dữ liệu ở từng nơi gọi.
     private void ghiOExcel(Row row, int column, Object value, CellStyle style) {
         Cell cell = row.createCell(column);
         if (value instanceof BigDecimal number) cell.setCellValue(number.doubleValue());
@@ -415,12 +478,16 @@ public class ThongKeService {
     private void hoanTatSheet(Sheet sheet, int headerRow, int lastRow, int[] widths) {
         sheet.setAutoFilter(new CellRangeAddress(headerRow, lastRow, 0, widths.length - 1));
         sheet.createFreezePane(1, headerRow + 1);
-        for (int i = 0; i < widths.length; i++) sheet.setColumnWidth(i, widths[i] * 256);
+        for (int i = 0; i < widths.length; i++) {
+            sheet.setColumnWidth(i, widths[i] * 256);
+        }
     }
 
     private void datVienExcel(CellStyle style) {
-        style.setBorderTop(BorderStyle.THIN); style.setBorderRight(BorderStyle.THIN);
-        style.setBorderBottom(BorderStyle.THIN); style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
     }
 
     private String layNguoiXuat() {
@@ -439,10 +506,13 @@ public class ThongKeService {
         return value == null || value.isBlank() ? fallback : value;
     }
 
-    private BigDecimal nz(BigDecimal value) { return value == null ? BigDecimal.ZERO : value; }
+    // Trả về chính "value", hoặc 0 nếu "value" là null (ví dụ SUM trên tập rỗng từ DB trả về null).
+    private BigDecimal soHoacKhong(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
 
     private double tyLe(BigDecimal value, BigDecimal total) {
-        return nz(total).signum() <= 0 ? 0D : nz(value).divide(total, 6, RoundingMode.HALF_UP).doubleValue();
+        return soHoacKhong(total).signum() <= 0 ? 0D : soHoacKhong(value).divide(total, 6, RoundingMode.HALF_UP).doubleValue();
     }
 
     private String nhanTrangThaiDonHang(TrangThaiDonHang status) {
