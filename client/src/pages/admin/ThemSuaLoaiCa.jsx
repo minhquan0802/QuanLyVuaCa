@@ -69,9 +69,18 @@ export default function ThemSuaLoaiCa() {
         setSizeRows(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
     };
 
+    /**
+     * Xử lý khi người dùng gửi form thêm/cập nhật loại cá.
+     *
+     * Luồng thêm mới gồm: kiểm tra thông tin chung → chuẩn hóa từng cấu hình kích cỡ/giá
+     * → xác nhận thao tác → đóng gói JSON và ảnh bằng FormData → gọi API tạo loại cá.
+     * Luồng cập nhật chỉ gửi thông tin loại cá và ảnh mới, không tạo lại kích cỡ/bảng giá.
+     */
     const handleSubmit = async (e) => {
+        // Ngăn trình duyệt submit form theo cách mặc định và tải lại toàn bộ trang.
         e.preventDefault();
 
+        // 1. Chuẩn hóa và kiểm tra thông tin chung của loại cá.
         const tenLoaiCa = currentCategory.tenloaica.trim();
         if (!tenLoaiCa) {
             showToast("Vui lòng nhập tên loại cá!", "error");
@@ -82,8 +91,11 @@ export default function ThemSuaLoaiCa() {
             return;
         }
 
+        // 2. Khi thêm mới, chuyển các dòng nhập trên giao diện thành cấu hình backend yêu cầu.
+        // Khi sửa loại cá, kích cỡ và bảng giá được quản lý ở màn hình riêng nên bỏ qua bước này.
         let cauHinhKichThuoc = [];
         if (!isEditing) {
+            // Bỏ qua các dòng hoàn toàn trống; ít nhất một dòng phải có dữ liệu.
             const rowsDaNhap = sizeRows.filter(row =>
                 row.sizeId
                 || row.newSizeName.trim()
@@ -96,6 +108,7 @@ export default function ThemSuaLoaiCa() {
                 return;
             }
 
+            // Kiểm tra lần lượt từng kích cỡ để dừng ngay tại dữ liệu không hợp lệ.
             for (const row of rowsDaNhap) {
                 const hasSize = row.sizeId === NEW_SIZE_SENTINEL
                     ? row.newSizeName.trim()
@@ -125,6 +138,8 @@ export default function ThemSuaLoaiCa() {
                     return;
                 }
 
+                // Chuẩn hóa về đúng DTO CauHinhKichThuocVaGiaRequest của backend:
+                // dùng size có sẵn thì gửi idsizeca; tạo size mới thì gửi tensizemoi.
                 cauHinhKichThuoc.push({
                     idsizeca: row.sizeId === NEW_SIZE_SENTINEL ? null : Number(row.sizeId),
                     tensizemoi: row.sizeId === NEW_SIZE_SENTINEL ? row.newSizeName.trim() : null,
@@ -135,6 +150,7 @@ export default function ThemSuaLoaiCa() {
             }
         }
 
+        // 3. Yêu cầu người dùng xác nhận trước khi phát sinh thay đổi dữ liệu.
         const accepted = await confirm({
             title: isEditing ? "Cập nhật loại cá" : "Thêm loại cá mới",
             message: isEditing
@@ -144,9 +160,11 @@ export default function ThemSuaLoaiCa() {
             variant: "primary",
         });
         if (!accepted) return;
+        // Khóa nút lưu trong lúc chờ API để tránh gửi form nhiều lần.
         setIsSaving(true);
         try {
             if (isEditing) {
+                // 4a. Luồng cập nhật: gửi các trường văn bản và chỉ gửi ảnh khi người dùng chọn ảnh mới.
                 const formData = new FormData();
                 formData.append("tenloaica", tenLoaiCa);
                 formData.append("mieuta", currentCategory.mieuta || "");
@@ -157,6 +175,9 @@ export default function ThemSuaLoaiCa() {
                 return;
             }
 
+            // 4b. Luồng thêm mới: endpoint nhận multipart/form-data gồm:
+            // - request: JSON chứa loại cá và toàn bộ cấu hình kích cỡ/bảng giá.
+            // - hinhanh: file ảnh tùy chọn.
             const formData = new FormData();
             formData.append(
                 "request",
@@ -169,13 +190,16 @@ export default function ThemSuaLoaiCa() {
             if (currentCategory.hinhanhFile) {
                 formData.append("hinhanh", currentCategory.hinhanhFile);
             }
+            // 5. Backend tạo loại cá, mặt hàng theo kích cỡ và bảng giá trong cùng giao dịch.
             await api.post("/Loaicas", formData);
 
             showToast("Đã thêm loại cá, kích cỡ và bảng giá thành công!", "success");
             navigate("/admin/QuanLyLoaiCa");
         } catch (error) {
+            // Ưu tiên hiển thị thông báo nghiệp vụ từ backend; dùng thông báo chung nếu không có.
             showToast(`Lỗi: ${error.response?.data?.message || "Thao tác thất bại"}`, "error");
         } finally {
+            // Luôn mở lại nút lưu dù API thành công hay thất bại.
             setIsSaving(false);
         }
     };

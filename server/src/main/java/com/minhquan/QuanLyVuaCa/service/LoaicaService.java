@@ -166,10 +166,18 @@ public class LoaicaService {
         return mapper.toLoaicaResponse(loaicaRepository.save(loaica));
     }
 
+    /**
+     * Loại bỏ khoảng trắng thừa ở đầu và cuối chuỗi trước khi lưu xuống cơ sở dữ liệu.
+     * Hàm vẫn giữ nguyên giá trị {@code null} để phân biệt với chuỗi rỗng.
+     */
     private String chuanHoaChuoi(String value) {
         return value == null ? null : value.trim();
     }
 
+    /**
+     * Kiểm tra ảnh đại diện trước khi upload.
+     * Chỉ chấp nhận tệp không rỗng thuộc một trong ba định dạng JPEG, PNG hoặc WebP.
+     */
     private void kiemTraAnh(MultipartFile file) {
         Set<String> allowedContentTypes = Set.of("image/jpeg", "image/png", "image/webp");
         String contentType = file.getContentType();
@@ -179,6 +187,10 @@ public class LoaicaService {
         }
     }
 
+    /**
+     * Tạo tên ảnh duy nhất từ tên loại cá, UUID và phần mở rộng tương ứng với MIME type.
+     * Cách đặt tên này giúp dễ nhận biết ảnh trên Cloudinary và tránh ghi đè ảnh đã tồn tại.
+     */
     private String taoTenFileAnh(String tenLoaiCa, MultipartFile file) {
         String extension = switch (Objects.requireNonNull(file.getContentType()).toLowerCase()) {
             case "image/jpeg" -> ".jpg";
@@ -189,6 +201,10 @@ public class LoaicaService {
         return slugify(tenLoaiCa) + "-" + UUID.randomUUID() + extension;
     }
 
+    /**
+     * Chuyển tên loại cá thành chuỗi an toàn để dùng làm một phần public ID của ảnh.
+     * Ví dụ: "Cá Điêu Hồng" được chuyển thành "ca-dieu-hong".
+     */
     private String slugify(String input) {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("[^\\p{ASCII}]", "")
@@ -197,6 +213,10 @@ public class LoaicaService {
                 .toLowerCase();
     }
 
+    /**
+     * Upload ảnh vào thư mục {@code loaica} trên Cloudinary và trả về URL HTTPS của ảnh.
+     * Nếu upload thất bại, lỗi kỹ thuật được chuyển thành lỗi nghiệp vụ của ứng dụng.
+     */
     public String saveImage(MultipartFile file, String tenFile) {
         try {
             String publicId = tenFile.replaceAll("\\.[^.]+$", "");
@@ -217,6 +237,11 @@ public class LoaicaService {
         }
     }
 
+    /**
+     * Xóa ảnh loại cá đã upload trên Cloudinary.
+     * Hàm được dùng để dọn ảnh khi giao dịch tạo loại cá thất bại, tránh sinh tệp rác
+     * vì giao dịch cơ sở dữ liệu không thể tự rollback dữ liệu đã gửi lên Cloudinary.
+     */
     private void xoaFile(String urlAnh) {
         if (urlAnh == null || urlAnh.isBlank() || !urlAnh.contains("/loaica/")) {
             return;
@@ -231,6 +256,42 @@ public class LoaicaService {
         }
     }
 
+//    Controller
+//   ↓
+//    taoLoaiCaHoanChinh()
+//   ├─ chuanHoaChuoi()
+//   ├─ Nếu có ảnh:
+//            │    ├─ kiemTraAnh()
+//   │    ├─ taoTenFileAnh()
+//   │    │    └─ slugify()
+//   │    └─ saveImage()
+//   ├─ Lưu loại cá
+//   └─ cauHinhKichThuocVaGia()
+//        └─ Lặp qua từng kích cỡ:
+//            ├─ resolveSizeId()
+//             │    ├─ Dùng kích cỡ có sẵn
+//             │    └─ Hoặc gọi SizecaService.taoSize()
+//            ├─ ChitietCabanService.taoMoi()
+//            └─ BanggiaService.taoMoi()
+//
+//    Nếu có lỗi:
+//            └─ xoaFile() → xóa ảnh đã upload
+
+    /**
+     * Tạo hoàn chỉnh một loại cá cùng ảnh, danh sách kích cỡ, số kg quy đổi và bảng giá ban đầu.
+     *
+     * <p>Luồng xử lý:</p>
+     * <ol>
+     *     <li>Chuẩn hóa và kiểm tra tên loại cá không bị trùng.</li>
+     *     <li>Kiểm tra, upload ảnh nếu người dùng có chọn ảnh.</li>
+     *     <li>Lưu thông tin loại cá để lấy ID.</li>
+     *     <li>Tạo từng mặt hàng loại cá-kích cỡ với tồn ban đầu bằng 0.</li>
+     *     <li>Tạo bảng giá sỉ và lẻ ban đầu cho từng mặt hàng.</li>
+     * </ol>
+     *
+     * <p>{@link Transactional} bảo đảm dữ liệu loại cá, kích cỡ kho và bảng giá cùng thành công
+     * hoặc cùng rollback. Riêng ảnh Cloudinary được xóa thủ công trong khối catch nếu có lỗi.</p>
+     */
     @Transactional
     public LoaicaResponse taoLoaiCaHoanChinh(
             TaoLoaiCaHoanChinhRequest request,
@@ -269,6 +330,11 @@ public class LoaicaService {
         }
     }
 
+    /**
+     * Xác định ID kích cỡ cho một dòng cấu hình.
+     * Người dùng phải chọn đúng một trong hai cách: dùng kích cỡ có sẵn hoặc nhập tên kích cỡ mới.
+     * Nếu nhập kích cỡ mới, hàm gọi {@link SizecaService} để tạo rồi trả về ID vừa sinh.
+     */
     private Integer resolveSizeId(CauHinhKichThuocVaGiaRequest cauHinh) {
         boolean coSizeSan = cauHinh.getIdsizeca() != null;
         boolean coSizeMoi = cauHinh.getTensizemoi() != null
@@ -288,6 +354,11 @@ public class LoaicaService {
                 .getIdsizeca();
     }
 
+    /**
+     * Tạo cấu hình bán cho tất cả kích cỡ của loại cá vừa thêm.
+     * Mỗi kích cỡ tạo một bản ghi kho {@code Chitietcaban} với tồn bằng 0 và một bảng giá hiện hành.
+     * Danh sách ID đã xử lý được lưu trong Set để ngăn cấu hình trùng kích cỡ trong cùng yêu cầu.
+     */
     private void cauHinhKichThuocVaGia(
             Integer idLoaiCa,
             List<CauHinhKichThuocVaGiaRequest> cauHinhs) {
