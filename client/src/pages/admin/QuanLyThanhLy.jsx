@@ -11,6 +11,7 @@ const THANHLY_STATUS = {
 };
 
 const formatDate = (value) => value ? new Date(value).toLocaleDateString("vi-VN") : "";
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value || 0) + " VNĐ";
 
 export default function QuanLyThanhLy() {
     const navigate = useNavigate();
@@ -35,8 +36,8 @@ export default function QuanLyThanhLy() {
     const [selectedLotFishNames, setSelectedLotFishNames] = useState([]);
     const [selectedLotSizes, setSelectedLotSizes] = useState([]);
     const [selectedPhieuDates, setSelectedPhieuDates] = useState([]);
-    const [selectedPhieuFishNames, setSelectedPhieuFishNames] = useState([]);
     const [selectedPhieuStatuses, setSelectedPhieuStatuses] = useState([]);
+    const [expandedPhieuId, setExpandedPhieuId] = useState(null);
     const [selectedLotIds, setSelectedLotIds] = useState([]);
 
     // --- GỌI API ---
@@ -83,10 +84,6 @@ export default function QuanLyThanhLy() {
     // --- CÁC HÀM TIỆN ÍCH CHO PHIẾU ---
     const tinhTongSoLuong = (listChiTiet) => (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.soluongthanhly), 0);
     const tinhTongTien = (listChiTiet) => (listChiTiet || []).reduce((sum, ct) => sum + Number(ct.thanhtien), 0);
-    const tenSanPham = (listChiTiet) => {
-        const ten = [...new Set((listChiTiet || []).map(ct => `${ct.tenLoaiCa} (${ct.tenSize})`))];
-        return ten.join(", ");
-    };
 
     // --- XỬ LÝ DỮ LIỆU: LỌC & PHÂN TRANG CHO LÔ HÀNG ---
     const processedLots = useMemo(() => {
@@ -139,16 +136,11 @@ export default function QuanLyThanhLy() {
         if (selectedPhieuDates.length > 0) {
             filtered = filtered.filter(phieu => selectedPhieuDates.includes(formatDate(phieu.ngaythanhly)));
         }
-        if (selectedPhieuFishNames.length > 0) {
-            filtered = filtered.filter(phieu =>
-                (phieu.listChiTiet || []).some(detail => selectedPhieuFishNames.includes(detail.tenLoaiCa))
-            );
-        }
         if (selectedPhieuStatuses.length > 0) {
             filtered = filtered.filter(phieu => selectedPhieuStatuses.includes(phieu.trangthai));
         }
         return filtered;
-    }, [phieus, selectedPhieuDates, selectedPhieuFishNames, selectedPhieuStatuses]);
+    }, [phieus, selectedPhieuDates, selectedPhieuStatuses]);
 
     const lotFilterSource = useMemo(() => [...lots, ...overdueLots], [lots, overdueLots]);
 
@@ -164,13 +156,6 @@ export default function QuanLyThanhLy() {
 
     const phieuDateOptions = useMemo(() =>
         [...new Set(phieus.map(phieu => formatDate(phieu.ngaythanhly)).filter(Boolean))]
-            .map(value => ({ value, label: value })), [phieus]);
-
-    const phieuFishOptions = useMemo(() =>
-        [...new Set(phieus.flatMap(phieu =>
-            (phieu.listChiTiet || []).map(detail => detail.tenLoaiCa).filter(Boolean)
-        ))]
-            .sort((a, b) => a.localeCompare(b, "vi"))
             .map(value => ({ value, label: value })), [phieus]);
 
     const phieuStatusOptions = useMemo(() =>
@@ -474,6 +459,7 @@ export default function QuanLyThanhLy() {
                         <table className="w-full text-left min-w-[900px] border-collapse">
                             <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
                                 <tr>
+                                    <th className="p-4 w-8"></th>
                                     <th className="p-4">
                                         <div className="flex items-center justify-between gap-3">
                                             <span className="flex-1">Ngày thanh lý</span>
@@ -486,17 +472,6 @@ export default function QuanLyThanhLy() {
                                         </div>
                                     </th>
                                     <th className="p-4">Người tạo</th>
-                                    <th className="p-4 w-44 min-w-44">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="whitespace-nowrap">Tên loại cá</span>
-                                            <ColumnFilter
-                                                label="Tên loại cá"
-                                                options={phieuFishOptions}
-                                                selectedValues={selectedPhieuFishNames}
-                                                onChange={values => updateFilter(setSelectedPhieuFishNames, values)}
-                                            />
-                                        </div>
-                                    </th>
                                     <th className="p-4">Lý do</th>
                                     <th className="p-4 text-right">Tổng SL (kg)</th>
                                     <th className="p-4 text-right">Tổng tiền</th>
@@ -519,26 +494,64 @@ export default function QuanLyThanhLy() {
                                 ) : paginatedPhieus.length > 0 ? (
                                     paginatedPhieus.map((item) => {
                                         const statusConfig = THANHLY_STATUS[item.trangthai] || { label: item.trangthai, badge: "bg-gray-50 text-gray-600 border-slate-200" };
+                                        const isExpanded = expandedPhieuId === item.idphieuthanhly;
+                                        const hasDetail = item.listChiTiet && item.listChiTiet.length > 0;
                                         return (
-                                            <tr key={item.idphieuthanhly} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="p-4 text-slate-500">{new Date(item.ngaythanhly).toLocaleString('vi-VN')}</td>
-                                                <td className="p-4 font-semibold text-slate-800">{item.tenNguoiTaoPhieu}</td>
-                                                <td className="p-4 w-44 max-w-44 font-semibold text-slate-800">
-                                                    <div className="truncate" title={tenSanPham(item.listChiTiet)}>
-                                                        {tenSanPham(item.listChiTiet)}
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">{item.lydothanhly}</td>
-                                                <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{tinhTongSoLuong(item.listChiTiet)}</td>
-                                                <td className="p-4 text-right font-bold tabular-nums text-cyan-700 whitespace-nowrap">
-                                                    {tinhTongTien(item.listChiTiet).toLocaleString("vi-VN")} VNĐ
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${statusConfig.badge}`}>
-                                                        {statusConfig.label}
-                                                    </span>
-                                                </td>
-                                            </tr>
+                                            <React.Fragment key={item.idphieuthanhly}>
+                                                <tr className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="p-4 text-center">
+                                                        {hasDetail && (
+                                                            <button
+                                                                onClick={() => setExpandedPhieuId(prev => prev === item.idphieuthanhly ? null : item.idphieuthanhly)}
+                                                                className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                                                            >
+                                                                {isExpanded ? "▾" : "▸"}
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4 text-slate-500">{new Date(item.ngaythanhly).toLocaleString('vi-VN')}</td>
+                                                    <td className="p-4 font-semibold text-slate-800">{item.tenNguoiTaoPhieu}</td>
+                                                    <td className="p-4">{item.lydothanhly}</td>
+                                                    <td className="p-4 text-right font-semibold tabular-nums text-slate-700">{tinhTongSoLuong(item.listChiTiet)}</td>
+                                                    <td className="p-4 text-right font-bold tabular-nums text-cyan-700 whitespace-nowrap">
+                                                        {tinhTongTien(item.listChiTiet).toLocaleString("vi-VN")} VNĐ
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center justify-center ${statusConfig.badge}`}>
+                                                            {statusConfig.label}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+
+                                                {isExpanded && hasDetail && (
+                                                    <tr className="bg-cyan-50/40">
+                                                        <td colSpan="7" className="px-8 py-3">
+                                                            <table className="w-full text-xs border-collapse">
+                                                                <thead>
+                                                                    <tr className="text-slate-500 uppercase font-bold border-b border-slate-200">
+                                                                        <th className="py-1.5 text-left">Loại cá</th>
+                                                                        <th className="py-1.5 text-left">Kích thước</th>
+                                                                        <th className="py-1.5 text-right">Số lượng (kg)</th>
+                                                                        <th className="py-1.5 text-right">Đơn giá</th>
+                                                                        <th className="py-1.5 text-right">Thành tiền</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-100">
+                                                                    {item.listChiTiet.map((ct, idx) => (
+                                                                        <tr key={idx} className="text-slate-700">
+                                                                            <td className="py-1.5 font-semibold">{ct.tenLoaiCa}</td>
+                                                                            <td className="py-1.5">{ct.tenSize}</td>
+                                                                            <td className="py-1.5 text-right font-semibold tabular-nums">{Number(ct.soluongthanhly || 0).toLocaleString("vi-VN")}</td>
+                                                                            <td className="py-1.5 text-right font-semibold tabular-nums">{formatCurrency(ct.dongia)}</td>
+                                                                            <td className="py-1.5 text-right font-bold tabular-nums text-cyan-700">{formatCurrency(ct.thanhtien)}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
                                         );
                                     })
                                 ) : (
