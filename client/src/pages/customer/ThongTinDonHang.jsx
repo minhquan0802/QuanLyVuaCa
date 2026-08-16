@@ -256,12 +256,12 @@ export default function ThongTinDonHang() {
     const matchesTab = (order, tabId) => {
         const s = order.trangthaidonhang;
         switch (tabId) {
-            case 'ALL':         return true;
+            case 'ALL':          return true;
             case 'CHO_XAC_NHAN': return s === 'CHO_XAC_NHAN';
-            case 'DANG_XU_LY':  return ['DANG_DONG_HANG', 'DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(s);
-            case 'DANG_GIAO':   return ['DANG_VAN_CHUYEN', 'DANG_GIAO_HANG'].includes(s);
-            case 'DA_GIAO':     return s === 'GIAO_HANG_THANH_CONG';
-            case 'DA_HUY':      return ['HUY', 'DA_HUY'].includes(s);
+            case 'DANG_XU_LY':   return s === 'DANG_DONG_HANG';
+            case 'DANG_GIAO':    return s === 'DANG_VAN_CHUYEN';
+            case 'DA_GIAO':      return s === 'GIAO_HANG_THANH_CONG';
+            case 'DA_HUY':       return s === 'HUY';
             default: return false;
         }
     };
@@ -292,9 +292,7 @@ export default function ThongTinDonHang() {
     const getStatusText = (status) => {
         switch (status) {
             case "CHO_XAC_NHAN": return "Chờ xác nhận";
-            case "DA_XAC_NHAN": return "Đang chuẩn bị hàng";
-            case "DANG_CHUAN_BI_HANG": return "Đang đóng gói";
-            case "DANG_GIAO_HANG": 
+            case "DANG_DONG_HANG": return "Đang chuẩn bị hàng";
             case "DANG_VAN_CHUYEN": return "Đang giao hàng";
             case "GIAO_HANG_THANH_CONG": return "Giao thành công";
             case "HUY": return "Đã hủy";
@@ -305,12 +303,9 @@ export default function ThongTinDonHang() {
     const getStatusStyle = (status) => {
         switch (status) {
             case "CHO_XAC_NHAN": return "bg-orange-100 text-orange-600";
-            case "DA_XAC_NHAN":
-            case "DANG_CHUAN_BI_HANG": return "bg-blue-100 text-blue-600";
-            case "DANG_GIAO_HANG": 
+            case "DANG_DONG_HANG": return "bg-blue-100 text-blue-600";
             case "DANG_VAN_CHUYEN": return "bg-cyan-100 text-cyan-600";
             case "GIAO_HANG_THANH_CONG": return "bg-teal-100 text-teal-700";
-            case "DA_HUY":
             case "HUY": return "bg-red-100 text-red-600";
             default: return "bg-gray-100 text-gray-600";
         }
