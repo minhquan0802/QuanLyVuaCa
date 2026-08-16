@@ -30,6 +30,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -223,7 +224,7 @@ public class CongNoService {
         }
     }
 
-    // ===== Phase 4: chặn checkout theo nợ dự kiến + khóa đặt hàng =====
+    // chặn checkout theo nợ dự kiến + khóa đặt hàng
 
     // Ném exception nếu không được đặt hàng. Không làm gì nếu khách không tham gia công nợ.
     @Transactional
@@ -320,6 +321,7 @@ public class CongNoService {
     }
     public List<CongNoKhachResponse> layDanhSachKhachCoCongNo() {
         return taiKhoanRepository.findByVaitroAndHanmuctindungIsNotNull("CUSTOMER").stream()
+//                .filter(khach -> khach.getCongnohientai().compareTo(BigDecimal.ZERO) > 0)
                 .map(khach -> CongNoKhachResponse.builder()
                         .idtaikhoan(khach.getIdtaikhoan())
                         .ho(khach.getHo())
@@ -331,7 +333,24 @@ public class CongNoService {
                         .ngayvuothanmuc(khach.getNgayvuothanmuc())
                         .dangBiKhoa(kiemTraDangBiKhoa(khach))
                         .build())
+                .sorted(Comparator.comparingInt(this::mucDoUuTien)
+                        .thenComparing(CongNoKhachResponse::getCongnohientai, Comparator.reverseOrder()))
                 .toList();
+    }
+
+    // Rank càng nhỏ càng ưu tiên hiển thị lên đầu: Bị khóa > Nguy hiểm > Cảnh báo > Bình thường > Chưa cấp hạn mức
+    private int mucDoUuTien(CongNoKhachResponse khach) {
+        if (Boolean.TRUE.equals(khach.getDangBiKhoa())) return 0;
+
+        BigDecimal hanmuc = khach.getHanmuctindung();
+        if (hanmuc == null || hanmuc.compareTo(BigDecimal.ZERO) <= 0) return 4;
+
+        BigDecimal phanTram = khach.getCongnohientai()
+                .multiply(BigDecimal.valueOf(100))
+                .divide(hanmuc, 2, RoundingMode.HALF_UP);
+        if (phanTram.compareTo(BigDecimal.valueOf(100)) >= 0) return 1;
+        if (phanTram.compareTo(BigDecimal.valueOf(80)) >= 0) return 2;
+        return 3;
     }
 
     @Transactional

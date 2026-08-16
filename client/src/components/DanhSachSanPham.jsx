@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../config/axios";
 import { useAuth } from "../context/AuthContext";
+import { getPageList } from "./Pagination";
 
 // [1] Nhận prop searchTerm truyền từ Home.js
 const SO_SAN_PHAM_MOI_TRANG = 12;
@@ -85,9 +86,14 @@ export default function ProductList({ searchTerm }) {
     const filteredList = productList.filter((product) => {
         const item = product.result || product;
         if (item.deleted) return false;
-        if (!searchTerm) return true;
-        const name = item.tenloaica ? item.tenloaica.toLowerCase() : "";
-        return name.includes(searchTerm.toLowerCase());
+        if (!searchTerm) return true;   // chưa gõ gì thì giữ hết
+
+        const search = searchTerm.toLowerCase();
+        const name = item.tenloaica ? item.tenloaica.toLowerCase() : ""; //tìm theo tên cá
+        const moTa = item.mieuta ? item.mieuta.toLowerCase() : "";
+
+        return name.includes(searchTerm.toLowerCase())
+            || moTa.includes(search)  ;
     });
 
     // Tìm kiếm đổi kết quả -> quay về trang 1, tránh đứng ở trang trống
@@ -205,19 +211,25 @@ export default function ProductList({ searchTerm }) {
                         <span className="material-symbols-outlined text-lg">chevron_left</span>
                     </button>
 
-                    {Array.from({ length: tongSoTrang }, (_, i) => i + 1).map(soTrang => (
-                        <button
-                            key={soTrang}
-                            onClick={() => setTrangHienTai(soTrang)}
-                            className={`size-9 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
-                                soTrang === trangDangXem
-                                    ? "bg-blue-600 text-white"
-                                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                            }`}
-                        >
-                            {soTrang}
-                        </button>
-                    ))}
+                    {getPageList(trangDangXem, tongSoTrang).map((soTrang, index) =>
+                        soTrang === "..." ? (
+                            <span key={`dots-${index}`} className="size-9 flex items-center justify-center text-slate-400 select-none">
+                                ...
+                            </span>
+                        ) : (
+                            <button
+                                key={soTrang}
+                                onClick={() => setTrangHienTai(soTrang)}
+                                className={`size-9 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+                                    soTrang === trangDangXem
+                                        ? "bg-blue-600 text-white"
+                                        : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                }`}
+                            >
+                                {soTrang}
+                            </button>
+                        )
+                    )}
 
                     <button
                         onClick={() => setTrangHienTai(p => Math.min(tongSoTrang, p + 1))}

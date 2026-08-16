@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
+import Pagination from "../../components/Pagination";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import api from "../../config/axios";
@@ -553,34 +554,7 @@ export default function SalesDashboard() {
                             <span className="text-xs text-slate-500">
                                 Hiển thị {(ordersPage - 1) * ordersPageSize + 1}–{Math.min(ordersPage * ordersPageSize, ordersTotalElements)} trong {ordersTotalElements} đơn
                             </span>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => setOrdersPage(page => page - 1)}
-                                    disabled={ordersPage === 1}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Trước
-                                </button>
-                                {Array.from({ length: ordersTotalPages }, (_, index) => index + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setOrdersPage(page)}
-                                        className={`size-8 rounded-lg text-sm font-bold transition-colors ${ordersPage === page
-                                            ? "bg-blue-600 text-white"
-                                            : "text-slate-600 hover:bg-slate-200"
-                                        }`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => setOrdersPage(page => page + 1)}
-                                    disabled={ordersPage === ordersTotalPages}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Sau
-                                </button>
-                            </div>
+                            <Pagination currentPage={ordersPage} totalPages={ordersTotalPages} onPageChange={setOrdersPage} />
                         </div>
                     )}
                 </div>

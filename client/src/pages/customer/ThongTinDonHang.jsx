@@ -2,6 +2,7 @@
 ;
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import Pagination from "../../components/Pagination";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -255,12 +256,12 @@ export default function ThongTinDonHang() {
     const matchesTab = (order, tabId) => {
         const s = order.trangthaidonhang;
         switch (tabId) {
-            case 'ALL':         return true;
+            case 'ALL':          return true;
             case 'CHO_XAC_NHAN': return s === 'CHO_XAC_NHAN';
-            case 'DANG_XU_LY':  return ['DANG_DONG_HANG', 'DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(s);
-            case 'DANG_GIAO':   return ['DANG_VAN_CHUYEN', 'DANG_GIAO_HANG'].includes(s);
-            case 'DA_GIAO':     return s === 'GIAO_HANG_THANH_CONG';
-            case 'DA_HUY':      return ['HUY', 'DA_HUY'].includes(s);
+            case 'DANG_XU_LY':   return s === 'DANG_DONG_HANG';
+            case 'DANG_GIAO':    return s === 'DANG_VAN_CHUYEN';
+            case 'DA_GIAO':      return s === 'GIAO_HANG_THANH_CONG';
+            case 'DA_HUY':       return s === 'HUY';
             default: return false;
         }
     };
@@ -291,9 +292,7 @@ export default function ThongTinDonHang() {
     const getStatusText = (status) => {
         switch (status) {
             case "CHO_XAC_NHAN": return "Chờ xác nhận";
-            case "DA_XAC_NHAN": return "Đang chuẩn bị hàng";
-            case "DANG_CHUAN_BI_HANG": return "Đang đóng gói";
-            case "DANG_GIAO_HANG": 
+            case "DANG_DONG_HANG": return "Đang chuẩn bị hàng";
             case "DANG_VAN_CHUYEN": return "Đang giao hàng";
             case "GIAO_HANG_THANH_CONG": return "Giao thành công";
             case "HUY": return "Đã hủy";
@@ -304,12 +303,9 @@ export default function ThongTinDonHang() {
     const getStatusStyle = (status) => {
         switch (status) {
             case "CHO_XAC_NHAN": return "bg-orange-100 text-orange-600";
-            case "DA_XAC_NHAN":
-            case "DANG_CHUAN_BI_HANG": return "bg-blue-100 text-blue-600";
-            case "DANG_GIAO_HANG": 
+            case "DANG_DONG_HANG": return "bg-blue-100 text-blue-600";
             case "DANG_VAN_CHUYEN": return "bg-cyan-100 text-cyan-600";
             case "GIAO_HANG_THANH_CONG": return "bg-teal-100 text-teal-700";
-            case "DA_HUY":
             case "HUY": return "bg-red-100 text-red-600";
             default: return "bg-gray-100 text-gray-600";
         }
@@ -523,38 +519,7 @@ export default function ThongTinDonHang() {
                     {/* PHÂN TRANG */}
                     {!loading && filteredOrders.length > 0 && (
                         <div className="p-4 mt-4 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 md:rounded-lg shadow-sm">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(prev => prev - 1)}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Trước
-                                </button>
-
-                                <div className="flex items-center gap-1">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${currentPage === page
-                                                    ? "bg-blue-600 text-white shadow-sm"
-                                                    : "text-slate-600 hover:bg-slate-100"
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <button
-                                    onClick={() => setCurrentPage(prev => prev + 1)}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Sau
-                                </button>
-                            </div>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                         </div>
                     )}
                 </div>
