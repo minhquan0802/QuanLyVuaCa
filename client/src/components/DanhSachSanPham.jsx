@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../config/axios";
 import { useAuth } from "../context/AuthContext";
+import { getPageList } from "./Pagination";
 
 // [1] Nhận prop searchTerm truyền từ Home.js
 const SO_SAN_PHAM_MOI_TRANG = 12;
@@ -205,19 +206,25 @@ export default function ProductList({ searchTerm }) {
                         <span className="material-symbols-outlined text-lg">chevron_left</span>
                     </button>
 
-                    {Array.from({ length: tongSoTrang }, (_, i) => i + 1).map(soTrang => (
-                        <button
-                            key={soTrang}
-                            onClick={() => setTrangHienTai(soTrang)}
-                            className={`size-9 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
-                                soTrang === trangDangXem
-                                    ? "bg-blue-600 text-white"
-                                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                            }`}
-                        >
-                            {soTrang}
-                        </button>
-                    ))}
+                    {getPageList(trangDangXem, tongSoTrang).map((soTrang, index) =>
+                        soTrang === "..." ? (
+                            <span key={`dots-${index}`} className="size-9 flex items-center justify-center text-slate-400 select-none">
+                                ...
+                            </span>
+                        ) : (
+                            <button
+                                key={soTrang}
+                                onClick={() => setTrangHienTai(soTrang)}
+                                className={`size-9 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+                                    soTrang === trangDangXem
+                                        ? "bg-blue-600 text-white"
+                                        : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                }`}
+                            >
+                                {soTrang}
+                            </button>
+                        )
+                    )}
 
                     <button
                         onClick={() => setTrangHienTai(p => Math.min(tongSoTrang, p + 1))}

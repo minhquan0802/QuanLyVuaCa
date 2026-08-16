@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import ColumnFilter from "../../components/admin/ColumnFilter";
+import Pagination from "../../components/Pagination";
 import api from "../../config/axios";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -321,35 +322,7 @@ export default function QuanLyCongNo() {
                 {/* PHÂN TRANG */}
                 {!loading && processedDanhSach.length > 0 && (
                     <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50">
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(p => p - 1)}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Trước
-                            </button>
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
-                                            currentPage === page ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200"
-                                        }`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                            </div>
-                            <button
-                                onClick={() => setCurrentPage(p => p + 1)}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Sau
-                            </button>
-                        </div>
+                        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                     </div>
                 )}
             </div>
@@ -531,34 +504,7 @@ export default function QuanLyCongNo() {
                         </div>
                         {!loadingLichSu && lichSuData.length > lichSuPageSize && (
                             <div className="px-6 py-3 border-t border-slate-200 flex items-center justify-center gap-2 bg-slate-50/50">
-                                <button
-                                    type="button"
-                                    onClick={() => setLichSuPage(page => page - 1)}
-                                    disabled={lichSuPage === 1}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Trước
-                                </button>
-                                {Array.from({ length: tongTrangLichSu }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        type="button"
-                                        key={page}
-                                        onClick={() => setLichSuPage(page)}
-                                        className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${
-                                            lichSuPage === page ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200"
-                                        }`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    type="button"
-                                    onClick={() => setLichSuPage(page => page + 1)}
-                                    disabled={lichSuPage === tongTrangLichSu}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Sau
-                                </button>
+                                <Pagination currentPage={lichSuPage} totalPages={tongTrangLichSu} onPageChange={setLichSuPage} />
                             </div>
                         )}
                     </div>

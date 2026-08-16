@@ -2,6 +2,7 @@
 ;
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import Pagination from "../../components/Pagination";
 import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -523,38 +524,7 @@ export default function ThongTinDonHang() {
                     {/* PHÂN TRANG */}
                     {!loading && filteredOrders.length > 0 && (
                         <div className="p-4 mt-4 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 md:rounded-lg shadow-sm">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(prev => prev - 1)}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Trước
-                                </button>
-
-                                <div className="flex items-center gap-1">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`size-8 flex items-center justify-center rounded-lg text-sm font-bold transition-colors ${currentPage === page
-                                                    ? "bg-blue-600 text-white shadow-sm"
-                                                    : "text-slate-600 hover:bg-slate-100"
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <button
-                                    onClick={() => setCurrentPage(prev => prev + 1)}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Sau
-                                </button>
-                            </div>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                         </div>
                     )}
                 </div>
