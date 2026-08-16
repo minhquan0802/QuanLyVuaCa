@@ -86,9 +86,14 @@ export default function ProductList({ searchTerm }) {
     const filteredList = productList.filter((product) => {
         const item = product.result || product;
         if (item.deleted) return false;
-        if (!searchTerm) return true;
-        const name = item.tenloaica ? item.tenloaica.toLowerCase() : "";
-        return name.includes(searchTerm.toLowerCase());
+        if (!searchTerm) return true;   // chưa gõ gì thì giữ hết
+
+        const search = searchTerm.toLowerCase();
+        const name = item.tenloaica ? item.tenloaica.toLowerCase() : ""; //tìm theo tên cá
+        const moTa = item.mieuta ? item.mieuta.toLowerCase() : "";
+
+        return name.includes(searchTerm.toLowerCase())
+            || moTa.includes(search)  ;
     });
 
     // Tìm kiếm đổi kết quả -> quay về trang 1, tránh đứng ở trang trống
