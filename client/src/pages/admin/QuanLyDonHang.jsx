@@ -49,7 +49,7 @@ export default function QuanLyDonHang() {
             (filterPayment === "ALL" || o.trangthaithanhtoan === filterPayment)
         );
 
-        // Bước 2: Lọc theo Từ khóa tìm kiếm (Mã đơn, Tên KH, SĐT)
+        // Lọc theo Từ khóa tìm kiếm (Mã đơn, Tên KH, SĐT)
         if (searchTerm.trim() !== "") {
             const search = searchTerm.toLowerCase();
             result = result.filter(o =>

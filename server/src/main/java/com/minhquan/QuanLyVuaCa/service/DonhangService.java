@@ -266,14 +266,12 @@ public class DonhangService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public List<DonhangResponse> layTatCaDonHang() {
 
-        // Lấy danh sách entity từ DB
         // Đơn hàng mới nhất sẽ nằm đầu danh sách
         List<Donhang> danhSachEntity = donhangRepository.findAllByOrderByNgaydatDesc();
 
-        // Tạo một list rỗng để chứa kết quả
         List<DonhangResponse> danhSachResponse = new ArrayList<>();
 
-        // Duyệt từng đơn hàng bằng vòng lặp
+        // duyệt từng đơn hàng
         for (Donhang donhang : danhSachEntity) {
             String tenKhach;
             String sdtKhach;
