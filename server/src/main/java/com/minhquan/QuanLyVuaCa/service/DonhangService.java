@@ -54,6 +54,11 @@ public class DonhangService {
     BanggiaRepository banggiaRepository;
     ThongBaoService thongBaoService;
 
+    // Tạo đơn hàng dùng chung cho POS khách lẻ, POS khách sỉ và đặt hàng online.
+    // Luồng: xác định khách sỉ/lẻ để áp giá đúng -> kiểm tra công nợ (nếu khách sỉ) -> lưu đơn ->
+    // với từng dòng sản phẩm: tính khối lượng quy đổi + thành tiền theo bảng giá đang áp dụng.
+    // Trừ tồn kho theo FIFO NGAY nếu là POS (trạng thái khởi tạo khác CHO_XAC_NHAN); đơn đặt online
+    // (CHO_XAC_NHAN) thì chưa trừ, đợi admin xác nhận hoặc VNPay thanh toán xong mới trừ.
     @Transactional
     public DonhangResponse taoDonHang(DonhangRequestCreation request) {
 
@@ -172,8 +177,9 @@ public class DonhangService {
                 // --- C. TRỪ TỒN KHO NGAY NẾU ĐƠN KHÔNG ĐI QUA PIPELINE CHỜ XÁC NHẬN ---
                 // POS khách lẻ: GIAO_HANG_THANH_CONG; POS khách sỉ: DANG_DONG_HANG.
                 // Cả hai != CHO_XAC_NHAN -> trừ kho/lô ngay lúc tạo.
-                // Đơn online CHO_XAC_NHAN: trừ kho khi admin xác nhận qua updateStatus()
-                // hoặc khi VNPAY callback gọi truSoluongTon().
+                // Đơn online CHO_XAC_NHAN: chưa trừ kho ở đây, kể cả khi thanh toán VNPAY ngay lúc đặt
+                // (VNPAY chỉ xác nhận tiền đã vào, không tự chốt đơn) — chờ admin xác nhận đơn qua
+                // capNhatTrangThai() mới thực sự trừ kho/lô.
                 if (donHangDaLuu.getTrangthaidonhang() != TrangThaiDonHang.CHO_XAC_NHAN) {
                     BigDecimal luongCanTru = soLuongKgQuyDoi;
                     BigDecimal tonCoTheBan = tinhTonCoTheBan(chitietcabanCuoi);
@@ -418,6 +424,13 @@ public class DonhangService {
     }
 
     // --- 5. CẬP NHẬT TRẠNG THÁI (admin/staff) ---
+    // Không chỉ đổi field trạng thái — tùy đổi từ đâu sang đâu mà kéo theo nhiều việc khác nhau:
+    //   - Sang "Đang vận chuyển": chặn nếu đơn rỗng (tổng tiền = 0), cảnh báo khách nếu có mặt hàng
+    //     cân được 0kg lúc đóng gói.
+    //   - Rời "Chờ xác nhận" (qua đường admin xác nhận, không phải VNPay) -> trừ kho/lô lúc này;
+    //     nếu tồn không đủ thì tự điều chỉnh xuống đúng số còn và cảnh báo, không chặn cả đơn.
+    //   - Sang "Hủy" sau khi đã lỡ trừ kho (đơn từng rời "Chờ xác nhận") -> hoàn lại kho/lô.
+    //   - Sang "Giao thành công" -> báo công nợ tăng (dùng chung đường với xacNhanNhanHang()).
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public DonhangResponse capNhatTrangThai(String id, TrangThaiDonHang trangThaiMoi) {
@@ -454,9 +467,9 @@ public class DonhangService {
             }
         }
 
-        // Đơn rời CHO_XAC_NHAN qua đường admin xác nhận (COD/thanh toán sau) -> trừ kho/lô lúc này
-        // (đơn VNPAY không đi qua đây để rời CHO_XAC_NHAN — callback thanh toán tự trừ trực tiếp
-        // qua truSoluongTon(), không trừ trùng).
+        // Đơn rời CHO_XAC_NHAN qua đường admin xác nhận -> trừ kho/lô lúc này. Áp dụng cho mọi
+        // đơn online kể cả đã thanh toán VNPAY trước (VNPAY chỉ xác nhận tiền, không tự trừ kho —
+        // xem createPaymentUrl/orderReturn trong VnPayService), nên không có rủi ro trừ trùng ở đây.
         List<String> canhBaoGiaoThieu = new ArrayList<>();
 
         if (trangThaiCu == TrangThaiDonHang.CHO_XAC_NHAN
@@ -607,11 +620,11 @@ public class DonhangService {
         Donhang donhang = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng: " + idDonhang));
 
-        // 2. [THAY ĐỔI] Tìm danh sách chi tiết từ Repository của ChiTietDonHang
+        // 2. Tìm danh sách chi tiết từ Repository của ChiTietDonHang
         List<Chitietdonhang> danhSachChiTiet = chitietdonhangRepository.findByIddonhang(donhang);
 
         if (danhSachChiTiet.isEmpty()) {
-            // Trường hợp đơn hàng rỗng (hiếm gặp nhưng nên check)
+            // Trường hợp đơn hàng rỗng
             return;
         }
 
@@ -619,8 +632,7 @@ public class DonhangService {
         for (Chitietdonhang chitiet : danhSachChiTiet) {
             Chitietcaban sanphamTrongKho = chitiet.getIdchitietcaban();
 
-            // Lấy số kg đã quy đổi (không dùng soluong thô — đó là số Con/Bao/Kg theo đơn đặt,
-            // không phải kg thực; trước đây trừ nhầm bằng soluong thô gây lệch kho khi ĐVT khác Kg).
+            // Lấy số kg đã quy đổi (không dùng soluong thô — đó là số Con/Bao/Kg theo đơn đặt, không phải kg thực;
             BigDecimal soLuongCanTru = chitiet.getKhoiluongthucte() != null
                     ? chitiet.getKhoiluongthucte() : chitiet.getKhoiluongdukien();
             if (soLuongCanTru == null || soLuongCanTru.compareTo(BigDecimal.ZERO) <= 0) continue;
@@ -789,6 +801,12 @@ public class DonhangService {
         return canhBao;
     }
 
+    // Ghi nhận số kg cân thực tế lúc đóng hàng (chỉ cho khi đơn đang "Đang đóng hàng"), vì cá tươi
+    // sống nên khối lượng thật khi cân có thể khác số dự kiến lúc khách đặt.
+    // Với mỗi dòng: hoàn kho tổng theo số dự kiến cũ -> kiểm tra đủ tồn cho số mới -> trừ số mới
+    // (tránh trừ trùng); riêng lô hàng chỉ xử lý đúng phần chênh lệch (nặng hơn -> trừ thêm theo
+    // FIFO, nhẹ hơn -> hoàn lại lô gần nhất). Đơn giá/kg giữ nguyên, chỉ tính lại thành tiền theo
+    // khối lượng thực tế, rồi cộng lại tổng tiền cả đơn.
     @Transactional
     public void capNhatThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> danhSachCapNhat) {
         // 1. Kiểm tra đơn hàng
@@ -826,8 +844,7 @@ public class DonhangService {
 
             // Bước 2: Kiểm tra tồn kho có đủ cho số mới không
             if (kho.getSoluongton().compareTo(slThucTeMoi) < 0) {
-                // Nếu muốn hiện chi tiết số lượng thiếu trong message, bạn cần constructor custom trong AppException
-                // Ở đây dùng message mặc định của Enum: "So luong ton kho khong du..."
+                // dùng message mặc định của Enum: "So luong ton kho khong du..."
                 throw new AppExceptions(ErrorCode.INVENTORY_NOT_ENOUGH);
             }
 
