@@ -24,10 +24,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Service DUY NHẤT chịu trách nhiệm thông báo (persist + push SSE).
- * Các service khác chỉ gọi guiChoVaiTro()/guiChoTaiKhoan(), không tự quản lý SseEmitter.
- */
+
+// Service chỉ chịu trách nhiệm thông báo (persist + push SSE)
+// Các service khác chỉ gọi guiChoVaiTro()/guiChoTaiKhoan()
 @Slf4j
 @Service
 @RequiredArgsConstructor

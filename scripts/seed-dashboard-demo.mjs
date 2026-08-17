@@ -11,8 +11,6 @@
  *   $env:KHACHSI_EMAIL="nguyenhongquan20042005@gmail.com"   (để tạo đơn công nợ)
  *   $env:API_BASE="http://localhost:8080/quan-ly-vua-ca"    (mặc định, đổi nếu khác)
  *
- * Toàn bộ dữ liệu tạo ra đều có ghi chú "[SEED-DEMO]" để dễ nhận diện/tra soát sau này.
- *
  * Ngoài số liệu cho Dashboard, script còn tạo thêm dữ liệu đa dạng trạng thái để demo trực tiếp
  * các luồng nghiệp vụ khác (không cần thao tác tay trước buổi bảo vệ):
  *   - Nhập hàng: 1 phiếu nhập cho MỖI loại cá đang có giá bán (không chỉ vài loại đầu tiên).
@@ -200,7 +198,7 @@ async function seedPhieuNhap(ctx) {
                 idncc: ctx.supplier.id,
                 ngaynhap: todayStr(),
                 trangthaithanhtoan,
-                ghichu: "[SEED-DEMO] Phiếu nhập dữ liệu mẫu",
+                ghichu: "Phiếu nhập dữ liệu mẫu",
                 listChiTiet,
             });
             idx++;
@@ -238,7 +236,7 @@ async function seedDonHangKhachLe(ctx, stockAdded) {
                 trangthaidonhang: "GIAO_HANG_THANH_CONG",
                 trangthaithanhtoan: "DA_THANH_TOAN",
                 ngaydat: daysAgoLocalIso(randInt(0, 6)),
-                ghichu: "[SEED-DEMO] Đơn khách lẻ dữ liệu mẫu",
+                ghichu: "Đơn khách lẻ dữ liệu mẫu",
                 chiTietDonHang: [{
                     idchitietcaban: String(product.id),
                     iddonvitinh: String(ctx.kgUnit.id),
@@ -282,7 +280,7 @@ async function seedDonHangKhachSi(ctx, stockAdded) {
                 trangthaidonhang: "DANG_DONG_HANG",
                 trangthaithanhtoan: "CHUA_THANH_TOAN",
                 ngaydat: daysAgoLocalIso(randInt(0, 4)),
-                ghichu: "[SEED-DEMO] Đơn khách sỉ dữ liệu mẫu (thanh toán sau)",
+                ghichu: "Đơn khách sỉ dữ liệu mẫu (thanh toán sau)",
                 chiTietDonHang: [{
                     idchitietcaban: String(product.id),
                     iddonvitinh: String(ctx.kgUnit.id),
@@ -339,7 +337,7 @@ async function seedDaDangTrangThaiKhachSi(ctx, stockAdded) {
 
     // (a) 1 đơn dừng ở "Đang vận chuyển" — demo tab "Đang giao" + nút khách tự xác nhận nhận hàng.
     try {
-        const id = await taoDonKhachSi(3, "[SEED-DEMO] Đơn khách sỉ đang vận chuyển");
+        const id = await taoDonKhachSi(3, "Đơn khách sỉ đang vận chuyển");
         if (id) {
             await capNhatTrangThaiDon(id, "DANG_DONG_HANG");
             await capNhatTrangThaiDon(id, "DANG_VAN_CHUYEN");
@@ -351,7 +349,7 @@ async function seedDaDangTrangThaiKhachSi(ctx, stockAdded) {
 
     // (b) 1 đơn giao thành công + thanh toán đủ ngay — demo lịch sử công nợ có cả tăng lẫn giảm.
     try {
-        const id = await taoDonKhachSi(2, "[SEED-DEMO] Đơn khách sỉ đã giao, đã thanh toán đủ");
+        const id = await taoDonKhachSi(2, "Đơn khách sỉ đã giao, đã thanh toán đủ");
         if (id) {
             await capNhatTrangThaiDon(id, "GIAO_HANG_THANH_CONG");
             await call("PUT", `/Thanhtoan/${id}/thanh-toan-thu-cong`);
@@ -364,7 +362,7 @@ async function seedDaDangTrangThaiKhachSi(ctx, stockAdded) {
     // (c) 1 đơn giao thành công nhưng còn nợ, kèm 1 khoản chuyển khoản "chờ xác nhận" một phần —
     // demo trang Quản lý công nợ (còn dư nợ) và màn hình admin xác nhận thanh toán thủ công.
     try {
-        const id = await taoDonKhachSi(1, "[SEED-DEMO] Đơn khách sỉ đã giao, còn nợ");
+        const id = await taoDonKhachSi(1, "Đơn khách sỉ đã giao, còn nợ");
         if (id) {
             await capNhatTrangThaiDon(id, "GIAO_HANG_THANH_CONG");
             const tinhTrang = await call("GET", `/Thanhtoan/${id}/tinh-trang`);
@@ -374,7 +372,7 @@ async function seedDaDangTrangThaiKhachSi(ctx, stockAdded) {
                 await call("POST", "/Thanhtoan/chuyen-khoan", {
                     iddonhang: id,
                     sotien: soTienTra,
-                    ghichu: "[SEED-DEMO] Khách chuyển khoản một phần, chờ admin xác nhận",
+                    ghichu: "Khách chuyển khoản một phần, chờ admin xác nhận",
                 });
             }
             console.log("Đã tạo 1 đơn khách sỉ còn nợ, kèm 1 khoản chuyển khoản đang chờ xác nhận.");
@@ -441,7 +439,7 @@ async function seedApSatHanMucCongNo(ctx, stockAdded) {
         const resp = await call("POST", "/Donhangs", {
             idthongtinkhachhang: ctx.khachSi.idtaikhoan,
             ngaydat: daysAgoLocalIso(0),
-            ghichu: "[SEED-DEMO] Đơn khách sỉ đẩy công nợ áp sát/vượt hạn mức tín dụng",
+            ghichu: "Đơn khách sỉ đẩy công nợ áp sát/vượt hạn mức tín dụng",
             chiTietDonHang: [{
                 idchitietcaban: String(product.id),
                 iddonvitinh: String(ctx.kgUnit.id),
@@ -467,7 +465,7 @@ async function seedPhieuThanhLy(ctx) {
         const lot = lots[0];
         const soluongthanhly = Math.min(2, Number(lot.soluongconlai));
         await call("POST", "/Phieuthanhlys", {
-            lydothanhly: "[SEED-DEMO] Hao hụt mẫu để demo Dashboard",
+            lydothanhly: "Hao hụt hàng cận hạn, xuất bán thanh lý",
             trangthai: "DA_BAN_THANH_LY",
             listChiTiet: [{
                 idchitietphieunhap: lot.idchitietphieunhap,
