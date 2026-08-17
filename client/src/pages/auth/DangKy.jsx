@@ -92,8 +92,9 @@ export default function Register() {
         }
     }
 
-    const handleLogin = () => {
-        navigate('/');
+    const handleLogin = (e) => {
+        e.preventDefault();
+        navigate('/login');
     }
 
     return (
