@@ -218,7 +218,6 @@ public class ThongKeService {
 
         BigDecimal chuaThanhToan = soHoacKhong(data.getChiPhiNhapHang()).subtract(soHoacKhong(data.getChiPhiNhapDaThanhToan()));
         List<List<Object>> rows = List.of(
-                List.of("Doanh thu đơn hàng", soHoacKhong(data.getTongDoanhThu()), "Chỉ tính đơn giao thành công"),
                 List.of("Thu từ bán thanh lý", soHoacKhong(data.getThuTuBanThanhLy()), "Không bao gồm tiêu hủy"),
                 List.of("Chi phí nhập hàng", soHoacKhong(data.getChiPhiNhapHang()), "Giá trị phiếu nhập phát sinh trong kỳ"),
                 List.of("Chi phí nhập đã thanh toán", soHoacKhong(data.getChiPhiNhapDaThanhToan()), "Phần đã xác nhận thanh toán"),

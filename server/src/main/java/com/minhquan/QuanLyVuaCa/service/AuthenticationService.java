@@ -217,7 +217,7 @@ public class AuthenticationService {
         if (!buildScope(taiKhoan).equals(tokenRole))
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
 
-        String tokenPasswordVersion = signedJWT.getJWTClaimsSet().getStringClaim("password_version");
+        String tokenPasswordVersion = signedJWT.getJWTClaimsSet().getStringClaim("password_version"); // so sánh lại mật khẩu khi thay đổi
         if (!buildPasswordVersion(taiKhoan.getMatkhau()).equals(tokenPasswordVersion))
             throw new AppExceptions(ErrorCode.UNAUTHENTICATED);
     }
