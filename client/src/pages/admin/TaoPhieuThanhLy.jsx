@@ -219,6 +219,12 @@ export default function TaoPhieuThanhLy() {
                 showToast("Đơn giá không được âm!", "error");
                 return;
             }
+
+            // if (!Number.isFinite(commonPrice) || commonPrice > formatCurrency(lot.gianhap)) {
+            //     showToast("Giá thanh lý phải nhỏ hơn giá nhập!", "error");
+            //     return;
+            // }
+            
             if (headerForm.trangthai === "DA_BAN_THANH_LY" && price <= 0) {
                 showToast("Bán thanh lý yêu cầu đơn giá của mọi lô lớn hơn 0!", "error");
                 return;
