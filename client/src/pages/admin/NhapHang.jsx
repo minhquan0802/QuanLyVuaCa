@@ -200,7 +200,7 @@ export default function NhapHang() {
         }));
     };
 
-    const handleAddDetail = () => {
+    const handleAddDetail = () => { // thêm chi tiết từng mặt hàng
         if (!currentDetail.idsizeca) { showToast("Vui lòng chọn Size!", "error"); return; }
         if (currentDetail.soluongnhap <= 0) { showToast("Số lượng nhập phải > 0", "error"); return; }
         if (currentDetail.gianhap <= 0) { showToast("Giá nhập phải > 0", "error"); return; }

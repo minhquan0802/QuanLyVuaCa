@@ -87,7 +87,8 @@ api.interceptors.response.use(
         } catch (refreshError) {
             const isPublicPage = publicPaths.some((path) =>
                 path === "/" ? window.location.pathname === path : window.location.pathname.startsWith(path));
-            await dangXuat({ redirect: !isPublicPage });
+            await dangXuat({ redirect: !isPublicPage }); // khi cả refresh token cũng hết hạn thì đăng xuất 
+                                                         // và xóa luôn cặp token ở cookie
             return Promise.reject(refreshError);
         }
     }
