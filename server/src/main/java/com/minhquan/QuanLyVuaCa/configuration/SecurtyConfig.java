@@ -17,6 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,8 +25,11 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurtyConfig {
-    @Value("${frontend.url}")
-    private String frontendUrl;
+    // Danh sach origin duoc phep goi API. Tach rieng khoi frontend.url vi frontend.url
+    // con duoc PaymentController/EmailService dung lam base URL de dung link (chi 1 gia
+    // tri, co the kem path), con CORS thi can nhieu gia tri va khong duoc kem path.
+    @Value("${frontend.allowed-origins}")
+    private String frontendAllowedOrigins;
 
     @Value("${cookie.secure}")
     private boolean cookieSecure;
@@ -117,17 +121,38 @@ public class SecurtyConfig {
 //    }
 
 
+    /**
+     * Origin theo chuẩn CORS chỉ gồm scheme + host + port. Biến môi trường có thể được
+     * điền kèm path (vd GitHub Pages: https://user.github.io/QuanLyVuaCa) hoặc dấu "/"
+     * cuối; nếu để nguyên thì sẽ không khớp header Origin của trình duyệt và request bị
+     * chặn với thông báo "Invalid CORS request".
+     */
+    private static String chuanHoaOrigin(String value) {
+        try {
+            URI uri = URI.create(value);
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return value.replaceAll("/+$", "");
+            }
+            String origin = uri.getScheme() + "://" + uri.getHost();
+            return uri.getPort() == -1 ? origin : origin + ":" + uri.getPort();
+        } catch (IllegalArgumentException e) {
+            return value.replaceAll("/+$", "");
+        }
+    }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 1. CHỈ ĐỊNH CHÍNH XÁC DOMAIN ĐƯỢC PHÉP GỌI API (Không được dùng "*")
-        // frontend.url đọc từ biến môi trường FRONTEND_URL, hỗ trợ nhiều domain
-        // cách nhau bởi dấu phẩy (vd: local dev + domain thật trên Render).
-        List<String> allowedOrigins = Arrays.stream(frontendUrl.split(","))
+        // frontend.allowed-origins đọc từ biến môi trường FRONTEND_ALLOWED_ORIGINS
+        // (mặc định lấy theo FRONTEND_URL), hỗ trợ nhiều domain cách nhau bởi dấu phẩy
+        // (vd: local dev + Render + GitHub Pages).
+        List<String> allowedOrigins = Arrays.stream(frontendAllowedOrigins.split(","))
                 .map(String::trim)
-                .map(origin -> origin.replaceAll("/+$", "")) // bỏ dấu "/" cuối, tránh lệch so với Origin header trình duyệt
                 .filter(origin -> !origin.isEmpty())
+                .map(SecurtyConfig::chuanHoaOrigin)
+                .distinct()
                 .toList();
         configuration.setAllowedOrigins(allowedOrigins);
 

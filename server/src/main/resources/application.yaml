@@ -6,7 +6,6 @@ server:
 
 spring:
   config:
-    # Support running from either the repository root or the server directory.
     import: "optional:file:server/.env[.properties],optional:file:.env[.properties]"
   servlet:
     multipart:
@@ -25,7 +24,6 @@ spring:
     hibernate:
       ddl-auto: validate
       naming:
-        # Dòng này quan trọng: Bắt Hibernate dùng đúng tên trong @Column, không tự sửa thành snake_case
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     show-sql: true
@@ -92,7 +90,14 @@ springdoc:
     path: ${API_DOCS}
 
 frontend:
+  # Base URL duy nhất của FE, dùng để dựng link redirect VNPay và link trong email.
+  # Có thể kèm path nếu FE nằm dưới thư mục con (GitHub Pages project page):
+  # https://minhquan0802.github.io/QuanLyVuaCa
   url: ${FRONTEND_URL}
+  # Danh sách origin được phép gọi API (CORS), cách nhau bởi dấu phẩy. Mặc định
+  # bằng FRONTEND_URL; chỉ cần khai riêng khi chạy nhiều FE cùng lúc (Render +
+  # GitHub Pages). Path và dấu "/" cuối sẽ được tự cắt bỏ.
+  allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:${FRONTEND_URL}}
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
