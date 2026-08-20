@@ -4,6 +4,11 @@ const baseURL = import.meta.env.VITE_BE_URL;
 const unsafeMethods = new Set(["post", "put", "patch", "delete"]);
 const publicPaths = ["/", "/login", "/register", "/home", "/quen-mat-khau", "/dat-lai-mat-khau", "/xac-thuc-email"];
 
+// Khi deploy GitHub Pages dạng project page, app nằm dưới /<ten-repo>/ nên
+// pathname luôn có tiền tố này. Cắt bỏ để so khớp với publicPaths ở trên.
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const duongDanApp = () => window.location.pathname.slice(basePath.length) || "/";
+
 const authClient = axios.create({
     baseURL,
     withCredentials: true,
@@ -85,8 +90,9 @@ api.interceptors.response.use(
             await refreshSession();
             return api(originalRequest);
         } catch (refreshError) {
+            const duongDanHienTai = duongDanApp();
             const isPublicPage = publicPaths.some((path) =>
-                path === "/" ? window.location.pathname === path : window.location.pathname.startsWith(path));
+                path === "/" ? duongDanHienTai === path : duongDanHienTai.startsWith(path));
             await dangXuat({ redirect: !isPublicPage }); // khi cả refresh token cũng hết hạn thì đăng xuất 
                                                          // và xóa luôn cặp token ở cookie
             return Promise.reject(refreshError);
@@ -104,8 +110,8 @@ export const dangXuat = async ({ redirect = true } = {}) => {
         csrfToken = null;
     }
 
-    if (redirect && window.location.pathname !== "/") {
-        window.location.href = "/";
+    if (redirect && duongDanApp() !== "/") {
+        window.location.href = import.meta.env.BASE_URL;
     }
 };
 

@@ -1,0 +1,76 @@
+name: Deploy FE lên GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/deploy-fe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Không chạy chồng nhau; job đang deploy dở thì để chạy xong.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          # Project page phục vụ tại https://<user>.github.io/<repo>/
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_BE_URL: ${{ vars.VITE_BE_URL }}
+          VITE_BANK_ID: ${{ vars.VITE_BANK_ID }}
+          VITE_BANK_ACCOUNT: ${{ vars.VITE_BANK_ACCOUNT }}
+          VITE_BANK_NAME: ${{ vars.VITE_BANK_NAME }}
+          VITE_BANK_DATE: ${{ vars.VITE_BANK_DATE }}
+          VITE_BANK_OTP: ${{ vars.VITE_BANK_OTP }}
+        run: |
+          if [ -z "$VITE_BE_URL" ]; then
+            echo "::error::Chưa cấu hình repository variable VITE_BE_URL (URL backend trên Render)."
+            exit 1
+          fi
+          npm run build
+
+      - name: Tạo SPA fallback
+        # GitHub Pages không có rewrite rule, vào thẳng /admin/... hoặc F5 sẽ 404.
+        # Trả về chính index.html để React Router tự xử lý route.
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
