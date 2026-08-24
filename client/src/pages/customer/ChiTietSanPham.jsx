@@ -22,6 +22,7 @@ export default function ProductDetail() {
     const [selectedOption, setSelectedOption] = useState(null);
     const [unitList, setUnitList] = useState([]);
     const [selectedUnit, setSelectedUnit] = useState(null);
+    const [lienQuan, setLienQuan] = useState([]);
 
     const { product_id } = useParams();
 
@@ -38,7 +39,28 @@ export default function ProductDetail() {
 
                 const productObj = resProduct.data.result || resProduct.data;
                 setProduct(productObj);
-                setStockList(resStocks.data.result || []);
+                const stocks = resStocks.data.result || [];
+                setStockList(stocks);
+
+                // Gợi ý loại cá khác đang còn hàng. Chọn theo tồn kho chứ không lấy ngẫu nhiên:
+                // dẫn khách sang một sản phẩm đã hết hàng thì gợi ý phản tác dụng.
+                const tonTheoLoai = new Map();
+                stocks.forEach(sp => {
+                    const hienCo = tonTheoLoai.get(sp.idLoaiCa) || 0;
+                    tonTheoLoai.set(sp.idLoaiCa, hienCo + Number(sp.soluongton || 0));
+                });
+                const resKhac = await api.get("/Loaicas");
+                const duLieuKhac = resKhac.data;
+                const dsKhac = Array.isArray(duLieuKhac) ? duLieuKhac : (duLieuKhac.result || []);
+                setLienQuan(
+                    dsKhac
+                        .map(sp => sp.result || sp)
+                        .filter(sp => !sp.deleted
+                            && Number(sp.id) !== Number(product_id)
+                            && (tonTheoLoai.get(sp.id) || 0) > 0)
+                        .sort((a, b) => (tonTheoLoai.get(b.id) || 0) - (tonTheoLoai.get(a.id) || 0))
+                        .slice(0, 4)
+                );
 
                 const units = resUnits.data.result || [];
                 setUnitList(units);
@@ -347,6 +369,37 @@ export default function ProductDetail() {
                             </ul>
                         </div>
                     </div>
+                    {lienQuan.length > 0 && (
+                        <div className="mt-12">
+                            <h2 className="font-display text-2xl font-bold text-blue-900 mb-4">
+                                Có thể bạn cũng cần
+                            </h2>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                                {lienQuan.map(sp => (
+                                    <Link
+                                        key={sp.id}
+                                        to={`/product-detail/${sp.id}`}
+                                        className="group flex flex-col bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                                    >
+                                        <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100">
+                                            <div
+                                                className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-110"
+                                                style={{ backgroundImage: `url("${getImageUrl(sp.hinhanhurl)}")` }}
+                                            ></div>
+                                        </div>
+                                        <div className="p-4">
+                                            <h3 className="font-bold text-blue-900 leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                                {sp.tenloaica}
+                                            </h3>
+                                            <p className="text-xs text-slate-500 line-clamp-2 mt-1 h-8">
+                                                {sp.mieuta || "Mô tả đang cập nhật..."}
+                                            </p>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
