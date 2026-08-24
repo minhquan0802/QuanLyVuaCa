@@ -232,6 +232,9 @@ Khi Backend đang chạy với cấu hình mẫu:
 | Công nợ nhà cung cấp | Hạn trả theo từng nhà cung cấp, trả tiền từng phần, sổ cái biến động nợ và nhắc trước hạn |
 | Báo cáo lãi/lỗ | Giá vốn hàng bán theo lô, biên lợi nhuận theo sản phẩm và theo lô, hao hụt cân dự kiến so với thực tế — nằm trong Dashboard, dùng chung bộ lọc thời gian |
 | Nhật ký thao tác | Ghi vết các thao tác tác động tới tiền và quyền, tra cứu theo bản ghi hoặc theo người thực hiện |
+| Đặt lại đơn cũ | Nạp toàn bộ giỏ của một đơn đã xong vào giỏ hàng hiện tại, báo rõ sản phẩm không còn đặt được |
+| Đơn định kỳ | Khách sỉ khai giỏ hàng quen thuộc theo thứ trong tuần, hệ thống tự sinh đơn chờ xác nhận lúc 5h sáng |
+| Lọc sản phẩm nâng cao | Lọc theo size và khoảng giá, chỉ hàng còn bán, sắp xếp, gợi ý tìm kiếm và sản phẩm liên quan |
 
 ## Chạy kiểm thử
 

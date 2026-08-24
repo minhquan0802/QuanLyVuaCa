@@ -131,6 +131,21 @@ public enum ErrorCode {
     // ===== BÁO CÁO LÃI/LỖ =====
     KHOANG_THOI_GIAN_INVALID(1102, "Khoảng thời gian báo cáo không hợp lệ", HttpStatus.BAD_REQUEST),
 
+    // ===== ĐẶT LẠI ĐƠN & LỊCH ĐẶT ĐỊNH KỲ =====
+    DONHANG_KHONG_THUOC_VE_BAN(1103, "Đơn hàng này không thuộc về bạn", HttpStatus.FORBIDDEN),
+    DONHANG_KHONG_CO_SAN_PHAM_DAT_LAI(1104, "Không còn sản phẩm nào trong đơn cũ có thể đặt lại", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_NOT_EXISTED(1105, "Không tìm thấy lịch đặt hàng định kỳ", HttpStatus.NOT_FOUND),
+    LICH_DINH_KY_KHONG_THUOC_VE_BAN(1106, "Lịch đặt hàng này không thuộc về bạn", HttpStatus.FORBIDDEN),
+    LICH_DINH_KY_CHI_DANH_CHO_KHACH_SI(1107, "Đặt hàng định kỳ chỉ dành cho khách sỉ", HttpStatus.FORBIDDEN),
+    LICH_DINH_KY_TEN_INVALID(1108, "Tên lịch không hợp lệ", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_THIEU_NGAY(1109, "Phải chọn ít nhất một thứ trong tuần", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_NGAY_TRONG_TUAN_INVALID(1110, "Thứ trong tuần chỉ nhận giá trị từ 1 (thứ Hai) đến 7 (Chủ nhật)", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_THIEU_SAN_PHAM(1111, "Lịch đặt hàng phải có ít nhất một sản phẩm", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_THIEU_DON_VI_TINH(1112, "Thiếu đơn vị tính cho sản phẩm trong lịch", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_SO_LUONG_INVALID(1113, "Số lượng trong lịch phải lớn hơn 0", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_GHICHU_INVALID(1114, "Ghi chú không hợp lệ", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_KHOANG_NGAY_INVALID(1115, "Ngày kết thúc phải sau ngày bắt đầu", HttpStatus.BAD_REQUEST),
+
     // ===== THÔNG BÁO =====
     THONGBAO_NOT_EXISTED(1042, "Thông báo không tồn tại", HttpStatus.NOT_FOUND);
 
