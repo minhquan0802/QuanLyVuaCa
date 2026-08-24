@@ -33,6 +33,8 @@ class GioHangServiceTest {
     @Mock ChitietcabanRepository chitietcabanRepository;
     @Mock DonvitinhRepository donvitinhRepository;
     @Mock BanggiaRepository banggiaRepository;
+    @Mock DonhangRepository donhangRepository;
+    @Mock ChitietdonhangRepository chitietdonhangRepository;
 
     GioHangService gioHangService;
     Taikhoan user;
@@ -43,7 +45,8 @@ class GioHangServiceTest {
     @BeforeEach
     void setUp() {
         gioHangService = new GioHangService(gioHangRepository, chitietGioHangRepository,
-                taikhoanRepository, chitietcabanRepository, donvitinhRepository, banggiaRepository);
+                taikhoanRepository, chitietcabanRepository, donvitinhRepository, banggiaRepository,
+                donhangRepository, chitietdonhangRepository);
 
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("khach@vuaca.vn", null, List.of()));
