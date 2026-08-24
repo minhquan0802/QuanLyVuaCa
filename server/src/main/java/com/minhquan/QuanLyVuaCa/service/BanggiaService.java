@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.service;
 
+import com.minhquan.QuanLyVuaCa.annotation.GhiNhatKy;
 import com.minhquan.QuanLyVuaCa.dto.request.BanggiaRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.BanggiaResponse;
 import com.minhquan.QuanLyVuaCa.entity.Banggia;
@@ -43,6 +44,7 @@ public class BanggiaService {
     }
 
     @Transactional
+    @GhiNhatKy(bang = "banggia", hanhDong = "THEM_BANG_GIA", thamSoId = -1)
     public BanggiaResponse taoMoi(BanggiaRequest request) {
         kiemTraGia(request.getGiabanle(), request.getGiabansi());
 
@@ -78,6 +80,7 @@ public class BanggiaService {
     }
 
     @Transactional
+    @GhiNhatKy(bang = "banggia", hanhDong = "XOA_BANG_GIA")
     public void xoa(Integer id) {
         Banggia price = banggiaRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.BANGGIA_NOT_EXISTED));

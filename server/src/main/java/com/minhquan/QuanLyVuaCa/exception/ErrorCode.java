@@ -119,6 +119,18 @@ public enum ErrorCode {
     VUOT_HAN_MUC_TIN_DUNG(1044, "Đơn hàng dự kiến sẽ vượt hạn mức tín dụng", HttpStatus.CONFLICT),
     TAIKHOAN_BI_KHOA_DAT_HANG(1045, "Tài khoản đang bị khóa đặt hàng do quá hạn công nợ", HttpStatus.FORBIDDEN),
 
+    // ===== CÔNG NỢ NHÀ CUNG CẤP =====
+    PHIEUNHAP_KHONG_THUOC_NCC(1095, "Phiếu nhập không thuộc nhà cung cấp này", HttpStatus.BAD_REQUEST),
+    SOTIEN_VUOT_QUA_CONG_NO_NCC(1096, "Số tiền thanh toán vượt quá số còn nợ của phiếu nhập", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_DIACHI_INVALID(1097, "Địa chỉ nhà cung cấp không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_EMAIL_INVALID(1098, "Email nhà cung cấp không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_MASOTHUE_INVALID(1099, "Mã số thuế nhà cung cấp không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_NGUOILIENHE_INVALID(1100, "Người liên hệ không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_HANTRA_INVALID(1101, "Hạn trả mặc định không hợp lệ", HttpStatus.BAD_REQUEST),
+
+    // ===== BÁO CÁO LÃI/LỖ =====
+    KHOANG_THOI_GIAN_INVALID(1102, "Khoảng thời gian báo cáo không hợp lệ", HttpStatus.BAD_REQUEST),
+
     // ===== THÔNG BÁO =====
     THONGBAO_NOT_EXISTED(1042, "Thông báo không tồn tại", HttpStatus.NOT_FOUND);
 

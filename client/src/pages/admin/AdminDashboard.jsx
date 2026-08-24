@@ -9,8 +9,8 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    DollarSign, CheckCircle2, ShoppingCart,
-    AlertCircle, TableProperties, BarChart2, Table, Download
+    DollarSign, CheckCircle2, ShoppingCart, Package, Wallet,
+    AlertCircle, TableProperties, BarChart2, Table, Download, TrendingUp, TrendingDown
 } from "lucide-react";
 
 const ORDER_STATUS = {
@@ -50,6 +50,14 @@ export default function SalesDashboard() {
     // --- KHỐI LƯỢNG NHẬP - BÁN - HAO HỤT THEO LOẠI CÁ ---
     const [fishVolumeData, setFishVolumeData] = useState([]);
 
+    // --- PHÂN TÍCH LÃI/LỖ VÀ HAO HỤT CÂN ---
+    // Dùng chung bộ lọc thời gian ở đầu trang: backend cũng đi qua
+    // ThongKeService.xacDinhKhoangThoiGian() nên nhận đúng các giá trị range của Dashboard.
+    const [laiLo, setLaiLo] = useState(null);
+    const [tabPhanTich, setTabPhanTich] = useState("SAN_PHAM");
+    const [bangPhanTich, setBangPhanTich] = useState([]);
+    const [loadingPhanTich, setLoadingPhanTich] = useState(true);
+
     // --- DANH SÁCH ĐƠN HÀNG ---
     const [orders, setOrders] = useState([]);
     const [orderDetailsById, setOrderDetailsById] = useState({});
@@ -75,7 +83,29 @@ export default function SalesDashboard() {
         api.get("/Thongke/luan-chuyen-hang-hoa", { params })
             .then(res => setFishVolumeData(res.data.result || []))
             .catch(() => {});
+
+        api.get("/BaoCao/lai-lo", { params })
+            .then(res => setLaiLo(res.data.result || null))
+            .catch(() => setLaiLo(null));
     }, [timeRange, customFrom, customTo]);
+
+    // Bảng phân tích tải riêng vì còn phụ thuộc tab đang chọn, không nên kéo theo cả khối KPI.
+    useEffect(() => {
+        if (timeRange === "CUSTOM" && (!customFrom || !customTo || customFrom > customTo)) return;
+        const params = timeRange === "CUSTOM"
+            ? { range: timeRange, from: customFrom, to: customTo }
+            : { range: timeRange };
+
+        const duongDan = tabPhanTich === "SAN_PHAM" ? "/BaoCao/bien-loi-nhuan/san-pham"
+            : tabPhanTich === "LO" ? "/BaoCao/bien-loi-nhuan/lo"
+            : "/BaoCao/hao-hut-can";
+
+        setLoadingPhanTich(true);
+        api.get(duongDan, { params })
+            .then(res => setBangPhanTich(res.data.result || []))
+            .catch(() => setBangPhanTich([]))
+            .finally(() => setLoadingPhanTich(false));
+    }, [timeRange, customFrom, customTo, tabPhanTich]);
 
     // Chỉ tải danh sách đơn ở bước đầu. Chi tiết được tải theo trang đang hiển thị
     // ở effect phía dưới để tránh gọi một API cho mọi đơn hàng cùng lúc.
@@ -86,6 +116,7 @@ export default function SalesDashboard() {
         .sort((a, b) => b.ban - a.ban); // Ưu tiên xếp theo loại cá bán chạy nhất
 
     const formatCurrency = (value) => `${new Intl.NumberFormat('vi-VN').format(value || 0)} VNĐ`;
+    const formatNumber = (value) => Number(value || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 
     const handleExportExcel = async () => {
         if (timeRange === "CUSTOM" && (!customFrom || !customTo || customFrom > customTo)) {
@@ -318,13 +349,66 @@ export default function SalesDashboard() {
                 <p className="-mt-5 mb-6 text-right text-sm font-medium text-red-600">Ngày bắt đầu không được lớn hơn ngày kết thúc.</p>
             )}
 
-            {/* --- KHU VỰC 1: KPI TÀI CHÍNH VÀ VẬN HÀNH --- */}
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 ${timeRange === "TODAY" ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
+            {/* --- KHU VỰC 1: TỔNG QUAN TÀI CHÍNH (KPI + PHÂN TÍCH LÃI/LỖ) --- */}
+            {/* Doanh thu / chi phí nhập / thu thanh lý ở khối KPI và trong báo cáo lãi lỗ vốn là CÙNG
+                một truy vấn trên CÙNG khoảng thời gian, nên gộp làm một thay vì hiện hai lần. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-4">
                 <div className="bg-cyan-100 p-6 rounded-3xl shadow-sm border border-cyan-300 text-cyan-950 flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4"><div className="p-3 bg-cyan-200 rounded-2xl"><DollarSign size={28} className="text-cyan-700" /></div></div>
                     <div>
                         <p className="text-cyan-700 text-xs font-bold uppercase tracking-wider mb-1">Doanh Thu Đơn Hàng</p>
                         <h3 className="text-2xl lg:text-3xl font-black">{formatCurrency(stats.tongDoanhThu)}</h3>
+                    </div>
+                </div>
+
+                <div className="bg-orange-100 p-6 rounded-3xl shadow-sm border border-orange-300 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-orange-200 rounded-2xl"><Package size={28} className="text-orange-700" /></div></div>
+                    <div>
+                        <p className="text-orange-700 text-xs font-bold uppercase tracking-wider mb-1">Giá Vốn Hàng Bán</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-orange-950">{laiLo ? formatCurrency(laiLo.giaVonHangBan) : "—"}</h3>
+                        <p className="mt-2 text-xs font-semibold text-orange-800">Chỉ phần cá đã thực sự xuất đi</p>
+                    </div>
+                </div>
+
+                {/* Ô chủ đạo: tô đặc để tách khỏi các ô pastel, vì đây mới là con số kết luận. */}
+                <div className={`p-6 rounded-3xl shadow-sm border flex flex-col justify-between text-white ${
+                    Number(laiLo?.loiNhuanGop || 0) >= 0 ? "bg-emerald-600 border-emerald-700" : "bg-rose-600 border-rose-700"
+                }`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-white/20 rounded-2xl">
+                            {Number(laiLo?.loiNhuanGop || 0) >= 0
+                                ? <TrendingUp size={28} className="text-white" />
+                                : <TrendingDown size={28} className="text-white" />}
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-white/80 text-xs font-bold uppercase tracking-wider mb-1">Lợi Nhuận Gộp</p>
+                        <h3 className="text-2xl lg:text-3xl font-black">{laiLo ? formatCurrency(laiLo.loiNhuanGop) : "—"}</h3>
+                        <p className="mt-2 text-xs font-semibold text-white/80">
+                            {laiLo ? `Biên ${formatNumber(laiLo.bienLoiNhuanGop)}%` : "Đang tính..."}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="bg-amber-100 p-6 rounded-3xl shadow-sm border border-amber-300 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-amber-200 rounded-2xl"><ShoppingCart size={28} className="text-amber-700" /></div></div>
+                    <div>
+                        <p className="text-amber-700 text-xs font-bold uppercase tracking-wider mb-1">Chi Phí Nhập Hàng</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-amber-950">{formatCurrency(stats.chiPhiNhapHang)}</h3>
+                        <p className="mt-2 text-xs font-semibold text-amber-800">
+                            Đã trả cho hàng nhập kỳ này: {formatCurrency(stats.chiPhiNhapDaThanhToan)}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="bg-slate-100 p-6 rounded-3xl shadow-sm border border-slate-300 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-slate-200 rounded-2xl"><Wallet size={28} className="text-slate-700" /></div></div>
+                    <div>
+                        <p className="text-slate-600 text-xs font-bold uppercase tracking-wider mb-1">Công Nợ Nhà Cung Cấp</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-red-600">{laiLo ? formatCurrency(laiLo.congNoNccConLai) : "—"}</h3>
+                        <p className="mt-2 text-xs font-semibold text-slate-600">
+                            Đã trả trong kỳ: {laiLo ? formatCurrency(laiLo.tienDaTraNcc) : "—"}
+                        </p>
                     </div>
                 </div>
 
@@ -336,14 +420,11 @@ export default function SalesDashboard() {
                     </div>
                 </div>
 
-                <div className="bg-amber-100 p-6 rounded-3xl shadow-sm border border-amber-300 flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-amber-200 rounded-2xl"><ShoppingCart size={28} className="text-amber-700" /></div></div>
+                <div className="bg-emerald-100 p-6 rounded-3xl shadow-sm border border-emerald-300 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-emerald-200 rounded-2xl"><CheckCircle2 size={28} className="text-emerald-700" /></div></div>
                     <div>
-                        <p className="text-amber-700 text-xs font-bold uppercase tracking-wider mb-1">Chi Phí Nhập Hàng</p>
-                        <h3 className="text-2xl lg:text-3xl font-black text-amber-950">{formatCurrency(stats.chiPhiNhapHang)}</h3>
-                        <p className="mt-2 text-xs font-semibold text-amber-800">
-                            Đã thanh toán: {formatCurrency(stats.chiPhiNhapDaThanhToan)}
-                        </p>
+                        <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider mb-1">Đơn Hoàn Thành</p>
+                        <h3 className="text-2xl lg:text-3xl font-black text-emerald-950">{stats.donHoanThanh} <span className="text-lg font-semibold text-emerald-600">đơn</span></h3>
                     </div>
                 </div>
 
@@ -368,17 +449,143 @@ export default function SalesDashboard() {
                         </div>
                     </button>
                 )}
+            </div>
 
-                <div className="bg-emerald-100 p-6 rounded-3xl shadow-sm border border-emerald-300 flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4"><div className="p-3 bg-emerald-200 rounded-2xl"><CheckCircle2 size={28} className="text-emerald-700" /></div></div>
-                    <div>
-                        <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider mb-1">Đơn Hoàn Thành</p>
-                        <h3 className="text-2xl lg:text-3xl font-black text-emerald-950">{stats.donHoanThanh} <span className="text-lg font-semibold text-emerald-600">đơn</span></h3>
-                    </div>
+            <div className="bg-cyan-50 border border-cyan-200 rounded-2xl px-5 py-4 mb-8 text-xs text-cyan-900 leading-relaxed">
+                <strong>Cách đọc:</strong> lợi nhuận gộp = doanh thu − <em>giá vốn hàng bán</em>, không phải
+                doanh thu − <em>chi phí nhập hàng</em>. Hai ô đó nằm cạnh nhau nhưng đo hai thứ khác nhau: cá
+                nhập trong kỳ mà còn nằm trong bể thì chưa phải chi phí của doanh thu kỳ này. Giá vốn và biên
+                lợi nhuận chỉ có số liệu với đơn phát sinh sau khi bật tính năng phân bổ lô.
+            </div>
+
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 mb-8">
+                <div className="mb-6">
+                    <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
+                        <TrendingUp size={24} className="text-cyan-600" />
+                        Chi tiết lãi/lỗ và hao hụt
+                    </h3>
+                    <p className="text-slate-500 mt-1 text-sm">
+                        Bóc tách các con số phía trên theo sản phẩm, theo lô nhập, và đối chiếu cân dự kiến với cân thực tế
+                    </p>
+                </div>
+
+                <div className="flex bg-cyan-50 p-1.5 rounded-xl border border-cyan-200 w-fit mb-4">
+                    {[
+                        { value: "SAN_PHAM", label: "Theo sản phẩm" },
+                        { value: "LO", label: "Theo lô nhập" },
+                        { value: "HAO_HUT", label: "Hao hụt cân" },
+                    ].map(item => (
+                        <button
+                            key={item.value}
+                            onClick={() => setTabPhanTich(item.value)}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                                tabPhanTich === item.value
+                                    ? "bg-cyan-600 text-white shadow-sm"
+                                    : "text-cyan-800 hover:text-cyan-900 hover:bg-cyan-100"
+                            }`}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                    {tabPhanTich === "HAO_HUT" ? (
+                        <table className="w-full text-left min-w-[820px] border-collapse">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
+                                <tr>
+                                    <th className="p-4">Loại cá</th>
+                                    <th className="p-4">Size</th>
+                                    <th className="p-4 text-right">Kg dự kiến</th>
+                                    <th className="p-4 text-right">Kg thực tế</th>
+                                    <th className="p-4 text-right">Chênh lệch</th>
+                                    <th className="p-4 text-right">Tỷ lệ lệch</th>
+                                    <th className="p-4 text-center">Số dòng đơn</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
+                                {loadingPhanTich ? (
+                                    <tr><td colSpan="7" className="p-8 text-center text-slate-400">Đang tải...</td></tr>
+                                ) : bangPhanTich.length > 0 ? (
+                                    bangPhanTich.map((dong, index) => (
+                                        <tr key={`${dong.idLoaiCa}-${dong.tenSize}-${index}`} className={dong.vuotNguong ? "bg-rose-50/50" : ""}>
+                                            <td className="p-4 font-semibold text-slate-800">{dong.tenLoaiCa}</td>
+                                            <td className="p-4">{dong.tenSize}</td>
+                                            <td className="p-4 text-right tabular-nums">{formatNumber(dong.tongKgDuKien)}</td>
+                                            <td className="p-4 text-right tabular-nums">{formatNumber(dong.tongKgThucTe)}</td>
+                                            <td className={`p-4 text-right tabular-nums font-semibold ${Number(dong.chenhLech) < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                                                {formatNumber(dong.chenhLech)}
+                                            </td>
+                                            <td className="p-4 text-right tabular-nums font-bold">
+                                                <span className={dong.vuotNguong ? "text-rose-600" : "text-slate-600"}>{formatNumber(dong.tyLeLech)}%</span>
+                                                {dong.vuotNguong && <span className="ml-2 text-xs font-bold text-rose-500">vượt ngưỡng</span>}
+                                            </td>
+                                            <td className="p-4 text-center tabular-nums">{dong.soDongDon}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">Chưa có dữ liệu cân thực tế trong kỳ này.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <table className="w-full text-left min-w-[900px] border-collapse">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
+                                <tr>
+                                    {tabPhanTich === "LO" && <th className="p-4">Lô / Ngày nhập</th>}
+                                    <th className="p-4">Loại cá</th>
+                                    <th className="p-4">Size</th>
+                                    <th className="p-4 text-right">Kg đã bán</th>
+                                    <th className="p-4 text-right">Doanh thu</th>
+                                    <th className="p-4 text-right">Giá vốn</th>
+                                    <th className="p-4 text-right">Lợi nhuận gộp</th>
+                                    <th className="p-4 text-right">Biên</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
+                                {loadingPhanTich ? (
+                                    <tr><td colSpan="8" className="p-8 text-center text-slate-400">Đang tải...</td></tr>
+                                ) : bangPhanTich.length > 0 ? (
+                                    bangPhanTich.map((dong, index) => {
+                                        const loiNhuan = Number(dong.loiNhuanGop || 0);
+                                        return (
+                                            <tr key={`${dong.idLo || dong.tenLoaiCa}-${dong.tenSize}-${index}`}>
+                                                {tabPhanTich === "LO" && (
+                                                    <td className="p-4">
+                                                        <p className="font-mono text-xs text-slate-500">{(dong.idLo || "").slice(0, 8).toUpperCase()}</p>
+                                                        <p className="text-xs text-slate-400">
+                                                            {dong.ngayNhap ? new Date(dong.ngayNhap).toLocaleDateString("vi-VN") : "-"}
+                                                        </p>
+                                                    </td>
+                                                )}
+                                                <td className="p-4 font-semibold text-slate-800">{dong.tenLoaiCa}</td>
+                                                <td className="p-4">{dong.tenSize}</td>
+                                                <td className="p-4 text-right tabular-nums">{formatNumber(dong.soLuongBan)}</td>
+                                                <td className="p-4 text-right tabular-nums">{formatCurrency(dong.doanhThu)}</td>
+                                                <td className="p-4 text-right tabular-nums text-amber-700">{formatCurrency(dong.giaVon)}</td>
+                                                <td className={`p-4 text-right tabular-nums font-bold ${loiNhuan >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                                    {formatCurrency(loiNhuan)}
+                                                </td>
+                                                <td className={`p-4 text-right tabular-nums font-semibold ${loiNhuan >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                                    {formatNumber(dong.bienLoiNhuan)}%
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan="8" className="p-8 text-center text-slate-400 italic">
+                                            Chưa có dữ liệu phân bổ lô trong kỳ này. Báo cáo chỉ có số liệu cho đơn phát sinh sau khi bật tính năng.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 
-            {/* --- KHU VỰC 2: THỐNG KÊ (CÓ NÚT CHUYỂN ĐỔI BẢNG/BIỂU ĐỒ) --- */}
+            {/* --- KHU VỰC 2: THỐNG KÊ LUÂN CHUYỂN HÀNG HÓA (BẢNG/BIỂU ĐỒ) --- */}
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 mb-8">
                 <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>

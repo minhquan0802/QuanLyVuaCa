@@ -51,6 +51,8 @@ class ThongKeServiceExcelTest {
                 mock(com.minhquan.QuanLyVuaCa.repository.ChitietphieuthanhlyRepository.class),
                 donhangRepository,
                 taiKhoanRepository,
+                mock(com.minhquan.QuanLyVuaCa.repository.PhieunhapRepository.class),
+                mock(com.minhquan.QuanLyVuaCa.repository.ThanhToanNhaCungCapRepository.class),
                 phieuthanhlyService);
 
         Authentication authentication = mock(Authentication.class);
