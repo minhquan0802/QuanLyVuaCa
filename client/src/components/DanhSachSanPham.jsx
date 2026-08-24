@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../config/axios";
 import { useAuth } from "../context/AuthContext";
@@ -7,7 +7,9 @@ import { getPageList } from "./Pagination";
 // [1] Nhận prop searchTerm truyền từ Home.js
 const SO_SAN_PHAM_MOI_TRANG = 12;
 
-export default function ProductList({ searchTerm }) {
+const BO_LOC_RONG = { sizes: [], giaTu: "", giaDen: "", chiConHang: false, sapXep: "MAC_DINH" };
+
+export default function ProductList({ searchTerm, boLoc = BO_LOC_RONG, onDuLieu }) {
     const [productList, setProductList] = useState([]);
     const [priceList, setPriceList] = useState([]);
     const [stockList, setStockList] = useState([]);
@@ -16,6 +18,11 @@ export default function ProductList({ searchTerm }) {
     const { user } = useAuth();
 
     const navigate = useNavigate();
+
+    // Trang cha cần danh mục size và tên loại cá để dựng bộ lọc + gợi ý tìm kiếm. Báo ngược lên
+    // đây thay vì để trang cha gọi lại /Chitietcabans và /Loaicas một lần nữa.
+    const onDuLieuRef = useRef(onDuLieu);
+    onDuLieuRef.current = onDuLieu;
 
     const handleProductDetail = (product_id) => {
         navigate(`/product-detail/${product_id}`);
@@ -37,7 +44,22 @@ export default function ProductList({ searchTerm }) {
                 const prices = resPrices.data.result || [];
                 setPriceList(prices.filter(p => p.trangThai === "Đang áp dụng" || !p.ngayKetThuc));
 
-                setStockList(resStocks.data.result || []);
+                const stocks = resStocks.data.result || [];
+                setStockList(stocks);
+
+                const dsSize = [];
+                stocks.forEach(s => {
+                    if (s.tenSize && !dsSize.some(x => x.idSizeCa === s.idSizeCa)) {
+                        dsSize.push({ idSizeCa: s.idSizeCa, tenSize: s.tenSize });
+                    }
+                });
+                onDuLieuRef.current?.({
+                    sizes: dsSize,
+                    tenLoaiCas: (Array.isArray(productData) ? productData : (productData.result || []))
+                        .map(sp => (sp.result || sp))
+                        .filter(sp => !sp.deleted)
+                        .map(sp => ({ id: sp.id, ten: sp.tenloaica })),
+                });
 
             } catch (error) {
                 console.error("Lỗi tải dữ liệu:", error);
@@ -82,24 +104,81 @@ export default function ProductList({ searchTerm }) {
         return total;
     };
 
-    // [2] Logic lọc danh sách sản phẩm dựa trên searchTerm
-    const filteredList = productList.filter((product) => {
-        const item = product.result || product;
-        if (item.deleted) return false;
-        if (!searchTerm) return true;   // chưa gõ gì thì giữ hết
+    // Các size mà một loại cá đang có hàng bán, dùng cho bộ lọc size.
+    const getSizesCuaLoaiCa = (fishId) => stockList
+        .filter(s => Number(s.idLoaiCa) === Number(fishId))
+        .map(s => s.idSizeCa);
 
-        const search = searchTerm.toLowerCase();
-        const name = item.tenloaica ? item.tenloaica.toLowerCase() : ""; //tìm theo tên cá
-        const moTa = item.mieuta ? item.mieuta.toLowerCase() : "";
+    // [2] Lọc theo từ khóa + bộ lọc nâng cao, rồi sắp xếp.
+    // Toàn bộ làm ở client vì ba API phía trên đã tải sẵn trọn danh mục: một vựa cá có vài chục
+    // loại cá, thêm endpoint lọc phía server chỉ đổi một vòng lặp lấy một vòng mạng.
+    const filteredList = useMemo(() => {
+        const search = (searchTerm || "").trim().toLowerCase();
+        const giaTu = boLoc.giaTu !== "" && boLoc.giaTu != null ? Number(boLoc.giaTu) : null;
+        const giaDen = boLoc.giaDen !== "" && boLoc.giaDen != null ? Number(boLoc.giaDen) : null;
+        const sizesChon = boLoc.sizes || [];
 
-        return name.includes(searchTerm.toLowerCase())
-            || moTa.includes(search)  ;
-    });
+        const ketQua = productList.filter((product) => {
+            const item = product.result || product;
+            if (item.deleted) return false;
 
-    // Tìm kiếm đổi kết quả -> quay về trang 1, tránh đứng ở trang trống
+            if (search) {
+                const name = (item.tenloaica || "").toLowerCase();
+                const moTa = (item.mieuta || "").toLowerCase();
+                if (!name.includes(search) && !moTa.includes(search)) return false;
+            }
+
+            if (sizesChon.length > 0) {
+                const sizesCoSan = getSizesCuaLoaiCa(item.id);
+                if (!sizesChon.some(idSize => sizesCoSan.includes(idSize))) return false;
+            }
+
+            if (boLoc.chiConHang && getTotalStock(item.id) <= 0) return false;
+
+            if (giaTu != null || giaDen != null) {
+                const gia = getDisplayPrice(item.id)?.price;
+                // Hàng "Liên hệ báo giá" không có giá để so, nên bị loại khi khách đặt khoảng giá —
+                // giữ lại sẽ là câu trả lời sai cho câu hỏi "cá nào dưới 100k".
+                if (gia == null) return false;
+                if (giaTu != null && gia < giaTu) return false;
+                if (giaDen != null && gia > giaDen) return false;
+            }
+
+            return true;
+        });
+
+        // Sản phẩm chưa có giá luôn xuống cuối khi sắp theo giá: xếp chúng như giá 0 sẽ đẩy toàn bộ
+        // hàng "liên hệ báo giá" lên đầu danh sách giá tăng dần.
+        const theoGia = (chieu) => (a, b) => {
+            const ga = getDisplayPrice((a.result || a).id)?.price;
+            const gb = getDisplayPrice((b.result || b).id)?.price;
+            if (ga == null && gb == null) return 0;
+            if (ga == null) return 1;
+            if (gb == null) return -1;
+            return chieu * (ga - gb);
+        };
+
+        switch (boLoc.sapXep) {
+            case "GIA_TANG":
+                return [...ketQua].sort(theoGia(1));
+            case "GIA_GIAM":
+                return [...ketQua].sort(theoGia(-1));
+            case "TEN_AZ":
+                return [...ketQua].sort((a, b) =>
+                    ((a.result || a).tenloaica || "").localeCompare((b.result || b).tenloaica || "", "vi"));
+            case "TON_GIAM":
+                return [...ketQua].sort((a, b) =>
+                    getTotalStock((b.result || b).id) - getTotalStock((a.result || a).id));
+            default:
+                return ketQua;
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [productList, priceList, stockList, searchTerm, boLoc, user]);
+
+    // Đổi từ khóa hoặc bộ lọc -> quay về trang 1, tránh đứng ở trang trống
     useEffect(() => {
         setTrangHienTai(1);
-    }, [searchTerm]);
+    }, [searchTerm, boLoc]);
 
     const tongSoTrang = Math.max(1, Math.ceil(filteredList.length / SO_SAN_PHAM_MOI_TRANG));
     const trangDangXem = Math.min(trangHienTai, tongSoTrang);
@@ -110,6 +189,12 @@ export default function ProductList({ searchTerm }) {
 
     return (
         <>
+            {!loading && (
+                <div className="col-span-full -mt-2 mb-1 text-sm text-slate-500">
+                    Tìm thấy <strong className="text-slate-700">{filteredList.length}</strong> sản phẩm
+                </div>
+            )}
+
             {/* [3] Sử dụng danhSachTrangNay (đã lọc + cắt theo trang) thay vì productList để render */}
             {danhSachTrangNay.length > 0 ? (
                 danhSachTrangNay.map((product) => {

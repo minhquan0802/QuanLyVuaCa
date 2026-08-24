@@ -129,6 +129,16 @@ export default function Header() {
                                                         Theo dõi đơn hàng
                                                     </button>
 
+                                                    {user?.vaitro === 'CUSTOMER' && (
+                                                        <button
+                                                            onClick={() => handleNavigation('/dat-hang-dinh-ky')}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 flex items-center gap-2 cursor-pointer"
+                                                        >
+                                                            <span className="material-symbols-outlined text-lg">event_repeat</span>
+                                                            Đặt hàng định kỳ
+                                                        </button>
+                                                    )}
+
                                                     {(user?.vaitro === 'ADMIN' || user?.vaitro === 'STAFF') && (
                                                         <button
                                                             onClick={() => handleNavigation('/admin')}
@@ -256,6 +266,16 @@ export default function Header() {
                                                 >
                                                     <span className="material-symbols-outlined text-lg">receipt_long</span>
                                                     Theo dõi đơn hàng
+                                                </button>
+                                            )}
+
+                                            {user?.vaitro === 'CUSTOMER' && (
+                                                <button
+                                                    onClick={() => handleNavigation('/dat-hang-dinh-ky')}
+                                                    className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg">event_repeat</span>
+                                                    Đặt hàng định kỳ
                                                 </button>
                                             )}
 

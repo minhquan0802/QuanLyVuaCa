@@ -14,6 +14,7 @@ import Profile from '../pages/customer/Profile';
 import OrderSuccess from '../pages/customer/OrderSuccess';
 import OrderFailed from '../pages/customer/OrderFailed';
 import ThongTinDonHang from '../pages/customer/ThongTinDonHang';
+import DatHangDinhKy from '../pages/customer/DatHangDinhKy';
 
 // Admin pages
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -74,6 +75,7 @@ export default function AppRoutes() {
                 <Route path='/order-success' element={<OrderSuccess />} />
                 <Route path='/order-failed' element={<OrderFailed />} />
                 <Route path='/my-orders' element={<ThongTinDonHang />} />
+                <Route path='/dat-hang-dinh-ky' element={<DatHangDinhKy />} />
             </Route>
 
             <Route element={<ProtectedRoute />}>
