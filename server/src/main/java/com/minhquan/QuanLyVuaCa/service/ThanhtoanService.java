@@ -2,6 +2,7 @@ package com.minhquan.QuanLyVuaCa.service;
 
 import com.minhquan.QuanLyVuaCa.dto.response.ThanhtoanItemResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.TinhTrangThanhToanResponse;
+import com.minhquan.QuanLyVuaCa.annotation.GhiNhatKy;
 import com.minhquan.QuanLyVuaCa.entity.Donhang;
 import com.minhquan.QuanLyVuaCa.entity.Thanhtoan;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
@@ -110,6 +111,7 @@ public class ThanhtoanService {
 
     // Ghi nhận thanh toán thủ công (tiền mặt) cho toàn bộ số tiền còn nợ
     @Transactional
+    @GhiNhatKy(bang = "donhang", hanhDong = "GHI_NHAN_THANH_TOAN_THU_CONG")
     public void ghiNhanThanhToanThuCong(String idDonhang) {
         Donhang dh = donhangRepository.findById(idDonhang)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
@@ -154,6 +156,7 @@ public class ThanhtoanService {
     // Gọi từ admin/staff chủ động bấm "Xác nhận thanh toán" cho khoản chuyển khoản đang chờ ->
     // ghi đúng người thực hiện vào sổ cái công nợ.
     @Transactional
+    @GhiNhatKy(bang = "thanhtoan", hanhDong = "XAC_NHAN_THANH_TOAN_THU_CONG")
     public void xacNhanThanhToanThuCong(String idThanhtoan) {
         xacNhanThanhToanNoiBo(idThanhtoan, true);
     }

@@ -4,7 +4,6 @@ import com.minhquan.QuanLyVuaCa.entity.Chitietcaban;
 import com.minhquan.QuanLyVuaCa.entity.Chitietphieunhap;
 import com.minhquan.QuanLyVuaCa.entity.Loaica;
 import com.minhquan.QuanLyVuaCa.entity.Phieunhap;
-import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToan;
 import com.minhquan.QuanLyVuaCa.repository.projection.ThongKeLoaiCaProjection;
 import com.minhquan.QuanLyVuaCa.repository.projection.TonKhoConHanProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -82,17 +81,6 @@ public interface ChitietphieunhapRepository extends JpaRepository<Chitietphieunh
     """)
     BigDecimal tongTienNhapTrongKhoang(@Param("tuNgay") LocalDate tuNgay,
                                        @Param("denNgay") LocalDate denNgay);
-
-    @Query("""
-        SELECT COALESCE(SUM(ct.soluongnhap * ct.gianhap), 0)
-        FROM Chitietphieunhap ct
-        WHERE ct.idphieunhap.ngaynhap BETWEEN :tuNgay AND :denNgay
-          AND ct.idphieunhap.trangthaithanhtoan = :trangThai
-    """)
-    BigDecimal tongTienNhapDaThanhToanTrongKhoang(
-            @Param("tuNgay") LocalDate tuNgay,
-            @Param("denNgay") LocalDate denNgay,
-            @Param("trangThai") TrangThaiThanhToan trangThai);
 
     @Query("""
         SELECT ct.idchitietcaban.idloaica.id AS idLoaiCa,

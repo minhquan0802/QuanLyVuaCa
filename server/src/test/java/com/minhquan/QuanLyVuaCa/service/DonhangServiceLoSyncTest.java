@@ -46,6 +46,7 @@ class DonhangServiceLoSyncTest {
     @Mock ChitietdonhangRepository chitietdonhangRepository;
     @Mock ChitietcabanRepository chitietcabanRepository;
     @Mock ChitietphieunhapRepository chitietphieunhapRepository;
+    @Mock PhanBoXuatKhoRepository phanBoXuatKhoRepository;
     @Mock DonvitinhRepository donvitinhRepository;
     @Mock TaiKhoanRepository taikhoanRepository;
     @Mock DonhangMapper donhangMapper;
@@ -58,8 +59,8 @@ class DonhangServiceLoSyncTest {
     @BeforeEach
     void setUp() {
         donhangService = new DonhangService(donhangRepository, chitietdonhangRepository, chitietcabanRepository,
-                chitietphieunhapRepository, donvitinhRepository, taikhoanRepository, donhangMapper, congNoService,
-                banggiaRepository, thongBaoService);
+                chitietphieunhapRepository, phanBoXuatKhoRepository, donvitinhRepository, taikhoanRepository,
+                donhangMapper, congNoService, banggiaRepository, thongBaoService);
         lenient().when(chitietphieunhapRepository.tongTonConLaiTheoSanPham(any()))
                 .thenAnswer(invocation -> {
                     Chitietcaban sanPham = invocation.getArgument(0);

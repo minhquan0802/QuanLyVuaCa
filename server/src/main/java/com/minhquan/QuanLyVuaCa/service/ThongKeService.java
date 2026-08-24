@@ -48,6 +48,8 @@ public class ThongKeService {
     ChitietphieuthanhlyRepository chitietphieuthanhlyRepository;
     DonhangRepository donhangRepository;
     TaiKhoanRepository taiKhoanRepository;
+    PhieunhapRepository phieunhapRepository;
+    ThanhToanNhaCungCapRepository thanhToanNhaCungCapRepository;
     PhieuthanhlyService phieuthanhlyService;
 
     // --- KHU VỰC 1: KPI TÀI CHÍNH VÀ VẬN HÀNH ---
@@ -62,11 +64,15 @@ public class ThongKeService {
 
         BigDecimal chiPhiNhapHang = chitietphieunhapRepository.tongTienNhapTrongKhoang(
                 tuNgay.toLocalDate(), denNgay.toLocalDate());
+        // Tiền THỰC TRẢ cho hàng nhập trong kỳ, không phải "tổng giá trị những phiếu đã tất toán".
+        // Cách cũ lọc theo cờ nhị phân trangthaithanhtoan nên phiếu 25tr đã trả 10tr đóng góp 0đ —
+        // với nhà cung cấp cho trả góp, con số luôn báo thiếu.
         BigDecimal chiPhiNhapDaThanhToan =
-                chitietphieunhapRepository.tongTienNhapDaThanhToanTrongKhoang(
-                        tuNgay.toLocalDate(),
-                        denNgay.toLocalDate(),
-                        TrangThaiThanhToan.DA_THANH_TOAN);
+                soHoacKhong(thanhToanNhaCungCapRepository.tongDaTraChoPhieuNhapTrongKhoang(
+                        tuNgay.toLocalDate(), denNgay.toLocalDate()))
+                .add(soHoacKhong(phieunhapRepository.tongPhieuDaTraNhungChuaCoSoThanhToan(
+                        tuNgay.toLocalDate(), denNgay.toLocalDate(),
+                        TrangThaiThanhToan.DA_THANH_TOAN)));
 
         BigDecimal thuTuBanThanhLy = chitietphieuthanhlyRepository.tongTienThanhLyTrongKhoang(
                 toInstant(tuNgay), toInstant(denNgay));
@@ -220,8 +226,8 @@ public class ThongKeService {
         List<List<Object>> rows = List.of(
                 List.of("Thu từ bán thanh lý", soHoacKhong(data.getThuTuBanThanhLy()), "Không bao gồm tiêu hủy"),
                 List.of("Chi phí nhập hàng", soHoacKhong(data.getChiPhiNhapHang()), "Giá trị phiếu nhập phát sinh trong kỳ"),
-                List.of("Chi phí nhập đã thanh toán", soHoacKhong(data.getChiPhiNhapDaThanhToan()), "Phần đã xác nhận thanh toán"),
-                List.of("Chi phí nhập chưa thanh toán", chuaThanhToan, "Chi phí nhập trừ phần đã thanh toán")
+                List.of("Chi phí nhập đã thanh toán", soHoacKhong(data.getChiPhiNhapDaThanhToan()), "Tiền thực trả cho phiếu nhập trong kỳ, gồm cả trả từng phần"),
+                List.of("Chi phí nhập còn nợ", chuaThanhToan, "Chi phí nhập trừ phần đã trả")
         );
         int rowIndex = dongTieuDe + 1;
         for (List<Object> values : rows) {

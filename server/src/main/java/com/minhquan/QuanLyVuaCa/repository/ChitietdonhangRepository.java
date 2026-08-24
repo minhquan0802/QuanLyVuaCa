@@ -12,6 +12,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.minhquan.QuanLyVuaCa.repository.projection.HaoHutCanProjection;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,6 +37,32 @@ public interface ChitietdonhangRepository extends JpaRepository<Chitietdonhang, 
             @Param("kho") Chitietcaban kho,
             @Param("trangThais") List<TrangThaiDonHang> trangThais,
             @Param("idDonhangHienTai") String idDonhangHienTai);
+
+    // --- Dùng cho báo cáo hao hụt cân ---
+
+    // So sánh khối lượng ước lượng theo định mức (soluong * sokgtuongung) với khối lượng cân thật
+    // lúc đóng hàng, gộp theo loại cá x size. Cặp dữ liệu này đã nằm sẵn trong bảng từ lâu nhưng
+    // chưa từng được đối chiếu ở bất kỳ báo cáo nào.
+    @Query("""
+        SELECT ccb.idloaica.id AS idLoaiCa,
+               ccb.idloaica.tenloaica AS tenLoaiCa,
+               ccb.idsizeca.sizeca AS tenSize,
+               COALESCE(SUM(ct.khoiluongdukien), 0) AS tongKgDuKien,
+               COALESCE(SUM(ct.khoiluongthucte), 0) AS tongKgThucTe,
+               COUNT(ct) AS soDongDon
+        FROM Chitietdonhang ct
+        JOIN ct.idchitietcaban ccb
+        WHERE ct.iddonhang.trangthaidonhang = :trangThai
+          AND ct.iddonhang.ngaydat BETWEEN :tuNgay AND :denNgay
+          AND ct.khoiluongthucte IS NOT NULL
+          AND ct.khoiluongdukien IS NOT NULL
+          AND ct.khoiluongdukien > 0
+        GROUP BY ccb.idloaica.id, ccb.idloaica.tenloaica, ccb.idsizeca.sizeca
+        ORDER BY ccb.idloaica.tenloaica, ccb.idsizeca.sizeca
+    """)
+    List<HaoHutCanProjection> thongKeHaoHutCan(@Param("trangThai") TrangThaiDonHang trangThai,
+                                               @Param("tuNgay") LocalDateTime tuNgay,
+                                               @Param("denNgay") LocalDateTime denNgay);
 
     // --- Dùng cho Dashboard thống kê ---
 

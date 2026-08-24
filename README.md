@@ -62,10 +62,14 @@ Sau đó import bản schema và dữ liệu phù hợp với phiên bản code 
 Backend sử dụng:
 
 ```yaml
-spring.jpa.hibernate.ddl-auto: validate
+spring.jpa.hibernate.ddl-auto: update
 ```
 
-Do đó, Hibernate chỉ kiểm tra cấu trúc và không tự tạo hoặc tự cập nhật bảng. Ứng dụng sẽ không khởi động nếu database thiếu bảng/cột, còn sử dụng tên bảng cũ hoặc không đúng ràng buộc được khai báo trong Entity.
+Hibernate tự tạo bảng và cột còn thiếu khi khởi động, nên không cần chạy DDL thủ công mỗi lần thêm Entity mới.
+
+Cần lưu ý giới hạn của `update`: nó chỉ **thêm** bảng/cột, không bao giờ đổi kiểu dữ liệu, không xóa cột thừa và không chạy được các lệnh nạp lại dữ liệu. Những thay đổi dạng đó vẫn phải viết SQL tay — xem `docs/migration-cong-no-ncc-bao-cao-nhat-ky.sql`, trong đó phần backfill `phieunhap.tongtien` cho phiếu nhập cũ bắt buộc phải chạy riêng.
+
+Khi triển khai production nên cân nhắc đổi lại thành `validate` và chạy script migration, để tránh Hibernate tự sửa schema ngoài tầm kiểm soát.
 
 Phiên bản hiện tại không còn bảng `quydoikhoiluong`. Trường `sokgtuongung` được lưu trực tiếp trong bảng `chitietsanpham`.
 
@@ -225,6 +229,9 @@ Khi Backend đang chạy với cấu hình mẫu:
 | Công nợ | Hạn mức tín dụng, tăng/giảm nợ, khóa đặt hàng và lịch sử công nợ khách sỉ |
 | Thông báo | Gửi và nhận thông báo thời gian thực bằng SSE |
 | Dashboard | Doanh thu đơn hàng, thu thanh lý, chi phí nhập, lô quá hạn, luân chuyển hàng hóa và đơn hàng trong kỳ |
+| Công nợ nhà cung cấp | Hạn trả theo từng nhà cung cấp, trả tiền từng phần, sổ cái biến động nợ và nhắc trước hạn |
+| Báo cáo lãi/lỗ | Giá vốn hàng bán theo lô, biên lợi nhuận theo sản phẩm và theo lô, hao hụt cân dự kiến so với thực tế — nằm trong Dashboard, dùng chung bộ lọc thời gian |
+| Nhật ký thao tác | Ghi vết các thao tác tác động tới tiền và quyền, tra cứu theo bản ghi hoặc theo người thực hiện |
 
 ## Chạy kiểm thử
 

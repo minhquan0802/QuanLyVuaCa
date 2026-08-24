@@ -45,6 +45,7 @@ class PhieunhapServiceTest {
     @Mock PhieunhapMapper phieunhapMapper;
     @Mock ChitietphieunhapMapper chitietphieunhapMapper;
     @Mock BanggiaRepository banggiaRepository;
+    @Mock CongNoNccService congNoNccService;
 
     PhieunhapService phieunhapService;
     Loaica loaiCa;
@@ -55,7 +56,8 @@ class PhieunhapServiceTest {
     void setUp() {
         phieunhapService = new PhieunhapService(phieunhapRepository, chitietphieunhapRepository,
                 chitietcabanRepository, nhacungcapRepository, loaicaRepository, sizecaRepository,
-                taiKhoanRepository, phieunhapMapper, chitietphieunhapMapper, banggiaRepository);
+                taiKhoanRepository, congNoNccService, phieunhapMapper, chitietphieunhapMapper,
+                banggiaRepository);
 
         loaiCa = new Loaica();
         loaiCa.setId(1);

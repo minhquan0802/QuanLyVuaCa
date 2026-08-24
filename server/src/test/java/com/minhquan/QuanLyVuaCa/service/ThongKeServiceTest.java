@@ -33,6 +33,8 @@ class ThongKeServiceTest {
     @Mock ChitietphieuthanhlyRepository chitietphieuthanhlyRepository;
     @Mock DonhangRepository donhangRepository;
     @Mock TaiKhoanRepository taiKhoanRepository;
+    @Mock PhieunhapRepository phieunhapRepository;
+    @Mock ThanhToanNhaCungCapRepository thanhToanNhaCungCapRepository;
     @Mock PhieuthanhlyService phieuthanhlyService;
 
     ThongKeService service;
@@ -42,7 +44,8 @@ class ThongKeServiceTest {
         service = new ThongKeService(loaicaRepository, chitietcabanRepository,
                 chitietphieunhapRepository, chitietdonhangRepository,
                 chitietphieuthanhlyRepository, donhangRepository,
-                taiKhoanRepository, phieuthanhlyService);
+                taiKhoanRepository, phieunhapRepository, thanhToanNhaCungCapRepository,
+                phieuthanhlyService);
     }
 
     @Test
@@ -107,7 +110,8 @@ class ThongKeServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.tinhTongQuan("CUSTOM", null, LocalDate.of(2026, 6, 30)));
         verifyNoInteractions(chitietdonhangRepository, chitietphieunhapRepository,
-                chitietphieuthanhlyRepository, donhangRepository);
+                chitietphieuthanhlyRepository, donhangRepository,
+                phieunhapRepository, thanhToanNhaCungCapRepository);
     }
 
     @Test
