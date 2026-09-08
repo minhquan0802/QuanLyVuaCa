@@ -38,7 +38,7 @@ public class GioHangService {
     DonhangRepository donhangRepository;
     ChitietdonhangRepository chitietdonhangRepository;
 
-    // ── Lấy hoặc tạo giỏ hàng đang hoạt động của taikhoan hiện tại ──────────────
+    // Lấy hoặc tạo giỏ hàng đang hoạt động của taikhoan hiện tại
     private GioHang layHoacTaoGioHang(Taikhoan taikhoan) {
         return gioHangRepository
                 .findByIdtaikhoan_IdtaikhoanAndTrangthai(taikhoan.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
@@ -56,7 +56,7 @@ public class GioHangService {
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
     }
 
-    // ── Map sang Response, tính giá real-time ────────────────────────────────
+    // Map sang Response, tính giá real-time
     private GioHangResponse xayDungGioHangResponse(GioHang gioHang, boolean laKhachSi) {
         List<ChitietGioHang> danhSachMuc = chitietGioHangRepository.findByIdgiohang_Idgiohang(gioHang.getIdgiohang());
         BigDecimal tongTien = BigDecimal.ZERO;
@@ -107,7 +107,7 @@ public class GioHangService {
                 .orElse(BigDecimal.ZERO);
     }
 
-    // ── 1. Lấy giỏ hàng ──────────────────────────────────────────────────────
+    //  1. Lấy giỏ hàng
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse layGioHang() {
@@ -118,7 +118,7 @@ public class GioHangService {
                 .orElse(GioHangResponse.builder().items(List.of()).tongTien(BigDecimal.ZERO).build());
     }
 
-    // ── 2. Thêm sản phẩm vào giỏ ─────────────────────────────────────────────
+    //  2. Thêm sản phẩm vào giỏ
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse themSanPham(ThemVaoGioHangRequest request) {
@@ -157,7 +157,7 @@ public class GioHangService {
         return xayDungGioHangResponse(gioHang, laKhachSi);
     }
 
-    // ── 3. Cập nhật số lượng (soluong = 0 → xóa luôn) ───────────────────────
+    // 3. Cập nhật số lượng (soluong = 0 thì xóa luôn)
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse capNhatSoLuong(String idChitietGioHang, CapNhatSoLuongRequest request) {
@@ -175,7 +175,7 @@ public class GioHangService {
         return xayDungGioHangResponse(muc.getIdgiohang(), laKhachSi);
     }
 
-    // ── 4. Xóa 1 sản phẩm khỏi giỏ ──────────────────────────────────────────
+    // 4. Xóa 1 sản phẩm khỏi giỏ
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public GioHangResponse xoaSanPham(String idChitietGioHang) {
@@ -190,7 +190,7 @@ public class GioHangService {
         return xayDungGioHangResponse(gioHang, laKhachSi);
     }
 
-    // ── 5. Xóa toàn bộ giỏ ───────────────────────────────────────────────────
+    // 5. Xóa toàn bộ giỏ
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public void xoaToGioHang() {
