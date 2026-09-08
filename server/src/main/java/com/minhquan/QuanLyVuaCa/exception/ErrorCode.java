@@ -119,6 +119,33 @@ public enum ErrorCode {
     VUOT_HAN_MUC_TIN_DUNG(1044, "Đơn hàng dự kiến sẽ vượt hạn mức tín dụng", HttpStatus.CONFLICT),
     TAIKHOAN_BI_KHOA_DAT_HANG(1045, "Tài khoản đang bị khóa đặt hàng do quá hạn công nợ", HttpStatus.FORBIDDEN),
 
+    // ===== CÔNG NỢ NHÀ CUNG CẤP =====
+    PHIEUNHAP_KHONG_THUOC_NCC(1095, "Phiếu nhập không thuộc nhà cung cấp này", HttpStatus.BAD_REQUEST),
+    SOTIEN_VUOT_QUA_CONG_NO_NCC(1096, "Số tiền thanh toán vượt quá số còn nợ của phiếu nhập", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_DIACHI_INVALID(1097, "Địa chỉ nhà cung cấp không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_EMAIL_INVALID(1098, "Email nhà cung cấp không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_MASOTHUE_INVALID(1099, "Mã số thuế nhà cung cấp không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_NGUOILIENHE_INVALID(1100, "Người liên hệ không hợp lệ", HttpStatus.BAD_REQUEST),
+    NHACUNGCAP_HANTRA_INVALID(1101, "Hạn trả mặc định không hợp lệ", HttpStatus.BAD_REQUEST),
+
+    // ===== BÁO CÁO LÃI/LỖ =====
+    KHOANG_THOI_GIAN_INVALID(1102, "Khoảng thời gian báo cáo không hợp lệ", HttpStatus.BAD_REQUEST),
+
+    // ===== ĐẶT LẠI ĐƠN & LỊCH ĐẶT ĐỊNH KỲ =====
+    DONHANG_KHONG_THUOC_VE_BAN(1103, "Đơn hàng này không thuộc về bạn", HttpStatus.FORBIDDEN),
+    DONHANG_KHONG_CO_SAN_PHAM_DAT_LAI(1104, "Không còn sản phẩm nào trong đơn cũ có thể đặt lại", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_NOT_EXISTED(1105, "Không tìm thấy lịch đặt hàng định kỳ", HttpStatus.NOT_FOUND),
+    LICH_DINH_KY_KHONG_THUOC_VE_BAN(1106, "Lịch đặt hàng này không thuộc về bạn", HttpStatus.FORBIDDEN),
+    LICH_DINH_KY_CHI_DANH_CHO_KHACH_SI(1107, "Đặt hàng định kỳ chỉ dành cho khách sỉ", HttpStatus.FORBIDDEN),
+    LICH_DINH_KY_TEN_INVALID(1108, "Tên lịch không hợp lệ", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_THIEU_NGAY(1109, "Phải chọn ít nhất một thứ trong tuần", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_NGAY_TRONG_TUAN_INVALID(1110, "Thứ trong tuần chỉ nhận giá trị từ 1 (thứ Hai) đến 7 (Chủ nhật)", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_THIEU_SAN_PHAM(1111, "Lịch đặt hàng phải có ít nhất một sản phẩm", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_THIEU_DON_VI_TINH(1112, "Thiếu đơn vị tính cho sản phẩm trong lịch", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_SO_LUONG_INVALID(1113, "Số lượng trong lịch phải lớn hơn 0", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_GHICHU_INVALID(1114, "Ghi chú không hợp lệ", HttpStatus.BAD_REQUEST),
+    LICH_DINH_KY_KHOANG_NGAY_INVALID(1115, "Ngày kết thúc phải sau ngày bắt đầu", HttpStatus.BAD_REQUEST),
+
     // ===== THÔNG BÁO =====
     THONGBAO_NOT_EXISTED(1042, "Thông báo không tồn tại", HttpStatus.NOT_FOUND);
 

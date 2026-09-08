@@ -36,4 +36,14 @@ public class NhacungcapController {
                 .result(nhacungcapService.taoMoi(request))
                 .build();
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<NhacungcapResponse> capNhat(@PathVariable Integer id,
+                                                   @RequestBody @Valid NhacungcapRequest request) {
+        return ApiResponse.<NhacungcapResponse>builder()
+                .message("Cập nhật nhà cung cấp thành công")
+                .result(nhacungcapService.capNhat(id, request))
+                .build();
+    }
 }

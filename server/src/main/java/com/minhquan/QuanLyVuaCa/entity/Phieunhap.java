@@ -38,6 +38,16 @@ public class Phieunhap {
     @Column(name = "tongsoluong", precision = 12, scale = 2)
     private BigDecimal tongsoluong;
 
+    // Chốt cứng tại thời điểm nhập. Trước đây tổng tiền được tính động từ
+    // SUM(gianhap * soluongnhap) của chi tiết — sửa giá nhập về sau là sổ công nợ NCC lệch ngay
+    // mà không để lại dấu vết. Cùng nguyên tắc với Lichsucongno.sodusaukhithaydoi.
+    @Column(name = "tongtien", precision = 18, scale = 2)
+    private BigDecimal tongtien = BigDecimal.ZERO;
+
+    // Hạn phải trả tiền cho NCC = ngaynhap + Nhacungcap.hantramacdinh (có thể chỉnh tay).
+    @Column(name = "hantra")
+    private LocalDate hantra;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "trangthaithanhtoan", columnDefinition = "ENUM('CHUA_THANH_TOAN','DA_THANH_TOAN')")
     private TrangThaiThanhToan trangthaithanhtoan;

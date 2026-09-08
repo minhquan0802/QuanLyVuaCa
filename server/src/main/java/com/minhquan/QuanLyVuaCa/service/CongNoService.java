@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.service;
 
+import com.minhquan.QuanLyVuaCa.annotation.GhiNhatKy;
 import com.minhquan.QuanLyVuaCa.dto.response.CongNoKhachResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.LichSuCongNoResponse;
 import com.minhquan.QuanLyVuaCa.entity.Donhang;
@@ -354,6 +355,7 @@ public class CongNoService {
     }
 
     @Transactional
+    @GhiNhatKy(bang = "taikhoan", hanhDong = "DOI_HAN_MUC_TIN_DUNG")
     public void capNhatHanMuc(String idtaikhoan, BigDecimal hanMucMoi) {
         Taikhoan khach = taiKhoanRepository.timTheoIdDeKhoa(idtaikhoan)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
@@ -389,6 +391,7 @@ public class CongNoService {
     }
 
     @Transactional
+    @GhiNhatKy(bang = "taikhoan", hanhDong = "DIEU_CHINH_CONG_NO")
     public void dieuChinhThuCong(String idtaikhoan, BigDecimal sotien, boolean tang, String ghichu) {
         Taikhoan khach = taiKhoanRepository.timTheoIdDeKhoa(idtaikhoan)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));
@@ -414,6 +417,7 @@ public class CongNoService {
     }
 
     @Transactional
+    @GhiNhatKy(bang = "taikhoan", hanhDong = "MO_KHOA_DAT_HANG")
     public void moKhoaThuCong(String idtaikhoan, String ghichu) {
         Taikhoan khach = taiKhoanRepository.timTheoIdDeKhoa(idtaikhoan)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.USER_NOT_EXISTED));

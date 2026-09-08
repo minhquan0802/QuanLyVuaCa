@@ -21,11 +21,15 @@ export default function AdminSidebar() {
         { label: "Quản lý Tài Khoản", path: "/admin/QuanLyTaiKhoan", adminOnly: true  },
         { label: "Quản lý Đơn Hàng",  path: "/admin/QuanLyDonHang",  adminOnly: false },
         { label: "Quản lý Công Nợ",   path: "/admin/QuanLyCongNo",   adminOnly: false },
+        { label: "Công Nợ Nhà Cung Cấp", path: "/admin/QuanLyCongNoNCC", adminOnly: false },
+        { label: "Nhật Ký Thao Tác",  path: "/admin/NhatKyThaoTac",  adminOnly: true  },
     ].filter(item => isAdmin || !item.adminOnly);
 
     const isActive = (path) => {
         if (path === "/admin" && location.pathname !== "/admin") return false;
-        return location.pathname.startsWith(path);
+        // So khớp nguyên đoạn đường dẫn, không dùng startsWith trần: "/admin/QuanLyCongNo" là tiền
+        // tố của "/admin/QuanLyCongNoNCC" nên sẽ làm sáng nhầm cả hai mục menu.
+        return location.pathname === path || location.pathname.startsWith(path + "/");
     };
 
     return (

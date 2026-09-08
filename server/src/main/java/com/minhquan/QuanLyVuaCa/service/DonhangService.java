@@ -1,5 +1,6 @@
 package com.minhquan.QuanLyVuaCa.service;
 
+import com.minhquan.QuanLyVuaCa.annotation.GhiNhatKy;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiCa;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiDonHang;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiThanhToanDonHang;
@@ -30,9 +31,12 @@ import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -46,6 +50,7 @@ public class DonhangService {
     ChitietdonhangRepository chitietdonhangRepository;
     ChitietcabanRepository chitietcabanRepository;
     ChitietphieunhapRepository chitietphieunhapRepository;
+    PhanBoXuatKhoRepository phanBoXuatKhoRepository;
     DonvitinhRepository donvitinhRepository;
     TaiKhoanRepository taikhoanRepository;
     DonhangMapper donhangMapper;
@@ -112,6 +117,8 @@ public class DonhangService {
         if (request.getChiTietDonHang() != null && !request.getChiTietDonHang().isEmpty()) {
 
             List<Chitietdonhang> danhSachChiTiet = new ArrayList<>();
+            // Giữ phân bổ lô theo từng dòng đơn cho tới khi dòng đơn có ID thật (sau saveAll).
+            Map<Chitietdonhang, List<PhanBoXuatKho>> phanBoChoDongDon = new LinkedHashMap<>();
 
             for (ChitietDonhangRequest ctdhRequest : request.getChiTietDonHang()) {
                 Chitietdonhang ct = donhangMapper.toChitietEntity(ctdhRequest);
@@ -189,7 +196,9 @@ public class DonhangService {
                                 + " không đủ hàng! (Có thể bán: " + tonCoTheBan + ", Đặt: " + luongCanTru + ")");
                     }
 
-                    truLoFifo(chitietcabanCuoi, luongCanTru);
+                    // ct chưa có ID ở thời điểm này (chưa saveAll), nên giữ phân bổ lại và gắn
+                    // dòng đơn hàng sau khi lưu — xem ngay dưới vòng lặp.
+                    phanBoChoDongDon.put(ct, truLoFifo(chitietcabanCuoi, luongCanTru));
                     chitietcabanCuoi.setSoluongton(chitietcabanCuoi.getSoluongton().subtract(luongCanTru));
                     chitietcabanRepository.save(chitietcabanCuoi);
                 }
@@ -202,6 +211,7 @@ public class DonhangService {
 
             if (!danhSachChiTiet.isEmpty()) {
                 chitietdonhangRepository.saveAll(danhSachChiTiet);
+                phanBoChoDongDon.forEach(this::luuPhanBo);
             }
         }
 
@@ -433,6 +443,7 @@ public class DonhangService {
     //   - Sang "Giao thành công" -> báo công nợ tăng (dùng chung đường với xacNhanNhanHang()).
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @GhiNhatKy(bang = "donhang", hanhDong = "DOI_TRANG_THAI_DON_HANG")
     public DonhangResponse capNhatTrangThai(String id, TrangThaiDonHang trangThaiMoi) {
         Donhang donhang = donhangRepository.findById(id)
                 .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED, "Không tìm thấy đơn hàng ID: " + id));
@@ -501,7 +512,7 @@ public class DonhangService {
                 }
 
                 if (luongCanTru.compareTo(BigDecimal.ZERO) > 0) {
-                    truLoFifo(kho, luongCanTru);
+                    luuPhanBo(ctdh, truLoFifo(kho, luongCanTru));
                     kho.setSoluongton(kho.getSoluongton().subtract(luongCanTru));
                     chitietcabanRepository.save(kho);
                 }
@@ -529,7 +540,7 @@ public class DonhangService {
                 BigDecimal luongHoanTra = ctdh.getKhoiluongthucte() != null ? ctdh.getKhoiluongthucte() : BigDecimal.ZERO;
                 if (luongHoanTra.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-                hoanTraLoFifo(kho, luongHoanTra);
+                luuPhanBo(ctdh, hoanTraLoFifo(kho, luongHoanTra));
                 kho.setSoluongton(kho.getSoluongton().add(luongHoanTra));
                 chitietcabanRepository.save(kho);
             }
@@ -647,7 +658,7 @@ public class DonhangService {
             }
 
             // Phân bổ trừ theo từng lô (FIFO) để biết lô nào còn lại bao nhiêu
-            truLoFifo(sanphamTrongKho, soLuongCanTru);
+            luuPhanBo(chitiet, truLoFifo(sanphamTrongKho, soLuongCanTru));
 
             // Trừ và Lưu tồn kho tổng
             sanphamTrongKho.setSoluongton(sanphamTrongKho.getSoluongton().subtract(soLuongCanTru));
@@ -665,17 +676,20 @@ public class DonhangService {
 
     // Trừ dần soluongconlai của tất cả lô còn hàng, bao gồm cả lô quá hạn.
     // Lô nhập trước (ngaynhap cũ hơn) bị trừ trước nên hàng quá hạn/cũ được ưu tiên xuất trước.
-    private void truLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
+    private List<PhanBoXuatKho> truLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongCanTru) {
         List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
                 .findByIdchitietcabanAndSoluongconlaiGreaterThanOrderByIdphieunhap_NgaynhapAsc(
                         sanphamTrongKho, BigDecimal.ZERO);
-        truSoLuongTrongDanhSachLo(sanphamTrongKho, danhSachLo, soLuongCanTru);
+        return truSoLuongTrongDanhSachLo(sanphamTrongKho, danhSachLo, soLuongCanTru);
     }
 
-    private void truSoLuongTrongDanhSachLo(
+    // Trả về danh sách phân bổ (chưa gắn dòng đơn hàng). Đây chính là thông tin mà trước đây bị
+    // vứt đi ngay sau khi trừ soluongconlai — mất nó thì giá vốn không còn tính ngược được nữa.
+    private List<PhanBoXuatKho> truSoLuongTrongDanhSachLo(
             Chitietcaban sanphamTrongKho,
             List<Chitietphieunhap> danhSachLo,
             BigDecimal soLuongCanTru) {
+        List<PhanBoXuatKho> phanBos = new ArrayList<>();
         BigDecimal conLai = soLuongCanTru;
         for (Chitietphieunhap lo : danhSachLo) {
             if (conLai.compareTo(BigDecimal.ZERO) <= 0) break;
@@ -687,6 +701,8 @@ public class DonhangService {
             }
             chitietphieunhapRepository.save(lo);
 
+            phanBos.add(taoPhanBo(lo, laySoLuong));
+
             conLai = conLai.subtract(laySoLuong);
         }
 
@@ -695,15 +711,37 @@ public class DonhangService {
                     " (Size: " + sanphamTrongKho.getIdsizeca().getSizeca() +
                     ") không khớp với tồn kho tổng - thiếu " + conLai);
         }
+
+        return phanBos;
+    }
+
+    // Giá nhập được chốt cứng vào bản ghi phân bổ: sửa gianhap của lô về sau không được phép làm
+    // thay đổi giá vốn của những đơn đã bán rồi.
+    private PhanBoXuatKho taoPhanBo(Chitietphieunhap lo, BigDecimal soLuong) {
+        PhanBoXuatKho phanBo = new PhanBoXuatKho();
+        phanBo.setIdchitietphieunhap(lo);
+        phanBo.setSoluong(soLuong);
+        phanBo.setGianhaptaithoidiem(lo.getGianhap() != null ? lo.getGianhap() : BigDecimal.ZERO);
+        phanBo.setNgaytao(Instant.now());
+        return phanBo;
+    }
+
+    // Gắn dòng đơn hàng vào các phân bổ rồi lưu. Bỏ qua khi không có ngữ cảnh đơn hàng (vd
+    // dongBoLaiTonKhoTheoLo() — đó là thao tác đối soát kho, không phải bán hàng).
+    private void luuPhanBo(Chitietdonhang ctdh, List<PhanBoXuatKho> phanBos) {
+        if (ctdh == null || phanBos == null || phanBos.isEmpty()) return;
+        phanBos.forEach(phanBo -> phanBo.setIdchitietdonhang(ctdh));
+        phanBoXuatKhoRepository.saveAll(phanBos);
     }
 
     // Hoàn trả vào lô khi cân thực tế nhẹ hơn dự kiến (xem capNhatThucTeDonHang) — ưu tiên hoàn vào lô
     // vừa bị trừ gần đây nhất (ngaynhap mới nhất trước, ngược lại với FIFO lúc trừ). Bỏ qua lô đã
     // THANH_LY vì phần đó là hao hụt đã chốt sổ, không phải hàng còn bán được.
-    private void hoanTraLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongHoanTra) {
+    private List<PhanBoXuatKho> hoanTraLoFifo(Chitietcaban sanphamTrongKho, BigDecimal soLuongHoanTra) {
         List<Chitietphieunhap> danhSachLo = chitietphieunhapRepository
                 .findByIdchitietcabanOrderByIdphieunhap_NgaynhapDesc(sanphamTrongKho);
 
+        List<PhanBoXuatKho> phanBos = new ArrayList<>();
         BigDecimal conLai = soLuongHoanTra;
         for (Chitietphieunhap lo : danhSachLo) {
             if (conLai.compareTo(BigDecimal.ZERO) <= 0) break;
@@ -720,9 +758,13 @@ public class DonhangService {
             }
             chitietphieunhapRepository.save(lo);
 
+            // Bút toán âm: giá vốn của dòng đơn phải giảm tương ứng, nếu không hàng đã trả lại lô
+            // vẫn bị tính là đã bán.
+            phanBos.add(taoPhanBo(lo, traLai.negate()));
+
             conLai = conLai.subtract(traLai);
         }
-
+    
         // Hiếm khi xảy ra (chỉ khi lô đã lệch sẵn từ trước) — hoàn phần còn dư vào lô mới nhất
         // để không làm thất lạc số lượng, chấp nhận lô đó vượt nhẹ so với soluongnhap ban đầu.
         if (conLai.compareTo(BigDecimal.ZERO) > 0 && !danhSachLo.isEmpty()) {
@@ -733,7 +775,10 @@ public class DonhangService {
                 loMoiNhat.setTrangthaica(TrangThaiCa.CON_HANG);
             }
             chitietphieunhapRepository.save(loMoiNhat);
+            phanBos.add(taoPhanBo(loMoiNhat, conLai.negate()));
         }
+
+        return phanBos;
     }
 
     // Chỉ đọc, không sửa gì: liệt kê kho tổng vs tổng lô còn hàng cho TỪNG sản phẩm, để xem trước
@@ -791,6 +836,7 @@ public class DonhangService {
             if (lech.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             try {
+                // Không gắn phân bổ: đây là thao tác đối soát kho, không phải bán hàng cho đơn nào.
                 truLoFifo(kho, lech);
             } catch (RuntimeException e) {
                 canhBao.add("Kho ID " + kho.getId() + " (" + kho.getIdloaica().getTenloaica() + " - "
@@ -808,6 +854,7 @@ public class DonhangService {
     // FIFO, nhẹ hơn -> hoàn lại lô gần nhất). Đơn giá/kg giữ nguyên, chỉ tính lại thành tiền theo
     // khối lượng thực tế, rồi cộng lại tổng tiền cả đơn.
     @Transactional
+    @GhiNhatKy(bang = "donhang", hanhDong = "SUA_KHOI_LUONG_THUC_TE")
     public void capNhatThucTeDonHang(String idDonhang, List<UpdateCanNangRequest> danhSachCapNhat) {
         // 1. Kiểm tra đơn hàng
         Donhang donhang = donhangRepository.findById(idDonhang)
@@ -857,9 +904,9 @@ public class DonhangService {
             // nặng hơn dự kiến -> trừ thêm vào lô (FIFO); âm = nhẹ hơn -> hoàn trả lại lô.
             BigDecimal chenhLech = slThucTeMoi.subtract(slThucTeCu);
             if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                truLoFifo(kho, chenhLech);
+                luuPhanBo(ctdh, truLoFifo(kho, chenhLech));
             } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
-                hoanTraLoFifo(kho, chenhLech.abs());
+                luuPhanBo(ctdh, hoanTraLoFifo(kho, chenhLech.abs()));
             }
 
             // --- B. CẬP NHẬT CHI TIẾT ĐƠN HÀNG ---

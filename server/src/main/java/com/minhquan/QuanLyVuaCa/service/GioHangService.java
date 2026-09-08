@@ -3,6 +3,7 @@ package com.minhquan.QuanLyVuaCa.service;
 import com.minhquan.QuanLyVuaCa.dto.request.CapNhatSoLuongRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.ThemVaoGioHangRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ChitietGioHangResponse;
+import com.minhquan.QuanLyVuaCa.dto.response.DatLaiDonHangResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.GioHangResponse;
 import com.minhquan.QuanLyVuaCa.entity.*;
 import com.minhquan.QuanLyVuaCa.enums.TrangThaiGioHang;
@@ -34,6 +35,8 @@ public class GioHangService {
     ChitietcabanRepository chitietcabanRepository;
     DonvitinhRepository donvitinhRepository;
     BanggiaRepository banggiaRepository;
+    DonhangRepository donhangRepository;
+    ChitietdonhangRepository chitietdonhangRepository;
 
     // Lấy hoặc tạo giỏ hàng đang hoạt động của taikhoan hiện tại
     private GioHang layHoacTaoGioHang(Taikhoan taikhoan) {
@@ -194,6 +197,75 @@ public class GioHangService {
         Taikhoan taikhoan = layTaiKhoanHienTai();
         gioHangRepository.findByIdtaikhoan_IdtaikhoanAndTrangthai(taikhoan.getIdtaikhoan(), TrangThaiGioHang.DANG_HOAT_DONG)
                 .ifPresent(gioHang -> chitietGioHangRepository.deleteByIdgiohang(gioHang.getIdgiohang()));
+    }
+
+    // ── 6. Đặt lại: nạp toàn bộ giỏ của một đơn cũ vào giỏ hàng hiện tại ─────
+    /**
+     * Đưa vào GIỎ HÀNG chứ không tạo thẳng đơn mới. Nhà hàng đặt lại đơn hôm qua thường vẫn cần
+     * sửa vài dòng — hôm nay khách đông hơn, hôm nay bỏ món cá lóc — nên chặng dừng ở giỏ là chỗ
+     * để sửa. Tạo đơn thẳng sẽ biến thao tác tiện lợi thành thao tác nguy hiểm.
+     *
+     * Cộng dồn với những gì đang có trong giỏ (dùng lại themSanPham), không xóa giỏ cũ: xóa dữ
+     * liệu khách đang gõ dở để nhường chỗ cho đơn cũ là mất mát không hỏi ý ai.
+     */
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public DatLaiDonHangResponse datLaiTuDonHang(String iddonhang) {
+        Taikhoan taikhoan = layTaiKhoanHienTai();
+
+        Donhang donhang = donhangRepository.findById(iddonhang)
+                .orElseThrow(() -> new AppExceptions(ErrorCode.DONHANG_NOT_EXISTED));
+
+        // Đơn của người khác thì không được xem giỏ, kể cả khi đoán trúng ID.
+        if (!taikhoan.getIdtaikhoan().equals(donhang.getIdthongtinkhachhang())) {
+            throw new AppExceptions(ErrorCode.DONHANG_KHONG_THUOC_VE_BAN);
+        }
+
+        List<String> boQua = new ArrayList<>();
+        int daThem = 0;
+
+        for (Chitietdonhang dong : chitietdonhangRepository.findByIddonhang(donhang)) {
+            Chitietcaban sanpham = dong.getIdchitietcaban();
+            if (sanpham == null) continue;
+
+            String tenSanPham = sanpham.getIdloaica().getTenloaica() + " - " + sanpham.getIdsizeca().getSizeca();
+
+            if (Boolean.TRUE.equals(sanpham.getDeleted())) {
+                boQua.add(tenSanPham + " (đã ngừng kinh doanh)");
+                continue;
+            }
+
+            // Không còn bảng giá hiệu lực thì phải bỏ qua ngay tại đây: thêm vào giỏ rồi mới phát
+            // hiện sẽ làm hỏng cả giỏ, vì dựng response giỏ hàng cần giá cho MỌI dòng.
+            boolean coGia = banggiaRepository.findByChitietcabanAndNgayketthucIsNull(sanpham)
+                    .map(bg -> {
+                        BigDecimal gia = ChinhSachGiaUtils.laKhachSi(taikhoan.getVaitro()) && bg.getGiabansi() != null
+                                ? bg.getGiabansi() : bg.getGiabanle();
+                        return gia != null && gia.compareTo(BigDecimal.ZERO) > 0;
+                    })
+                    .orElse(false);
+            if (!coGia) {
+                boQua.add(tenSanPham + " (chưa có giá bán)");
+                continue;
+            }
+
+            ThemVaoGioHangRequest yeuCau = new ThemVaoGioHangRequest();
+            yeuCau.setIdchitietcaban(sanpham.getId());
+            yeuCau.setIddonvitinh(dong.getIddonvitinh() != null ? dong.getIddonvitinh().getId() : 1);
+            yeuCau.setSoluong(dong.getSoluong() != null ? dong.getSoluong() : 1);
+            themSanPham(yeuCau);
+            daThem++;
+        }
+
+        if (daThem == 0) {
+            throw new AppExceptions(ErrorCode.DONHANG_KHONG_CO_SAN_PHAM_DAT_LAI);
+        }
+
+        return DatLaiDonHangResponse.builder()
+                .gioHang(layGioHang())
+                .soDongDaThem(daThem)
+                .boQua(boQua)
+                .build();
     }
 
 }

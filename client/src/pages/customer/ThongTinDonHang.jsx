@@ -7,6 +7,7 @@ import api from "../../config/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useConfirm } from "../../context/ConfirmContext";
 import { useToast } from "../../context/ToastContext";
+import { useCart } from "../../context/CartContext";
 
 const BANK_ID = import.meta.env.VITE_BANK_ID || "MB";
 const BANK_ACCOUNT = import.meta.env.VITE_BANK_ACCOUNT || "0123456789";
@@ -33,7 +34,9 @@ export default function ThongTinDonHang() {
     const { user } = useAuth();
     const { confirm, showAlert } = useConfirm();
     const { showToast } = useToast();
+    const { reorderFromOrder } = useCart();
     const isWholesale = user?.vaitro === "CUSTOMER";
+    const [reorderingId, setReorderingId] = useState(null);
 
     // --- STATE DỮ LIỆU CHÍNH ---
     const [orders, setOrders] = useState([]);
@@ -250,6 +253,16 @@ export default function ThongTinDonHang() {
                 message: error.response?.data?.message || error.message,
                 variant: "danger",
             });
+        }
+    };
+
+    const handleReorder = async (iddonhang) => {
+        setReorderingId(iddonhang);
+        try {
+            const thanhCong = await reorderFromOrder(iddonhang);
+            if (thanhCong) navigate("/cart");
+        } finally {
+            setReorderingId(null);
         }
     };
 
@@ -500,6 +513,20 @@ export default function ThongTinDonHang() {
                                                     >
                                                         <span className="material-symbols-outlined text-[16px]">payments</span>
                                                         Thanh toán
+                                                    </button>
+                                                )}
+                                                {/* Đặt lại: chỉ mở với đơn đã xong hoặc đã hủy. Đơn đang chạy
+                                                    mà bấm đặt lại gần như luôn là nhầm — khách tưởng đang sửa
+                                                    đơn cũ chứ không phải tạo thêm một đơn nữa. */}
+                                                {(order.trangthaidonhang === 'GIAO_HANG_THANH_CONG'
+                                                  || order.trangthaidonhang === 'HUY') && (
+                                                    <button
+                                                        onClick={() => handleReorder(order.iddonhang)}
+                                                        disabled={reorderingId === order.iddonhang}
+                                                        className="px-5 py-2 rounded bg-cyan-600 text-white text-sm font-bold hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">refresh</span>
+                                                        {reorderingId === order.iddonhang ? "Đang thêm..." : "Đặt lại"}
                                                     </button>
                                                 )}
                                                 <button

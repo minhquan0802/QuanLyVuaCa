@@ -21,7 +21,11 @@ public class Loaica {
     @Column(name = "tenloaica", length = 60)
     private String tenloaica;
 
-    @Column(name = "mieuta")
+    // Cột trong DB là TEXT. Không khai columnDefinition thì Hibernate mặc định varchar(255) và,
+    // với ddl-auto=update, mỗi lần khởi động lại cố "alter table sanpham modify column mieuta
+    // varchar(255)" — MySQL từ chối vì có mô tả dài hơn 255, để lại một ERROR trong log khởi động
+    // che mất những lỗi DDL thật.
+    @Column(name = "mieuta", columnDefinition = "TEXT")
     private String mieuta;
 
     @Column(name = "hinhanhurl")

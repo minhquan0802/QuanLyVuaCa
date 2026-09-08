@@ -14,6 +14,7 @@ import Profile from '../pages/customer/Profile';
 import OrderSuccess from '../pages/customer/OrderSuccess';
 import OrderFailed from '../pages/customer/OrderFailed';
 import ThongTinDonHang from '../pages/customer/ThongTinDonHang';
+import DatHangDinhKy from '../pages/customer/DatHangDinhKy';
 
 // Admin pages
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -34,6 +35,8 @@ import QuanLyThanhLy from '../pages/admin/QuanLyThanhLy';
 import TaoPhieuThanhLy from '../pages/admin/TaoPhieuThanhLy';
 import ThanhLyMotLo from '../pages/admin/ThanhLyMotLo';
 import QuanLyCongNo from '../pages/admin/QuanLyCongNo';
+import QuanLyCongNoNCC from '../pages/admin/QuanLyCongNoNCC';
+import NhatKyThaoTac from '../pages/admin/NhatKyThaoTac';
 
 // Components
 import ProtectedRoute from './ProtectedRoute';
@@ -72,6 +75,7 @@ export default function AppRoutes() {
                 <Route path='/order-success' element={<OrderSuccess />} />
                 <Route path='/order-failed' element={<OrderFailed />} />
                 <Route path='/my-orders' element={<ThongTinDonHang />} />
+                <Route path='/dat-hang-dinh-ky' element={<DatHangDinhKy />} />
             </Route>
 
             <Route element={<ProtectedRoute />}>
@@ -81,6 +85,7 @@ export default function AppRoutes() {
                 <Route path='/admin/QuanLyKho' element={<QuanLyKho />} />
                 <Route path='/admin/QuanLyKho/nhap-hang' element={<NhapHang />} />
                 <Route path='/admin/QuanLyCongNo' element={<QuanLyCongNo />} />
+                <Route path='/admin/QuanLyCongNoNCC' element={<QuanLyCongNoNCC />} />
 
                 <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
                     <Route path='/admin' element={<AdminDashboard />} />
@@ -93,6 +98,7 @@ export default function AppRoutes() {
                     <Route path='/admin/QuanLyTaiKhoan/them' element={<ThemSuaTaiKhoan />} />
                     <Route path='/admin/QuanLyTaiKhoan/sua/:id' element={<ThemSuaTaiKhoan />} />
                     <Route path='/admin/QuanLyBangGia' element={<QuanLyBangGia />} />
+                    <Route path='/admin/NhatKyThaoTac' element={<NhatKyThaoTac />} />
                     <Route path='/admin/QuanLyBangGia/them' element={<ThemBangGia />} />
                     <Route path='/admin/QuanLyThanhLy' element={<QuanLyThanhLy />} />
                     <Route path='/admin/QuanLyThanhLy/tao-phieu' element={<TaoPhieuThanhLy />} />

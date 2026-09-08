@@ -12,6 +12,8 @@ const LOAI_LABELS = {
     CONG_NO_BI_KHOA: "Công nợ bị khóa",
     CONG_NO_NGUY_HIEM: "Công nợ nguy hiểm",
     CONG_NO_CANH_BAO: "Công nợ cảnh báo",
+    CONG_NO_NCC_DEN_HAN: "Đến hạn trả nhà cung cấp",
+    DON_DINH_KY_LOI: "Đơn định kỳ sinh lỗi",
     TAI_KHOAN_CHO_DUYET: "Tài khoản chờ duyệt",
 };
 

@@ -3,6 +3,7 @@ package com.minhquan.QuanLyVuaCa.controller;
 import com.minhquan.QuanLyVuaCa.dto.request.CapNhatSoLuongRequest;
 import com.minhquan.QuanLyVuaCa.dto.request.ThemVaoGioHangRequest;
 import com.minhquan.QuanLyVuaCa.dto.response.ApiResponse;
+import com.minhquan.QuanLyVuaCa.dto.response.DatLaiDonHangResponse;
 import com.minhquan.QuanLyVuaCa.dto.response.GioHangResponse;
 import com.minhquan.QuanLyVuaCa.service.GioHangService;
 import jakarta.validation.Valid;
@@ -55,6 +56,25 @@ public class GioHangController {
                 .code(200)
                 .message("Đã xóa")
                 .result(gioHangService.xoaSanPham(id))
+                .build();
+    }
+
+    /**
+     * Đặt lại: nạp giỏ của một đơn cũ vào giỏ hàng hiện tại.
+     *
+     * Nằm ở /gio-hang chứ không ở /Donhangs vì kết quả của nó là một giỏ hàng — FE gọi xong thì
+     * chuyển sang trang giỏ, không phải trang đơn.
+     */
+    @PostMapping("/dat-lai/{iddonhang}")
+    public ApiResponse<DatLaiDonHangResponse> datLai(@PathVariable String iddonhang) {
+        DatLaiDonHangResponse ketQua = gioHangService.datLaiTuDonHang(iddonhang);
+        return ApiResponse.<DatLaiDonHangResponse>builder()
+                .code(200)
+                .message(ketQua.getBoQua().isEmpty()
+                        ? "Đã thêm lại " + ketQua.getSoDongDaThem() + " sản phẩm vào giỏ hàng"
+                        : "Đã thêm lại " + ketQua.getSoDongDaThem() + " sản phẩm, "
+                            + ketQua.getBoQua().size() + " sản phẩm không còn đặt được")
+                .result(ketQua)
                 .build();
     }
 

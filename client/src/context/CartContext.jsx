@@ -74,6 +74,33 @@ export function CartProvider({ children }) {
         }
     };
 
+    // Đặt lại: nạp giỏ của một đơn cũ vào giỏ hiện tại.
+    // Đi qua context thay vì gọi thẳng api từ trang đơn hàng, nếu không state giỏ ở đây sẽ cũ và
+    // badge số lượng trên Header đứng yên dù giỏ đã có thêm hàng.
+    const reorderFromOrder = async (iddonhang) => {
+        const accepted = await confirm({
+            title: "Đặt lại đơn này",
+            message: "Thêm toàn bộ sản phẩm của đơn cũ vào giỏ hàng? Giỏ hiện tại vẫn được giữ nguyên.",
+            confirmText: "Thêm vào giỏ",
+            variant: "primary",
+        });
+        if (!accepted) return false;
+        try {
+            const { data } = await api.post(`/gio-hang/dat-lai/${iddonhang}`);
+            setGioHang(data.result.gioHang);
+            showToast(data.message || "Đã thêm lại vào giỏ hàng!", "success");
+
+            // Sản phẩm ngừng kinh doanh / hết bảng giá được báo riêng: gộp chung vào toast thành công
+            // sẽ khiến khách lướt qua và tưởng giỏ đã đủ như đơn cũ.
+            (data.result.boQua || []).forEach(ten =>
+                showToast(`Không đặt lại được: ${ten}`, "error"));
+            return true;
+        } catch (err) {
+            showToast(err.response?.data?.message || "Không thể đặt lại đơn này!", "error");
+            return false;
+        }
+    };
+
     // Xóa toàn bộ giỏ (gọi sau khi đặt hàng xong)
     const clearCart = async () => {
         try {
@@ -98,6 +125,7 @@ export function CartProvider({ children }) {
             addToCart,
             updateQuantity,
             removeFromCart,
+            reorderFromOrder,
             clearCart,
             totalItems,
             totalWeight,
