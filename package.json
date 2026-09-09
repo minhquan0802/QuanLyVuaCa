@@ -1,0 +1,22 @@
+{
+  "name": "vuaca-pos",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @vuaca/pos",
+    "build": "npm run build --workspace @vuaca/pos",
+    "preview": "npm run preview --workspace @vuaca/pos",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "tauri:dev": "npm run tauri:dev --workspace @vuaca/pos",
+    "tauri:build": "npm run tauri:build --workspace @vuaca/pos"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
