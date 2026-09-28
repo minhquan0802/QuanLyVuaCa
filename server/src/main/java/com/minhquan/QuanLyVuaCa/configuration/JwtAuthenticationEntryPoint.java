@@ -26,6 +26,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         // 3. Set kiểu dữ liệu trả về là JSON
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        // Không khai báo thì writer dùng ISO-8859-1, tiếng Việt thành "B?n ch?a ??ng nh?p"
+        response.setCharacterEncoding("UTF-8");
 
         // 4. Tạo đối tượng ApiResponse chuẩn của bạn
         ApiResponse<?> apiResponse = ApiResponse.builder()

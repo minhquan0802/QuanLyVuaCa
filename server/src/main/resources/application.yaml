@@ -62,6 +62,12 @@ rate-limit:
     refresh: ${AUTH_RATE_LIMIT_REFRESH:30}
     logout: ${AUTH_RATE_LIMIT_LOGOUT:30}
     csrf: ${AUTH_RATE_LIMIT_CSRF:60}
+    chat: ${CHAT_RATE_LIMIT:10}
+
+# FastAPI service trả lời chatbot (thư mục ai-service)
+ai-service:
+  url: ${AI_SERVICE_URL:http://localhost:8000}
+  read-timeout-seconds: ${AI_SERVICE_READ_TIMEOUT_SECONDS:60}
 
 # Mặc định cho production (Render): FE và BE khác domain (cross-site) nên
 # bắt buộc Secure=true + SameSite=None thì trình duyệt mới gửi cookie kèm request.

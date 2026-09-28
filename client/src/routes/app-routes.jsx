@@ -42,6 +42,7 @@ import NhatKyThaoTac from '../pages/admin/NhatKyThaoTac';
 import ProtectedRoute from './ProtectedRoute';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import ChatBot from '../components/ChatBot';
 
 function CustomerLayout() {
     return (
@@ -51,6 +52,7 @@ function CustomerLayout() {
                 <Outlet />
             </main>
             <Footer />
+            <ChatBot />
         </div>
     );
 }

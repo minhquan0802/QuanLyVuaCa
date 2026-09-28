@@ -146,6 +146,10 @@ public enum ErrorCode {
     LICH_DINH_KY_GHICHU_INVALID(1114, "Ghi chú không hợp lệ", HttpStatus.BAD_REQUEST),
     LICH_DINH_KY_KHOANG_NGAY_INVALID(1115, "Ngày kết thúc phải sau ngày bắt đầu", HttpStatus.BAD_REQUEST),
 
+    // ===== TRỢ LÝ ẢO =====
+    AI_SERVICE_UNAVAILABLE(1116, "Trợ lý ảo tạm thời không phản hồi, vui lòng thử lại sau", HttpStatus.SERVICE_UNAVAILABLE),
+    CHAT_MESSAGE_INVALID(1117, "Câu hỏi không được để trống và tối đa 1000 ký tự", HttpStatus.BAD_REQUEST),
+
     // ===== THÔNG BÁO =====
     THONGBAO_NOT_EXISTED(1042, "Thông báo không tồn tại", HttpStatus.NOT_FOUND);
 

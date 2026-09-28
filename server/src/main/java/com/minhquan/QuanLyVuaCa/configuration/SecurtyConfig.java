@@ -40,6 +40,8 @@ public class SecurtyConfig {
     private final String[] PUBLIC_POST_ENDPOINTS = {
             "/tai-khoan/**",
             "/auth/**",
+            // Chatbot cho cả khách chưa đăng nhập; số lượt gọi bị giới hạn ở AuthRateLimitFilter
+            "/chat",
     };
 
     private final String[] PUBLIC_GET_ENDPOINTS = {
