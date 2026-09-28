@@ -55,6 +55,10 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     @Value("${rate-limit.auth.csrf:60}")
     private long csrfLimit;
 
+    // /chat mở cho khách vãng lai, mỗi lượt gọi đều tốn quota LLM
+    @Value("${rate-limit.auth.chat:10}")
+    private long chatLimit;
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -99,7 +103,8 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         return Map.of(
                 "/auth/token", loginLimit,
                 "/auth/refresh", refreshLimit,
-                "/auth/logout", logoutLimit);
+                "/auth/logout", logoutLimit,
+                "/chat", chatLimit);
     }
 
     private String clientIp(HttpServletRequest request) {

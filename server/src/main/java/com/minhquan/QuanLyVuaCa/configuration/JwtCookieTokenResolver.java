@@ -22,7 +22,7 @@ public class JwtCookieTokenResolver implements BearerTokenResolver {
             "/tai-khoan/verify-email", "/auth/csrf");
 
     private static final List<String> PUBLIC_POST_PATTERNS = List.of(
-            "/tai-khoan/**", "/auth/**");
+            "/tai-khoan/**", "/auth/**", "/chat");
 
     @Override
     public String resolve(HttpServletRequest request) {
